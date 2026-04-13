@@ -1,4 +1,4 @@
-#include <include/VRChat/EventData.hpp>
+#include <VRChat/EventData.hpp>
 
 namespace IL2CPP::VRChat {
 

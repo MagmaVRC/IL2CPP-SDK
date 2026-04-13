@@ -80,7 +80,6 @@ namespace IL2CPP::Module::Unity {
             return MethodHandler::invoke<int>(m, raw());
         }
 
-        // ---- String-param methods ----
         void SetColorByName(std::string_view name, const Color& value) {
             static auto m = MethodHandler::resolve("UnityEngine.Material", "SetColor", 2);
             auto* e = GetExports(); if (!e || !e->m_stringNew) return;

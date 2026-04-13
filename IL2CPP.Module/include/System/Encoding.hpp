@@ -9,9 +9,7 @@
 #include <string_view>
 #include <vector>
 
-namespace IL2CPP::Module {
-    [[nodiscard]] IL2CPP::il2cpp_exports const* GetExports() noexcept;
-}
+namespace IL2CPP::Module { [[nodiscard]] IL2CPP::il2cpp_exports const* GetExports() noexcept; }
 
 namespace IL2CPP::Module::System {
 

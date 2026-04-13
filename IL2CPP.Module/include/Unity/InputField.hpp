@@ -4,7 +4,7 @@
 #include <IL2CPP.Common/il2cpp_shared.hpp>
 #include <string>
 #include <string_view>
-#include <Windows.h>
+#include <windows.h>
 
 namespace IL2CPP::Module::Unity {
 

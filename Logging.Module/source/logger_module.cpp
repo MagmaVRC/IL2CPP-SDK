@@ -1,6 +1,6 @@
-#include <include\logger_module.hpp>
+#include <include/logger_module.hpp>
 #include <SharedMemory.Common/shared_memory.hpp>
-#include <Windows.h>
+#include <windows.h>
 #include <atomic>
 
 namespace Logger::Module {
@@ -38,24 +38,24 @@ namespace Logger::Module {
         g_conn.vtable = nullptr;
     }
 
-    bool is_connected() noexcept {
+    bool IsConnected() noexcept {
         return g_conn.connected.load(std::memory_order_acquire) && g_conn.vtable;
     }
 
     void flush() {
-        if (is_connected() && g_conn.vtable->flush) {
+        if (IsConnected() && g_conn.vtable->flush) {
             g_conn.vtable->flush();
         }
     }
 
     Logger::Logger(std::string_view name) : m_name(name) {
-        if (!is_connected() && !Connect()) return;
+        if (!IsConnected() && !Connect()) return;
 
         m_id = g_conn.vtable->register_module(m_name.data(), static_cast<uint32_t>(m_name.size()));
     }
 
     Logger::~Logger() {
-        if (m_id != invalid_id && is_connected()) {
+        if (m_id != invalid_id && IsConnected()) {
             g_conn.vtable->unregister_module(m_id);
         }
     }
@@ -67,7 +67,7 @@ namespace Logger::Module {
 
     Logger& Logger::operator=(Logger&& other) noexcept {
         if (this != &other) {
-            if (m_id != invalid_id && is_connected()) {
+            if (m_id != invalid_id && IsConnected()) {
                 g_conn.vtable->unregister_module(m_id);
             }
             m_id = std::exchange(other.m_id, invalid_id);
@@ -77,7 +77,7 @@ namespace Logger::Module {
     }
 
     bool Logger::valid() const noexcept {
-        return m_id != invalid_id && is_connected();
+        return m_id != invalid_id && IsConnected();
     }
 
     uint32_t Logger::id() const noexcept {
@@ -134,13 +134,13 @@ namespace Logger::Module {
     Submodule::Submodule(Logger const& parent, std::string_view name)
         : m_module_id(parent.m_id)
         , m_name(name) {
-        if (!is_connected() || m_module_id == invalid_id) return;
+        if (!IsConnected() || m_module_id == invalid_id) return;
 
         m_submodule_id = g_conn.vtable->register_submodule(m_module_id, m_name.data(), static_cast<uint32_t>(m_name.size()));
     }
 
     Submodule::~Submodule() {
-        if (m_submodule_id != invalid_id && is_connected()) {
+        if (m_submodule_id != invalid_id && IsConnected()) {
             g_conn.vtable->unregister_submodule(m_module_id, m_submodule_id);
         }
     }
@@ -153,7 +153,7 @@ namespace Logger::Module {
 
     Submodule& Submodule::operator=(Submodule&& other) noexcept {
         if (this != &other) {
-            if (m_submodule_id != invalid_id && is_connected()) {
+            if (m_submodule_id != invalid_id && IsConnected()) {
                 g_conn.vtable->unregister_submodule(m_module_id, m_submodule_id);
             }
             m_module_id = std::exchange(other.m_module_id, invalid_id);
@@ -164,7 +164,7 @@ namespace Logger::Module {
     }
 
     bool Submodule::valid() const noexcept {
-        return m_module_id != invalid_id && m_submodule_id != invalid_id && is_connected();
+        return m_module_id != invalid_id && m_submodule_id != invalid_id && IsConnected();
     }
 
     ModuleId Submodule::id() const noexcept {

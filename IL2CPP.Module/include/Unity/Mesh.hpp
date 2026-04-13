@@ -57,7 +57,6 @@ namespace IL2CPP::Module::Unity {
     public:
         using Object::Object;
 
-        // ---- vertices ----
         [[nodiscard]] std::vector<Vector3> GetVertices() const {
             static auto m = MethodHandler::resolve("UnityEngine.Mesh", "get_vertices", 0);
             void* arr = MethodHandler::invoke<void*>(m, raw());
@@ -73,7 +72,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- normals ----
         [[nodiscard]] std::vector<Vector3> GetNormals() const {
             static auto m = MethodHandler::resolve("UnityEngine.Mesh", "get_normals", 0);
             void* arr = MethodHandler::invoke<void*>(m, raw());
@@ -89,7 +87,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- tangents ----
         [[nodiscard]] std::vector<Vector4> GetTangents() const {
             static auto m = MethodHandler::resolve("UnityEngine.Mesh", "get_tangents", 0);
             void* arr = MethodHandler::invoke<void*>(m, raw());
@@ -98,7 +95,6 @@ namespace IL2CPP::Module::Unity {
             return a.to_vector();
         }
 
-        // ---- uv ----
         [[nodiscard]] std::vector<Vector2> GetUV() const {
             static auto m = MethodHandler::resolve("UnityEngine.Mesh", "get_uv", 0);
             void* arr = MethodHandler::invoke<void*>(m, raw());
@@ -114,7 +110,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- uv2 ----
         [[nodiscard]] std::vector<Vector2> GetUV2() const {
             static auto m = MethodHandler::resolve("UnityEngine.Mesh", "get_uv2", 0);
             void* arr = MethodHandler::invoke<void*>(m, raw());
@@ -130,7 +125,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- colors32 ----
         [[nodiscard]] std::vector<Color32> GetColors32() const {
             static auto m = MethodHandler::resolve("UnityEngine.Mesh", "get_colors32", 0);
             void* arr = MethodHandler::invoke<void*>(m, raw());
@@ -146,7 +140,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- triangles ----
         [[nodiscard]] std::vector<int> GetTriangles() const {
             static auto m = MethodHandler::resolve("UnityEngine.Mesh", "get_triangles", 0);
             void* arr = MethodHandler::invoke<void*>(m, raw());
@@ -162,7 +155,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- submesh ----
         [[nodiscard]] int GetSubMeshCount() const {
             static auto m = MethodHandler::resolve("UnityEngine.Mesh", "get_subMeshCount", 0);
             return MethodHandler::invoke<int>(m, raw());
@@ -173,7 +165,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- bounds ----
         [[nodiscard]] Bounds GetBounds() const {
             static auto m = MethodHandler::resolve("UnityEngine.Mesh", "get_bounds", 0);
             return MethodHandler::invoke<Bounds>(m, raw());
@@ -185,19 +176,16 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- vertexCount (get-only) ----
         [[nodiscard]] int GetVertexCount() const {
             static auto m = MethodHandler::resolve("UnityEngine.Mesh", "get_vertexCount", 0);
             return MethodHandler::invoke<int>(m, raw());
         }
 
-        // ---- isReadable (get-only) ----
         [[nodiscard]] bool GetIsReadable() const {
             static auto m = MethodHandler::resolve("UnityEngine.Mesh", "get_isReadable", 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
-        // ---- methods ----
         void Clear() {
             static auto m = MethodHandler::resolve("UnityEngine.Mesh", "Clear", 0);
             MethodHandler::invoke(m, raw());

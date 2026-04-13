@@ -13,7 +13,6 @@
 #include <mutex>
 #include <unordered_map>
 
-// Low-Level Module API
 namespace IL2CPP::Module {
 
     [[nodiscard]] bool Connect();
@@ -70,7 +69,6 @@ namespace IL2CPP::Module {
 
 } // namespace IL2CPP::Module
 
-// High-Level Module API
 #include "Reflection.hpp"
 #include "ManagedObject.hpp"
 #include "Deobfuscation.hpp"

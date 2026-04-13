@@ -9,7 +9,6 @@ namespace IL2CPP::Module::Unity {
     public:
         using Renderer::Renderer;
 
-        // ---- positionCount ----
         [[nodiscard]] int GetPositionCount() const {
             static auto m = MethodHandler::resolve("UnityEngine.LineRenderer", "get_positionCount", 0);
             return MethodHandler::invoke<int>(m, raw());
@@ -20,7 +19,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- startWidth / endWidth ----
         [[nodiscard]] float GetStartWidth() const {
             static auto m = MethodHandler::resolve("UnityEngine.LineRenderer", "get_startWidth", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -40,7 +38,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- startColor / endColor ----
         [[nodiscard]] Color GetStartColor() const {
             static auto m = MethodHandler::resolve("UnityEngine.LineRenderer", "get_startColor", 0);
             return MethodHandler::invoke<Color>(m, raw());
@@ -62,7 +59,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- loop ----
         [[nodiscard]] bool GetLoop() const {
             static auto m = MethodHandler::resolve("UnityEngine.LineRenderer", "get_loop", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -73,7 +69,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- useWorldSpace ----
         [[nodiscard]] bool GetUseWorldSpace() const {
             static auto m = MethodHandler::resolve("UnityEngine.LineRenderer", "get_useWorldSpace", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -84,7 +79,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- SetPosition ----
         void SetPosition(int index, const Vector3& position) {
             static auto m = MethodHandler::resolve("UnityEngine.LineRenderer", "SetPosition", 2);
             Vector3 pos = position;
@@ -92,7 +86,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- GetPosition ----
         [[nodiscard]] Vector3 GetPosition(int index) const {
             static auto m = MethodHandler::resolve("UnityEngine.LineRenderer", "GetPosition", 1);
             void* params[] = { &index };

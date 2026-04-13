@@ -11,13 +11,11 @@ namespace IL2CPP::Module::Unity {
     public:
         using Object::Object;
 
-        // ---- length ----
         [[nodiscard]] float GetLength() const {
             static auto m = MethodHandler::resolve("UnityEngine.AnimationClip", "get_length", 0);
             return MethodHandler::invoke<float>(m, raw());
         }
 
-        // ---- frameRate ----
         [[nodiscard]] float GetFrameRate() const {
             static auto m = MethodHandler::resolve("UnityEngine.AnimationClip", "get_frameRate", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -28,7 +26,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- wrapMode ----
         [[nodiscard]] int GetWrapMode() const {
             static auto m = MethodHandler::resolve("UnityEngine.AnimationClip", "get_wrapMode", 0);
             return MethodHandler::invoke<int>(m, raw());
@@ -39,13 +36,11 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- localBounds ----
         [[nodiscard]] Bounds GetLocalBounds() const {
             static auto m = MethodHandler::resolve("UnityEngine.AnimationClip", "get_localBounds", 0);
             return MethodHandler::invoke<Bounds>(m, raw());
         }
 
-        // ---- legacy ----
         [[nodiscard]] bool GetLegacy() const {
             static auto m = MethodHandler::resolve("UnityEngine.AnimationClip", "get_legacy", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -56,19 +51,16 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- humanMotion (get-only) ----
         [[nodiscard]] bool GetHumanMotion() const {
             static auto m = MethodHandler::resolve("UnityEngine.AnimationClip", "get_humanMotion", 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
-        // ---- empty (get-only) ----
         [[nodiscard]] bool GetEmpty() const {
             static auto m = MethodHandler::resolve("UnityEngine.AnimationClip", "get_empty", 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
-        // ---- SampleAnimation ----
         void SampleAnimation(void* gameObject, float time) {
             static auto m = MethodHandler::resolve("UnityEngine.AnimationClip", "SampleAnimation", 2);
             void* params[] = { gameObject, &time };

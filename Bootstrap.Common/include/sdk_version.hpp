@@ -1,15 +1,13 @@
 #pragma once
 #include <cstdint>
 
-// Single source of truth for SDK version — change this one number
-#define UNIX_SDK_MAJOR 5
+#define UNIX_SDK_MAJOR 6
 #define UNIX_SDK_MINOR 0
 #define UNIX_SDK_PATCH 0
 
-// Stringify helper
 #define _UNIX_STR(x) #x
 #define _UNIX_XSTR(x) _UNIX_STR(x)
-#define UNIX_SDK_VERSION_STR _UNIX_XSTR(UNIX_SDK_MAJOR)
+#define UNIX_SDK_MAJOR_STR _UNIX_XSTR(UNIX_SDK_MAJOR)
 
 namespace Bootstrap {
 

@@ -285,9 +285,6 @@ namespace IL2CPP::Module {
         [[nodiscard]] T try_cast() const {
             if (!valid()) return T{};
             T dummy{};
-            // T must have a static get_class_static() or we check by name.
-            // Use the simple approach: construct T from our pointer and let
-            // the caller verify.  For a real type-safe check, use is_instance_of.
             return T{ m_native };
         }
 

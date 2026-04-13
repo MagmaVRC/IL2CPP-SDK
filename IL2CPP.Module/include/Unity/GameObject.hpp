@@ -297,16 +297,7 @@ namespace IL2CPP::Module::Unity {
             static auto m = MethodHandler::resolve("UnityEngine.GameObject", "get_tag", 0);
             void* str = MethodHandler::invoke<void*>(m, raw());
             if (!str) return "";
-
-            int len = *reinterpret_cast<int*>(static_cast<char*>(str) + 0x10);
-            if (len <= 0) return "";
-
-            wchar_t* wstr = reinterpret_cast<wchar_t*>(static_cast<char*>(str) + 0x14);
-            int bytes = WideCharToMultiByte(CP_UTF8, 0, wstr, len, nullptr, 0, nullptr, nullptr);
-            if (bytes <= 0) return "";
-            std::string out(static_cast<size_t>(bytes), '\0');
-            WideCharToMultiByte(CP_UTF8, 0, wstr, len, out.data(), bytes, nullptr, nullptr);
-            return out;
+            return System::String{ str }.to_string();
         }
 
         void SetTag(std::string_view tag) {
@@ -365,7 +356,6 @@ namespace IL2CPP::Module::Unity {
 
     };
 
-    // Type alias for backwards compatibility
     using GameObjectArray = std::vector<GameObject>;
 
 } // namespace IL2CPP::Module::Unity

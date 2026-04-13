@@ -9,7 +9,6 @@
 
 namespace IL2CPP::Module {
 
-    // Forward declarations
     class FieldQuery;
     class MethodQuery;
     class FieldCounter;
@@ -56,8 +55,6 @@ namespace IL2CPP::Module {
             if (!field) return false;
             Type t = field.type();
             if (!t || !t.raw()) return false;
-            // Check FIELD_ATTRIBUTE_STATIC bit in the type's m_uAttributes
-            // il2cppType: union (8 bytes) + m_uAttributes (2 bytes) at offset 0x8
             uint16_t attrs = *reinterpret_cast<const uint16_t*>(
                 static_cast<const char*>(t.raw()) + 0x8);
             return (attrs & FIELD_ATTRIBUTE_STATIC) != 0;
@@ -187,7 +184,6 @@ namespace IL2CPP::Module {
             if (m_fieldRawDest) *m_fieldRawDest = m_matched.raw();
             if (m_nameDest)     *m_nameDest = m_matched.name();  // Returns deobfuscated
             if (!m_deobfName.empty()) {
-                // Register mapping using RAW name as key (the obfuscated identifier)
                 Deobfuscation::AddMapping(
                     m_deobfPrefix + m_matched.raw_name(), m_deobfName);
             }
@@ -309,7 +305,6 @@ namespace IL2CPP::Module {
                 if (m_ptrDest)      *m_ptrDest = m_matched[0].pointer();
                 if (m_methodRawDest)*m_methodRawDest = m_matched[0].raw();
                 if (!m_deobfName.empty()) {
-                    // Register mapping using RAW name as key (the obfuscated identifier)
                     Deobfuscation::AddMapping(
                         m_deobfPrefix + m_matched[0].raw_name(), m_deobfName);
                 }
@@ -494,7 +489,6 @@ namespace IL2CPP::Module {
                 if (b.fieldRawDest) *b.fieldRawDest = field.raw();
                 if (b.nameDest)     *b.nameDest = field.name();  // Returns deobfuscated
                 if (!b.deobfName.empty()) {
-                    // Register mapping using RAW name as key (the obfuscated identifier)
                     Deobfuscation::AddMapping(
                         b.deobfPrefix + field.raw_name(), b.deobfName);
                 }
@@ -602,7 +596,6 @@ namespace IL2CPP::Module {
             for (const auto& c : m_indexedCollectors) c.apply();
 
             if (!m_deobfName.empty()) {
-                // Register mapping using RAW class name as key (the obfuscated identifier)
                 Deobfuscation::AddMapping(m_klass.raw_name(), m_deobfName);
             }
         }

@@ -8,7 +8,6 @@ namespace IL2CPP::Module::Unity {
     public:
         using Selectable::Selectable;
 
-        // ---- value ----
         [[nodiscard]] float GetValue() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Slider", "get_value", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -19,7 +18,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- minValue ----
         [[nodiscard]] float GetMinValue() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Slider", "get_minValue", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -30,7 +28,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- maxValue ----
         [[nodiscard]] float GetMaxValue() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Slider", "get_maxValue", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -41,7 +38,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- wholeNumbers ----
         [[nodiscard]] bool GetWholeNumbers() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Slider", "get_wholeNumbers", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -52,7 +48,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- onValueChanged (get, raw pointer to UnityEvent<float>) ----
         [[nodiscard]] void* GetOnValueChangedRaw() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Slider", "get_onValueChanged", 0);
             return MethodHandler::invoke<void*>(m, raw());

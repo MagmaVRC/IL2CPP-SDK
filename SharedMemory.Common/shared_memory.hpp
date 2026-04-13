@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Windows.h>
+#include <windows.h>
 #include <Psapi.h>
 #include <cstdint>
 #include <cstring>
@@ -9,7 +9,7 @@
 
 namespace SharedMemory {
 
-    inline constexpr uint32_t kMagic    = 0x554E4978; // "UNIx"
+    inline constexpr uint32_t kMagic    = 0x554E4978;
     inline constexpr uint32_t kVersion  = 1;
     inline constexpr uint32_t kCapacity = 32;
 
@@ -20,11 +20,11 @@ namespace SharedMemory {
     };
 
     struct Registry {
-        uint32_t       magic;       // kMagic
-        uint32_t       version;     // kVersion
+        uint32_t       magic;
+        uint32_t       version;
         uint32_t       count;
-        uint32_t       capacity;    // kCapacity
-        SRWLOCK        lock;        // in-place, no kernel object
+        uint32_t       capacity;
+        SRWLOCK        lock;
         RegistryEntry  entries[kCapacity];
     };
 
@@ -127,7 +127,7 @@ namespace SharedMemory {
 
     } // namespace detail
 
-    inline Registry* get_or_create_registry() {
+    inline Registry* GetOrCreateRegistry() {
         uintptr_t ga_base = 0;
         uint32_t  sizeOfImage = 0;
         if (!detail::get_game_assembly(ga_base, sizeOfImage))
@@ -158,7 +158,7 @@ namespace SharedMemory {
         return reg;
     }
 
-    inline Registry* find_registry() {
+    inline Registry* FindRegistry() {
         uintptr_t ga_base = 0;
         uint32_t  sizeOfImage = 0;
         if (!detail::get_game_assembly(ga_base, sizeOfImage))
@@ -170,7 +170,7 @@ namespace SharedMemory {
 
     template<typename T>
     T* Register(char const* name) {
-        Registry* reg = get_or_create_registry();
+        Registry* reg = GetOrCreateRegistry();
         if (!reg) return nullptr;
 
         AcquireSRWLockExclusive(&reg->lock);
@@ -215,7 +215,7 @@ namespace SharedMemory {
 
     template<typename T>
     T const* Resolve(char const* name) {
-        Registry* reg = find_registry();
+        Registry* reg = FindRegistry();
         if (!reg) return nullptr;
 
         AcquireSRWLockShared(&reg->lock);
@@ -233,7 +233,7 @@ namespace SharedMemory {
     }
 
     inline void Unregister(char const* name) {
-        Registry* reg = find_registry();
+        Registry* reg = FindRegistry();
         if (!reg) return;
 
         AcquireSRWLockExclusive(&reg->lock);

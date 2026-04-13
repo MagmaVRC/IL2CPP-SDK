@@ -1,4 +1,4 @@
-#include <include/VRChat/UdonBehaviour.hpp>
+#include <VRChat/UdonBehaviour.hpp>
 #include <IL2CPP.Module/include/MethodHandler.hpp>
 #include <IL2CPP.Module/include/System/String.hpp>
 #include <IL2CPP.Module/include/ManagedObject.hpp>

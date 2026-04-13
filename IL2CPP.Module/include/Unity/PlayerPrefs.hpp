@@ -5,9 +5,7 @@
 #include <string>
 #include <string_view>
 
-namespace IL2CPP::Module {
-    [[nodiscard]] IL2CPP::il2cpp_exports const* GetExports() noexcept;
-}
+namespace IL2CPP::Module { [[nodiscard]] IL2CPP::il2cpp_exports const* GetExports() noexcept; }
 
 namespace IL2CPP::Module::Unity {
 
@@ -15,7 +13,6 @@ namespace IL2CPP::Module::Unity {
     public:
         PlayerPrefs() = delete;
 
-        // ---- Int ----
         static void SetInt(std::string_view key, int value) {
             static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "SetInt", 2);
             auto* e = GetExports();
@@ -33,7 +30,6 @@ namespace IL2CPP::Module::Unity {
             return MethodHandler::invoke<int>(m, nullptr, params);
         }
 
-        // ---- Float ----
         static void SetFloat(std::string_view key, float value) {
             static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "SetFloat", 2);
             auto* e = GetExports();
@@ -51,7 +47,6 @@ namespace IL2CPP::Module::Unity {
             return MethodHandler::invoke<float>(m, nullptr, params);
         }
 
-        // ---- String ----
         static void SetString(std::string_view key, std::string_view value) {
             static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "SetString", 2);
             auto* e = GetExports();
@@ -73,7 +68,6 @@ namespace IL2CPP::Module::Unity {
             return System::String{ result }.to_string();
         }
 
-        // ---- HasKey ----
         [[nodiscard]] static bool HasKey(std::string_view key) {
             static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "HasKey", 1);
             auto* e = GetExports();
@@ -83,7 +77,6 @@ namespace IL2CPP::Module::Unity {
             return MethodHandler::invoke<bool>(m, nullptr, params);
         }
 
-        // ---- DeleteKey ----
         static void DeleteKey(std::string_view key) {
             static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "DeleteKey", 1);
             auto* e = GetExports();
@@ -93,13 +86,11 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, nullptr, params);
         }
 
-        // ---- DeleteAll ----
         static void DeleteAll() {
             static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "DeleteAll", 0);
             MethodHandler::invoke(m, nullptr);
         }
 
-        // ---- Save ----
         static void Save() {
             static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "Save", 0);
             MethodHandler::invoke(m, nullptr);

@@ -105,14 +105,16 @@ namespace IL2CPP {
         constexpr Quaternion() : x(0.f), y(0.f), z(0.f), w(0.f) {}
         constexpr Quaternion(float f1, float f2, float f3, float f4) : x(f1), y(f2), z(f3), w(f4) {}
 
-        Quaternion Euler(float m_fX, float m_fY, float m_fZ) {
+        [[nodiscard]] static Quaternion Euler(float m_fX, float m_fY, float m_fZ) {
             m_fX = m_fX * DEG2RAD * 0.5f; m_fY = m_fY * DEG2RAD * 0.5f; m_fZ = m_fZ * DEG2RAD * 0.5f;
             float sX = sinf(m_fX), cX = cosf(m_fX), sY = sinf(m_fY), cY = cosf(m_fY), sZ = sinf(m_fZ), cZ = cosf(m_fZ);
-            x = cY * sX * cZ + sY * cX * sZ; y = sY * cX * cZ - cY * sX * sZ;
-            z = cY * cX * sZ - sY * sX * cZ; w = cY * cX * cZ + sY * sX * sZ;
-            return *this;
+            return Quaternion(
+                cY * sX * cZ + sY * cX * sZ,
+                sY * cX * cZ - cY * sX * sZ,
+                cY * cX * sZ - sY * sX * cZ,
+                cY * cX * cZ + sY * sX * sZ);
         }
-        Quaternion Euler(const Vector3& r) { return Euler(r.x, r.y, r.z); }
+        [[nodiscard]] static Quaternion Euler(const Vector3& r) { return Euler(r.x, r.y, r.z); }
 
         [[nodiscard]] Vector3 ToEuler() const {
             Vector3 e; float d = x * x + y * y + z * z + w * w; float t = x * w - y * z;

@@ -1,6 +1,6 @@
-#include <include/VRChat/APIUser.hpp>
-#include <include/VRChat/ApiBadge.hpp>
-#include <include/bootstrap_internal.hpp>
+#include <VRChat/APIUser.hpp>
+#include <VRChat/ApiBadge.hpp>
+#include <bootstrap_internal.hpp>
 #include <IL2CPP.Module/include/MethodHandler.hpp>
 #include <IL2CPP.Module/include/System/String.hpp>
 #include <IL2CPP.Module/include/System/List.hpp>
@@ -191,7 +191,7 @@ namespace IL2CPP::VRChat {
         return MethodHandler::invoke<bool>(m, raw());
     }
 
-    std::string APIUser::GetLast_platform() {
+    std::string APIUser::GetLastPlatform() {
         static auto m = MethodHandler::resolve("VRC.Core.APIUser", "get_last_platform", 0);
         void* str = MethodHandler::invoke<void*>(m, raw());
         return str ? IL2CPP::Module::System::String(str).to_string() : "";

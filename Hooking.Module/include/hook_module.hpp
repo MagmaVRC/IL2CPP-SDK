@@ -2,15 +2,16 @@
 #include <Hooking.Common/hook_shared.hpp>
 #include <string_view>
 #include <string>
-#include <utility>
-#include <tuple>
 #include <type_traits>
 
 namespace Hooking::Module {
 
+    /// @internal
+    extern HookVtable const* get_connection_vtable() noexcept;
+
     [[nodiscard]] bool Connect();
     void Disconnect();
-    [[nodiscard]] bool is_connected() noexcept;
+    [[nodiscard]] bool IsConnected() noexcept;
 
     class HookModule {
     public:
@@ -78,9 +79,8 @@ namespace Hooking::Module {
                                         FnPtr target,
                                         FnPtr detour,
                                         FnPtr* out_original) {
-        if (!valid() || !is_connected()) return invalid_id;
+        if (!valid() || !IsConnected()) return invalid_id;
 
-        extern HookVtable const* get_connection_vtable() noexcept;
         auto* vt = get_connection_vtable();
         if (!vt) return invalid_id;
 
@@ -102,9 +102,8 @@ namespace Hooking::Module {
     uint32_t HookModule::create_prefix(std::string_view hook_name,
                                          void* target,
                                          CallbackFn callback) {
-        if (!valid() || !is_connected()) return invalid_id;
+        if (!valid() || !IsConnected()) return invalid_id;
 
-        extern HookVtable const* get_connection_vtable() noexcept;
         auto* vt = get_connection_vtable();
         if (!vt) return invalid_id;
 
@@ -119,9 +118,8 @@ namespace Hooking::Module {
     uint32_t HookModule::create_suffix(std::string_view hook_name,
                                          void* target,
                                          CallbackFn callback) {
-        if (!valid() || !is_connected()) return invalid_id;
+        if (!valid() || !IsConnected()) return invalid_id;
 
-        extern HookVtable const* get_connection_vtable() noexcept;
         auto* vt = get_connection_vtable();
         if (!vt) return invalid_id;
 

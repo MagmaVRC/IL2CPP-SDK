@@ -17,18 +17,35 @@ namespace IL2CPP {
     };
 
     struct gameObjectFunctions_t {
-        void* m_AddComponent = nullptr; void* m_CreatePrimitive = nullptr; void* m_Find = nullptr;
-        void* m_FindGameObjectsWithTag = nullptr; void* m_FindGameObjectWithTag = nullptr;
-        void* m_GetComponent = nullptr; void* m_GetComponents = nullptr;
+        void* m_AddComponent = nullptr;
+        void* m_CreatePrimitive = nullptr;
+        void* m_Find = nullptr;
+        void* m_FindGameObjectsWithTag = nullptr;
+        void* m_FindGameObjectWithTag = nullptr;
+        void* m_GetComponent = nullptr;
+        void* m_GetComponents = nullptr;
         void* m_GetComponentByName = nullptr;
-        void* m_GetComponentInChildren = nullptr; void* m_GetComponentsInChildren = nullptr;
-        void* m_GetComponentInParent = nullptr; void* m_GetComponentsInParent = nullptr;
-        void* m_GetActive = nullptr; void* m_GetActiveSelf = nullptr; void* m_GetActiveInHierarchy = nullptr;
-        void* m_GetLayer = nullptr; void* m_GetTransform = nullptr; void* m_GetTag = nullptr;
-        void* m_GetName = nullptr; void* m_GetScene = nullptr; void* m_SetActive = nullptr;
-        void* m_SetLayer = nullptr; void* m_SetTag = nullptr; void* m_SetName = nullptr;
-        void* m_CompareTag = nullptr; void* m_SendMessage = nullptr; void* m_SendMessageUpwards = nullptr;
-        void* m_BroadcastMessage = nullptr; void* m_TryGetComponent = nullptr;
+        void* m_GetComponentInChildren = nullptr;
+        void* m_GetComponentsInChildren = nullptr;
+        void* m_GetComponentInParent = nullptr;
+        void* m_GetComponentsInParent = nullptr;
+        void* m_GetActive = nullptr;
+        void* m_GetActiveSelf = nullptr;
+        void* m_GetActiveInHierarchy = nullptr;
+        void* m_GetLayer = nullptr;
+        void* m_GetTransform = nullptr;
+        void* m_GetTag = nullptr;
+        void* m_GetName = nullptr;
+        void* m_GetScene = nullptr;
+        void* m_SetActive = nullptr;
+        void* m_SetLayer = nullptr;
+        void* m_SetTag = nullptr;
+        void* m_SetName = nullptr;
+        void* m_CompareTag = nullptr;
+        void* m_SendMessage = nullptr;
+        void* m_SendMessageUpwards = nullptr;
+        void* m_BroadcastMessage = nullptr;
+        void* m_TryGetComponent = nullptr;
     };
 
     struct componentFunctions_t {
@@ -64,15 +81,24 @@ namespace IL2CPP {
     };
 
     struct transformFunctions_t {
-        void* m_GetPosition = nullptr; void* m_SetPosition = nullptr;
-        void* m_GetLocalPosition = nullptr; void* m_SetLocalPosition = nullptr;
-        void* m_GetRight = nullptr; void* m_SetRight = nullptr;
-        void* m_GetUp = nullptr; void* m_SetUp = nullptr;
-        void* m_GetForward = nullptr; void* m_SetForward = nullptr;
-        void* m_GetRotation = nullptr; void* m_SetRotation = nullptr;
-        void* m_GetLocalRotation = nullptr; void* m_SetLocalRotation = nullptr;
-        void* m_GetLocalScale = nullptr; void* m_SetLocalScale = nullptr;
-        void* m_GetParent = nullptr; void* m_SetParent = nullptr;
+        void* m_GetPosition = nullptr;
+        void* m_SetPosition = nullptr;
+        void* m_GetLocalPosition = nullptr;
+        void* m_SetLocalPosition = nullptr;
+        void* m_GetRight = nullptr;
+        void* m_SetRight = nullptr;
+        void* m_GetUp = nullptr;
+        void* m_SetUp = nullptr;
+        void* m_GetForward = nullptr;
+        void* m_SetForward = nullptr;
+        void* m_GetRotation = nullptr;
+        void* m_SetRotation = nullptr;
+        void* m_GetLocalRotation = nullptr;
+        void* m_SetLocalRotation = nullptr;
+        void* m_GetLocalScale = nullptr;
+        void* m_SetLocalScale = nullptr;
+        void* m_GetParent = nullptr;
+        void* m_SetParent = nullptr;
         void* m_GetWorldToLocalMatrix = nullptr;
         void* m_GetLocalToWorldMatrix = nullptr;
         void* m_GetRoot = nullptr;
@@ -188,7 +214,6 @@ namespace IL2CPP {
         void* m_WorldToScreenPoint = nullptr;
         void* m_GetWorldToCameraMatrix = nullptr;
         void* m_GetProjectionMatrix = nullptr;
-        // Extended camera properties
         void* m_GetFieldOfView = nullptr; void* m_SetFieldOfView = nullptr;
         void* m_GetNearClipPlane = nullptr; void* m_SetNearClipPlane = nullptr;
         void* m_GetFarClipPlane = nullptr; void* m_SetFarClipPlane = nullptr;

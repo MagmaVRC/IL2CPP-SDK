@@ -9,7 +9,6 @@ namespace IL2CPP::Module::Unity {
     public:
         using MaskableGraphic::MaskableGraphic;
 
-        // ---- sprite ----
         [[nodiscard]] void* GetSprite() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Image", "get_sprite", 0);
             return MethodHandler::invoke<void*>(m, raw());
@@ -20,13 +19,11 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- activeSprite ----
         [[nodiscard]] void* GetActiveSprite() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Image", "get_activeSprite", 0);
             return MethodHandler::invoke<void*>(m, raw());
         }
 
-        // ---- overrideSprite ----
         [[nodiscard]] void* GetOverrideSprite() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Image", "get_overrideSprite", 0);
             return MethodHandler::invoke<void*>(m, raw());
@@ -37,7 +34,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- fillAmount ----
         [[nodiscard]] float GetFillAmount() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Image", "get_fillAmount", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -48,7 +44,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- color ----
         [[nodiscard]] Color GetColor() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Image", "get_color", 0);
             return MethodHandler::invoke<Color>(m, raw());
@@ -60,7 +55,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- type ----
         [[nodiscard]] int GetType() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Image", "get_type", 0);
             return MethodHandler::invoke<int>(m, raw());
@@ -71,7 +65,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- preserveAspect ----
         [[nodiscard]] bool GetPreserveAspect() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Image", "get_preserveAspect", 0);
             return MethodHandler::invoke<bool>(m, raw());

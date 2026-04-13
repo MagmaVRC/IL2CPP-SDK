@@ -9,7 +9,6 @@ namespace IL2CPP::Module::Unity {
     public:
         using Renderer::Renderer;
 
-        // ---- time ----
         [[nodiscard]] float GetTime() const {
             static auto m = MethodHandler::resolve("UnityEngine.TrailRenderer", "get_time", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -20,7 +19,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- startWidth / endWidth ----
         [[nodiscard]] float GetStartWidth() const {
             static auto m = MethodHandler::resolve("UnityEngine.TrailRenderer", "get_startWidth", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -40,7 +38,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- startColor / endColor ----
         [[nodiscard]] Color GetStartColor() const {
             static auto m = MethodHandler::resolve("UnityEngine.TrailRenderer", "get_startColor", 0);
             return MethodHandler::invoke<Color>(m, raw());
@@ -62,7 +59,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- minVertexDistance ----
         [[nodiscard]] float GetMinVertexDistance() const {
             static auto m = MethodHandler::resolve("UnityEngine.TrailRenderer", "get_minVertexDistance", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -73,7 +69,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- autodestruct ----
         [[nodiscard]] bool GetAutodestruct() const {
             static auto m = MethodHandler::resolve("UnityEngine.TrailRenderer", "get_autodestruct", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -84,7 +79,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- emitting ----
         [[nodiscard]] bool GetEmitting() const {
             static auto m = MethodHandler::resolve("UnityEngine.TrailRenderer", "get_emitting", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -95,13 +89,11 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- positionCount (get-only) ----
         [[nodiscard]] int GetPositionCount() const {
             static auto m = MethodHandler::resolve("UnityEngine.TrailRenderer", "get_positionCount", 0);
             return MethodHandler::invoke<int>(m, raw());
         }
 
-        // ---- Clear ----
         void Clear() {
             static auto m = MethodHandler::resolve("UnityEngine.TrailRenderer", "Clear", 0);
             MethodHandler::invoke(m, raw());

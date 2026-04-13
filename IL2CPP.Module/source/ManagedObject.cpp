@@ -1,21 +1,18 @@
-#include <include/ManagedObject.hpp>
-#include <include/il2cpp_module.hpp>
-#include <include/System/String.hpp>
+#include <ManagedObject.hpp>
+#include <il2cpp_module.hpp>
+#include <System/String.hpp>
 
 namespace IL2CPP::Module {
 
     bool ManagedObject::valid() const noexcept {
         if (!m_native) return false;
         if (!IsValidPointer(m_native)) return false;
-        return true;
-        // Check that m_pClass (first field of il2cppObject) is non-null
         void* klass = *reinterpret_cast<void**>(m_native);
         return IsValidPointer(klass);
     }
 
     Class ManagedObject::get_class() const {
         if (!valid()) return Class{};
-        // il2cppObject::m_pClass is the first field
         return Class{ *reinterpret_cast<void**>(m_native) };
     }
 

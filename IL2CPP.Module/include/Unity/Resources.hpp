@@ -4,9 +4,7 @@
 #include <string>
 #include <string_view>
 
-namespace IL2CPP::Module {
-    [[nodiscard]] IL2CPP::il2cpp_exports const* GetExports() noexcept;
-}
+namespace IL2CPP::Module { [[nodiscard]] IL2CPP::il2cpp_exports const* GetExports() noexcept; }
 
 namespace IL2CPP::Module::Unity {
 

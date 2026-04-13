@@ -3,7 +3,6 @@
 #include <string_view>
 #include <format>
 #include <source_location>
-#include <utility>
 
 namespace Logger::Module {
 
@@ -168,7 +167,7 @@ namespace Logger::Module {
 
     [[nodiscard]] bool Connect();
     void Disconnect();
-    [[nodiscard]] bool is_connected() noexcept;
+    [[nodiscard]] bool IsConnected() noexcept;
     void flush();
 
 }

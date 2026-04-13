@@ -9,7 +9,6 @@ namespace IL2CPP::Module::Unity {
     public:
         using Component::Component;
 
-        // ---- enabled ----
         [[nodiscard]] bool GetEnabled() const {
             static auto m = MethodHandler::resolve("UnityEngine.Renderer", "get_enabled", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -20,7 +19,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- material ----
         [[nodiscard]] void* GetMaterial() const {
             static auto m = MethodHandler::resolve("UnityEngine.Renderer", "get_material", 0);
             return MethodHandler::invoke<void*>(m, raw());
@@ -31,7 +29,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- sharedMaterial ----
         [[nodiscard]] void* GetSharedMaterial() const {
             static auto m = MethodHandler::resolve("UnityEngine.Renderer", "get_sharedMaterial", 0);
             return MethodHandler::invoke<void*>(m, raw());
@@ -42,13 +39,11 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- bounds ----
         [[nodiscard]] Bounds GetBounds() const {
             static auto m = MethodHandler::resolve("UnityEngine.Renderer", "get_bounds", 0);
             return MethodHandler::invoke<Bounds>(m, raw());
         }
 
-        // ---- sortingOrder ----
         [[nodiscard]] int GetSortingOrder() const {
             static auto m = MethodHandler::resolve("UnityEngine.Renderer", "get_sortingOrder", 0);
             return MethodHandler::invoke<int>(m, raw());
@@ -59,7 +54,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- sortingLayerID ----
         [[nodiscard]] int GetSortingLayerID() const {
             static auto m = MethodHandler::resolve("UnityEngine.Renderer", "get_sortingLayerID", 0);
             return MethodHandler::invoke<int>(m, raw());
@@ -70,13 +64,11 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- isVisible (get-only) ----
         [[nodiscard]] bool GetIsVisible() const {
             static auto m = MethodHandler::resolve("UnityEngine.Renderer", "get_isVisible", 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
-        // ---- receiveShadows ----
         [[nodiscard]] bool GetReceiveShadows() const {
             static auto m = MethodHandler::resolve("UnityEngine.Renderer", "get_receiveShadows", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -87,7 +79,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- shadowCastingMode ----
         [[nodiscard]] int GetShadowCastingMode() const {
             static auto m = MethodHandler::resolve("UnityEngine.Renderer", "get_shadowCastingMode", 0);
             return MethodHandler::invoke<int>(m, raw());
@@ -98,7 +89,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- GetPropertyBlock / SetPropertyBlock ----
         void GetPropertyBlock(void* properties) const {
             static auto m = MethodHandler::resolve("UnityEngine.Renderer", "GetPropertyBlock", 1);
             void* params[] = { properties };

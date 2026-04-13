@@ -12,7 +12,9 @@
 
 namespace Bootstrap::Module {
 
+    /// Low-level connection management. Do not mix with BootstrapModule RAII.
     [[nodiscard]] bool Connect();
+    /// Low-level disconnection. Do not mix with BootstrapModule RAII.
     void Disconnect();
     [[nodiscard]] bool is_connected() noexcept;
 
@@ -108,7 +110,6 @@ namespace Bootstrap::Module {
         bool has_key(std::string_view key);
         void remove_key(std::string_view key);
 
-        // Vectors and colors
         void set_vec2(std::string_view key, float x, float y);
         std::pair<float, float> get_vec2(std::string_view key, float def_x = 0, float def_y = 0);
         void set_vec3(std::string_view key, float x, float y, float z);
@@ -122,7 +123,6 @@ namespace Bootstrap::Module {
         std::vector<std::string> get_keys();
         void clear();
 
-        // Extended numeric types
         void set_double(std::string_view key, double value);
         double get_double(std::string_view key, double default_val = 0.0);
         void set_int64(std::string_view key, int64_t value);
@@ -130,7 +130,6 @@ namespace Bootstrap::Module {
         void set_uint32(std::string_view key, uint32_t value);
         uint32_t get_uint32(std::string_view key, uint32_t default_val = 0);
 
-        // Arrays (stored as JSON via set_json/get_json)
         void set_int_array(std::string_view key, std::vector<int32_t> const& values);
         std::vector<int32_t> get_int_array(std::string_view key);
         void set_float_array(std::string_view key, std::vector<float> const& values);
@@ -142,7 +141,6 @@ namespace Bootstrap::Module {
         void set_double_array(std::string_view key, std::vector<double> const& values);
         std::vector<double> get_double_array(std::string_view key);
 
-        // Key-value maps (stored as JSON)
         void set_string_map(std::string_view key, std::vector<std::pair<std::string, std::string>> const& entries);
         std::vector<std::pair<std::string, std::string>> get_string_map(std::string_view key);
 
@@ -179,19 +177,16 @@ namespace Bootstrap::Module {
         void remove_button(uint32_t module_id, uint32_t button_id);
         void set_button_text(uint32_t module_id, uint32_t button_id, std::string_view text);
 
-        // Toggle buttons
         uint32_t add_toggle(uint32_t module_id, uint32_t page_id, std::string_view text,
                             bool default_state, Bootstrap::fn_menu_toggle_callback callback,
                             std::string_view config_key = "");
         void set_toggle_state(uint32_t module_id, uint32_t button_id, bool state);
         bool get_toggle_state(uint32_t module_id, uint32_t button_id);
 
-        // Icons & colors
         void set_button_icon(uint32_t module_id, uint32_t button_id, void* sprite_ptr);
         void set_button_icon(uint32_t module_id, uint32_t button_id, int32_t sprite_id);
         void set_button_color(uint32_t module_id, uint32_t button_id, float r, float g, float b, float a);
 
-        // Page customization
         void set_page_title(uint32_t module_id, uint32_t page_id, std::string_view title);
         void set_page_icon(uint32_t module_id, uint32_t page_id, void* sprite_ptr);
         void set_page_icon(uint32_t module_id, uint32_t page_id, int32_t sprite_id);
@@ -200,7 +195,6 @@ namespace Bootstrap::Module {
         void set_page_badge(uint32_t module_id, uint32_t page_id, bool visible, std::string_view text,
                             std::nullptr_t no_color);
 
-        // Button state and sub-page navigation
         void set_button_enabled(uint32_t module_id, uint32_t button_id, bool enabled);
         void set_button_visible(uint32_t module_id, uint32_t button_id, bool visible);
         uint32_t get_subpage_nav_button(uint32_t module_id, uint32_t sub_page_id);
@@ -208,7 +202,6 @@ namespace Bootstrap::Module {
         void set_subpage_nav_icon(uint32_t module_id, uint32_t sub_page_id, int32_t sprite_id);
         void set_image_sprite(void* image_component, int32_t sprite_id);
 
-        // Foldouts, settings toggles, enum selectors, sliders, separators
         uint32_t add_foldout(uint32_t module_id, uint32_t page_id, std::string_view title,
                              bool default_expanded = true, bool show_background = false,
                              bool auto_separators = false);
@@ -255,7 +248,6 @@ namespace Bootstrap::Module {
         void* get_local_player_api();
         void* get_local_vrc_player();
 
-        // Player rank
         Bootstrap::PlayerRank get_player_rank(void* player);
         Bootstrap::Color get_rank_color(Bootstrap::PlayerRank rank);
 
@@ -281,7 +273,6 @@ namespace Bootstrap::Module {
         void cancel(uint32_t tween_id);
         void cancel_all(uint32_t module_id);
 
-        // Extended tweens with completion callbacks
         uint32_t tween_float(uint32_t module_id, float from, float to,
                              float duration_ms, int32_t ease_type = 0,
                              fn_tween_completion_callback on_complete = nullptr);
@@ -364,7 +355,6 @@ namespace Bootstrap::Module {
         bool redeem_license(std::string_view key, Bootstrap::KeyAuthRedeemResult* out);
         uint32_t get_licenses(Bootstrap::KeyAuthProductResult* out_buf, uint32_t buf_count);
 
-        // Convenience
         std::optional<Bootstrap::KeyAuthUserInfo> get_user();
         std::optional<Bootstrap::KeyAuthProductResult> check_product(std::string_view product_id);
 

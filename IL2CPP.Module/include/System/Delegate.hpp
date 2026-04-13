@@ -9,7 +9,6 @@ namespace IL2CPP::Module::System {
 
     class Delegate : public ManagedObject {
     public:
-        // Delegate field offsets (after il2cppObject header)
         static constexpr int kMethodPtrOffset   = 0x10;
         static constexpr int kInvokeImplOffset  = 0x18;
         static constexpr int kTargetOffset      = 0x20;

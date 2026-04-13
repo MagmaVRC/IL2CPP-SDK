@@ -1,5 +1,5 @@
-#include <include/VRChat/VRChatEvents.hpp>
-#include <include/bootstrap_internal.hpp>
+#include <VRChat/VRChatEvents.hpp>
+#include <bootstrap_internal.hpp>
 
 namespace IL2CPP::VRChat {
 

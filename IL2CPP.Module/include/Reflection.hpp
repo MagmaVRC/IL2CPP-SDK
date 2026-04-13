@@ -7,7 +7,6 @@
 
 namespace IL2CPP::Module {
 
-    // Forward declarations
     class Field;
     class Method;
     class Property;

@@ -22,18 +22,10 @@ namespace IL2CPP::Module::Unity {
         [[nodiscard]] int GetHandle() const { return m_scene.handle; }
 
         [[nodiscard]] std::string GetName() const {
-            static auto m = MethodHandler::resolve("UnityEngine.SceneManagement.Scene", "get_name", 0);
-            Scene s = m_scene;
-            // Scene is a value type, we need to box or use differently
-            // Actually Scene.get_name is an instance method on value type, pass &scene as obj via boxing
-            auto* e = GetExports();
-            if (!e) return "";
-
-            // Resolve via SceneManager helper instead
-            static auto m2 = MethodHandler::resolve("UnityEngine.SceneManagement.Scene", "GetNameInternal", 1);
+            static auto m = MethodHandler::resolve("UnityEngine.SceneManagement.Scene", "GetNameInternal", 1);
             int handle = m_scene.handle;
             void* p[] = { &handle };
-            void* str = MethodHandler::invoke<void*>(m2, nullptr, p);
+            void* str = MethodHandler::invoke<void*>(m, nullptr, p);
             if (!str) return "";
             return System::String{ str }.to_string();
         }
@@ -68,10 +60,7 @@ namespace IL2CPP::Module::Unity {
 
         [[nodiscard]] std::vector<Object> GetRootGameObjects() const {
             static auto m = MethodHandler::resolve("UnityEngine.SceneManagement.Scene", "GetRootGameObjectsInternal", 1);
-            // This internal method may not exist on all versions, fallback to managed
-            // Use the instance method via managed invoke
             static auto m2 = MethodHandler::resolve("UnityEngine.SceneManagement.Scene", "GetRootGameObjects", 0);
-            // Value type instance method: need to box the Scene struct
             auto* e = GetExports();
             if (!e) return {};
             void* sceneClass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_helperFindClass)("UnityEngine.SceneManagement.Scene");

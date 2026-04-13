@@ -8,9 +8,7 @@
 #include <string_view>
 #include <vector>
 
-namespace IL2CPP::Module {
-    [[nodiscard]] IL2CPP::il2cpp_exports const* GetExports() noexcept;
-}
+namespace IL2CPP::Module { [[nodiscard]] IL2CPP::il2cpp_exports const* GetExports() noexcept; }
 
 namespace IL2CPP::Module::System {
 
@@ -71,7 +69,6 @@ namespace IL2CPP::Module::System {
             auto* e = GetExports();
             if (!e || !e->m_stringNew || !data || size == 0) return;
             void* pathStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());
-            // Create byte array
             void* byteClass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_helperFindClass)("System.Byte");
             if (!byteClass) return;
             void* arr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, uintptr_t)>(e->m_arrayNew)(byteClass, size);

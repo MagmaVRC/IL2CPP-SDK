@@ -200,7 +200,6 @@ namespace IL2CPP::Module::Unity {
         }
     };
 
-    // Type alias for backwards compatibility
     using ComponentArray = std::vector<Component>;
 
 } // namespace IL2CPP::Module::Unity

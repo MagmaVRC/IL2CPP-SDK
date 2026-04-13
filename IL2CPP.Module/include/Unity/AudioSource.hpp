@@ -9,7 +9,6 @@ namespace IL2CPP::Module::Unity {
     public:
         using Behaviour::Behaviour;
 
-        // ---- clip ----
         [[nodiscard]] void* GetClip() const {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "get_clip", 0);
             return MethodHandler::invoke<void*>(m, raw());
@@ -20,7 +19,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- volume ----
         [[nodiscard]] float GetVolume() const {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "get_volume", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -31,7 +29,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- pitch ----
         [[nodiscard]] float GetPitch() const {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "get_pitch", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -42,7 +39,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- loop ----
         [[nodiscard]] bool GetLoop() const {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "get_loop", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -53,7 +49,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- mute ----
         [[nodiscard]] bool GetMute() const {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "get_mute", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -64,13 +59,11 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- isPlaying (get-only) ----
         [[nodiscard]] bool GetIsPlaying() const {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "get_isPlaying", 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
-        // ---- time ----
         [[nodiscard]] float GetTime() const {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "get_time", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -81,7 +74,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- spatialBlend ----
         [[nodiscard]] float GetSpatialBlend() const {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "get_spatialBlend", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -92,7 +84,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- minDistance ----
         [[nodiscard]] float GetMinDistance() const {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "get_minDistance", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -103,7 +94,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- maxDistance ----
         [[nodiscard]] float GetMaxDistance() const {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "get_maxDistance", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -114,7 +104,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- playOnAwake ----
         [[nodiscard]] bool GetPlayOnAwake() const {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "get_playOnAwake", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -125,7 +114,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- priority ----
         [[nodiscard]] int GetPriority() const {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "get_priority", 0);
             return MethodHandler::invoke<int>(m, raw());
@@ -136,7 +124,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- spatialize ----
         [[nodiscard]] bool GetSpatialize() const {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "get_spatialize", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -147,7 +134,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- outputAudioMixerGroup ----
         [[nodiscard]] void* GetOutputAudioMixerGroup() const {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "get_outputAudioMixerGroup", 0);
             return MethodHandler::invoke<void*>(m, raw());
@@ -158,7 +144,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- Play ----
         void Play() {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "Play", 0);
             MethodHandler::invoke(m, raw());
@@ -169,7 +154,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- Pause / UnPause / Stop ----
         void Pause() {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "Pause", 0);
             MethodHandler::invoke(m, raw());
@@ -183,14 +167,12 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw());
         }
 
-        // ---- PlayOneShot ----
         void PlayOneShot(void* clip, float volumeScale = 1.0f) {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "PlayOneShot", 2);
             void* params[] = { clip, &volumeScale };
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- PlayClipAtPoint (static) ----
         static void PlayClipAtPoint(void* clip, const Vector3& position, float volume = 1.0f) {
             static auto m = MethodHandler::resolve("UnityEngine.AudioSource", "PlayClipAtPoint", 3);
             Vector3 pos = position;

@@ -1,4 +1,4 @@
-#include <include/VRChat/ApiBadge.hpp>
+#include <VRChat/ApiBadge.hpp>
 
 namespace IL2CPP::VRChat {
 

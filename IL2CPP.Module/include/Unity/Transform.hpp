@@ -221,8 +221,7 @@ namespace IL2CPP::Module::Unity {
 
 
         /// Make the transform look at a target position.
-        void LookAt(const Vector3& worldPosition, const Vector3& worldUp = Vector3(0, 1, 0)) {
-            (void)worldUp; // TODO: incorporate worldUp into rotation calculation
+        void LookAt(const Vector3& worldPosition) {
             Vector3 dir = worldPosition - GetPosition();
             if (dir.SqrMagnitude() < 0.0001f) return;
             dir.NormalizeInPlace();
@@ -236,9 +235,9 @@ namespace IL2CPP::Module::Unity {
         }
 
         /// Make the transform look at another transform's position.
-        void LookAt(Transform target, const Vector3& worldUp = Vector3(0, 1, 0)) {
+        void LookAt(Transform target) {
             if (!target) return;
-            LookAt(target.GetPosition(), worldUp);
+            LookAt(target.GetPosition());
         }
 
         /// Rotate the transform by euler angles (degrees).

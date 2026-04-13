@@ -1,6 +1,6 @@
 #include <include/hook_module.hpp>
 #include <SharedMemory.Common/shared_memory.hpp>
-#include <Windows.h>
+#include <windows.h>
 #include <atomic>
 
 namespace Hooking::Module {
@@ -40,20 +40,20 @@ namespace Hooking::Module {
         g_conn.vtable = nullptr;
     }
 
-    bool is_connected() noexcept {
+    bool IsConnected() noexcept {
         return g_conn.connected.load(std::memory_order_acquire) && g_conn.vtable;
     }
 
     HookModule::HookModule(std::string_view name)
         : m_name(name) {
-        if (!is_connected() && !Connect()) return;
+        if (!IsConnected() && !Connect()) return;
 
         m_id = g_conn.vtable->register_module(
             m_name.data(), static_cast<uint32_t>(m_name.size()));
     }
 
     HookModule::~HookModule() {
-        if (m_id != invalid_id && is_connected()) {
+        if (m_id != invalid_id && IsConnected()) {
             g_conn.vtable->unregister_module(m_id);
         }
     }
@@ -65,7 +65,7 @@ namespace Hooking::Module {
 
     HookModule& HookModule::operator=(HookModule&& other) noexcept {
         if (this != &other) {
-            if (m_id != invalid_id && is_connected()) {
+            if (m_id != invalid_id && IsConnected()) {
                 g_conn.vtable->unregister_module(m_id);
             }
             m_id   = std::exchange(other.m_id, invalid_id);
@@ -75,7 +75,7 @@ namespace Hooking::Module {
     }
 
     bool HookModule::valid() const noexcept {
-        return m_id != invalid_id && is_connected();
+        return m_id != invalid_id && IsConnected();
     }
 
     uint32_t HookModule::id() const noexcept {
@@ -157,17 +157,17 @@ namespace Hooking::Module {
     }
 
     uint32_t get_module_count() {
-        if (!is_connected()) return 0;
+        if (!IsConnected()) return 0;
         return g_conn.vtable->get_module_count();
     }
 
     bool get_module_info(uint32_t module_id, ModuleInfo* out) {
-        if (!is_connected() || !out) return false;
+        if (!IsConnected() || !out) return false;
         return g_conn.vtable->get_module_info(module_id, out);
     }
 
     bool is_ui_ready() {
-        if (!is_connected()) return false;
+        if (!IsConnected()) return false;
         return g_conn.vtable->is_ui_ready();
     }
 

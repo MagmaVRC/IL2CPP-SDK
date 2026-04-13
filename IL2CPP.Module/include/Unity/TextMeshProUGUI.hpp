@@ -23,7 +23,7 @@ namespace IL2CPP::Module::Unity {
         }
 
 
-        void CallSetText(std::string_view text) {
+        void SetTextDirect(std::string_view text) {
             static auto m = MethodHandler::resolve("TMPro.TextMeshProUGUI", "SetText", 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;

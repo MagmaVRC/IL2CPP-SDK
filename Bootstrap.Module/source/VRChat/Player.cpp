@@ -1,8 +1,8 @@
-#include <include/VRChat/Player.hpp>
-#include <include/VRChat/VRCPlayerApi.hpp>
-#include <include/VRChat/VRCPlayer.hpp>
-#include <include/VRChat/APIUser.hpp>
-#include <include/bootstrap_internal.hpp>
+#include <VRChat/Player.hpp>
+#include <VRChat/VRCPlayerApi.hpp>
+#include <VRChat/VRCPlayer.hpp>
+#include <VRChat/APIUser.hpp>
+#include <bootstrap_internal.hpp>
 
 namespace IL2CPP::VRChat {
 
@@ -14,31 +14,31 @@ namespace IL2CPP::VRChat {
     VRCPlayerApi Player::GetVRCPlayerApi() {
         if (!valid() || !Bootstrap::Module::is_connected()) return VRCPlayerApi();
         auto* data = Bootstrap::Module::get_vtable()->get_player_data();
-        return VRCPlayerApi(*reinterpret_cast<void**>(reinterpret_cast<uintptr_t>(m_native) + data->VRCPlayerApi));
+        return VRCPlayerApi(*reinterpret_cast<void**>(reinterpret_cast<uintptr_t>(raw()) + data->VRCPlayerApi));
     }
 
     VRCPlayer Player::GetVRCPlayer() {
         if (!valid() || !Bootstrap::Module::is_connected()) return {};
         auto* data = Bootstrap::Module::get_vtable()->get_player_data();
-        return VRCPlayer(*reinterpret_cast<void**>(reinterpret_cast<uintptr_t>(m_native) + data->VRCPlayer));
+        return VRCPlayer(*reinterpret_cast<void**>(reinterpret_cast<uintptr_t>(raw()) + data->VRCPlayer));
     }
 
     APIUser Player::GetAPIUser() {
         if (!valid() || !Bootstrap::Module::is_connected()) return {};
         auto* data = Bootstrap::Module::get_vtable()->get_player_data();
-        return APIUser(*reinterpret_cast<void**>(reinterpret_cast<uintptr_t>(m_native) + data->APIUser));
+        return APIUser(*reinterpret_cast<void**>(reinterpret_cast<uintptr_t>(raw()) + data->APIUser));
     }
 
     IL2CPP::Module::ManagedObject Player::GetUSpeaker() {
         if (!valid() || !Bootstrap::Module::is_connected()) return {};
         auto* data = Bootstrap::Module::get_vtable()->get_player_data();
-        return IL2CPP::Module::ManagedObject(*reinterpret_cast<void**>(reinterpret_cast<uintptr_t>(m_native) + data->USpeaker));
+        return IL2CPP::Module::ManagedObject(*reinterpret_cast<void**>(reinterpret_cast<uintptr_t>(raw()) + data->USpeaker));
     }
 
     PlayerRank Player::GetPlayerRank() {
         if (!valid() || !Bootstrap::Module::is_connected()) return PlayerRank::Visitor;
         return static_cast<PlayerRank>(
-            Bootstrap::Module::get_vtable()->get_player_rank(m_native));
+            Bootstrap::Module::get_vtable()->get_player_rank(raw()));
     }
 
     Bootstrap::Color Player::GetRankColor(PlayerRank rank) {

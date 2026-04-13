@@ -8,7 +8,6 @@ namespace IL2CPP::Module::Unity {
     public:
         using UIBehaviour::UIBehaviour;
 
-        // ---- padding (raw RectOffset pointer) ----
         [[nodiscard]] void* GetPadding() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.LayoutGroup", "get_padding", 0);
             return MethodHandler::invoke<void*>(m, raw());
@@ -19,7 +18,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- childAlignment ----
         [[nodiscard]] int GetChildAlignment() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.LayoutGroup", "get_childAlignment", 0);
             return MethodHandler::invoke<int>(m, raw());
@@ -30,7 +28,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- SetLayoutHorizontal / SetLayoutVertical ----
         void SetLayoutHorizontal() {
             static auto m = MethodHandler::resolve("UnityEngine.UI.LayoutGroup", "SetLayoutHorizontal", 0);
             MethodHandler::invoke(m, raw());

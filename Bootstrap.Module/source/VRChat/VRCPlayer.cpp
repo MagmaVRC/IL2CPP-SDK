@@ -1,8 +1,8 @@
-#include <include/VRChat/VRCPlayer.hpp>
-#include <include/VRChat/VRCPlayerApi.hpp>
-#include <include/VRChat/Player.hpp>
-#include <include/VRChat/PlayerNameplate.hpp>
-#include <include/bootstrap_internal.hpp>
+#include <VRChat/VRCPlayer.hpp>
+#include <VRChat/VRCPlayerApi.hpp>
+#include <VRChat/Player.hpp>
+#include <VRChat/PlayerNameplate.hpp>
+#include <bootstrap_internal.hpp>
 
 namespace IL2CPP::VRChat {
 
@@ -14,19 +14,19 @@ namespace IL2CPP::VRChat {
     VRCPlayerApi VRCPlayer::GetVRCPlayerApi() {
         if (!valid() || !Bootstrap::Module::is_connected()) return VRCPlayerApi();
         auto* data = Bootstrap::Module::get_vtable()->get_vrc_player_data();
-        return VRCPlayerApi(*reinterpret_cast<void**>(reinterpret_cast<uintptr_t>(m_native) + data->VRCPlayerApi));
+        return VRCPlayerApi(*reinterpret_cast<void**>(reinterpret_cast<uintptr_t>(raw()) + data->VRCPlayerApi));
     }
 
     Player VRCPlayer::GetPlayer() {
         if (!valid() || !Bootstrap::Module::is_connected()) return Player();
         auto* data = Bootstrap::Module::get_vtable()->get_vrc_player_data();
-        return Player(*reinterpret_cast<void**>(reinterpret_cast<uintptr_t>(m_native) + data->Player));
+        return Player(*reinterpret_cast<void**>(reinterpret_cast<uintptr_t>(raw()) + data->Player));
     }
 
     PlayerNameplate VRCPlayer::GetNameplate() {
         if (!valid() || !Bootstrap::Module::is_connected()) return {};
         auto* data = Bootstrap::Module::get_vtable()->get_vrc_player_data();
-        return PlayerNameplate(*reinterpret_cast<void**>(reinterpret_cast<uintptr_t>(m_native) + data->PlayerNameplate));
+        return PlayerNameplate(*reinterpret_cast<void**>(reinterpret_cast<uintptr_t>(raw()) + data->PlayerNameplate));
     }
 
 } // namespace IL2CPP::VRChat

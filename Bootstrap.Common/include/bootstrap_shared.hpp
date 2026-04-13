@@ -20,32 +20,27 @@ namespace Bootstrap {
         wchar_t log_file_path[260];
     };
 
-    // Callback types — Module Registration
     using fn_log_callback = void(__cdecl*)(char const* msg, uint32_t msg_len,
         char const* stack, uint32_t stack_len, UnityLogType log_type);
     using fn_register_module = uint32_t(__cdecl*)(char const* name, uint32_t name_len, uint32_t sdk_ver);
     using fn_unregister_module = void(__cdecl*)(uint32_t module_id);
 
-    // Callback types — Rendering
     using fn_render_callback = void(__cdecl*)();
     using fn_register_render_callback = uint32_t(__cdecl*)(uint32_t module_id, fn_render_callback callback);
     using fn_unregister_render_callback = void(__cdecl*)(uint32_t module_id, uint32_t callback_id);
     using fn_get_imgui_context = void*(__cdecl*)();
 
-    // Callback types — Unity Console
     using fn_register_log_callback = uint32_t(__cdecl*)(uint32_t module_id, fn_log_callback callback);
     using fn_unregister_log_callback = void(__cdecl*)(uint32_t module_id, uint32_t callback_id);
     using fn_get_console_options = void(__cdecl*)(UnityConsoleOptions* out);
     using fn_set_console_options = void(__cdecl*)(UnityConsoleOptions const* opts);
 
-    // Callback types — Unity Explorer
     using fn_show_gameobject_in_explorer = void(__cdecl*)(void* gameObject);
     using fn_show_component_in_explorer = void(__cdecl*)(void* component);
     using fn_explorer_navigate_callback = void(__cdecl*)(void* gameObject, void* component);
     using fn_register_explorer_callback = uint32_t(__cdecl*)(uint32_t module_id, fn_explorer_navigate_callback cb);
     using fn_unregister_explorer_callback = void(__cdecl*)(uint32_t module_id, uint32_t callback_id);
 
-    // Callback types — VRChat Data
     using fn_get_vrc_player_data = VRCPlayerData const* (__cdecl*)();
     using fn_get_player_data = PlayerData const* (__cdecl*)();
     using fn_get_nameplate_data = PlayerNameplateData const* (__cdecl*)();
@@ -53,13 +48,11 @@ namespace Bootstrap {
     using fn_get_local_player_api = void* (__cdecl*)();
     using fn_get_local_vrc_player = void* (__cdecl*)();
 
-    // Callback types — Player Events
     using fn_player_simple_callback = void(__cdecl*)(void* player);
     using fn_register_player_event = uint32_t(__cdecl*)(uint32_t module_id, PlayerEvent event, fn_player_simple_callback cb);
     using fn_unregister_player_event = void(__cdecl*)(uint32_t module_id, uint32_t callback_id);
     using fn_invoke_player_event = void(__cdecl*)(void* player, PlayerEvent event);
 
-    // Callback types — Config
     using fn_config_set_int    = void(__cdecl*)(uint32_t module_id, char const* key, uint32_t key_len, int32_t value);
     using fn_config_get_int    = int32_t(__cdecl*)(uint32_t module_id, char const* key, uint32_t key_len, int32_t default_val);
     using fn_config_set_float  = void(__cdecl*)(uint32_t module_id, char const* key, uint32_t key_len, float value);
@@ -90,7 +83,6 @@ namespace Bootstrap {
     using fn_config_set_json   = void(__cdecl*)(uint32_t module_id, char const* key, uint32_t key_len, char const* json, uint32_t json_len);
     using fn_config_get_json   = uint32_t(__cdecl*)(uint32_t module_id, char const* key, uint32_t key_len, char* out_buf, uint32_t buf_size);
 
-    // Callback types — Message Bus
     using fn_message_callback    = void(__cdecl*)(uint32_t sender_module_id,
         char const* topic, uint32_t topic_len,
         uint8_t const* data, uint32_t data_len);
@@ -98,7 +90,6 @@ namespace Bootstrap {
     using fn_unsubscribe_message = void(__cdecl*)(uint32_t module_id, uint32_t subscription_id);
     using fn_publish_message     = void(__cdecl*)(uint32_t module_id, char const* topic, uint32_t topic_len, uint8_t const* data, uint32_t data_len);
 
-    // Callback types — QuickMenu
     using fn_menu_button_callback = void(__cdecl*)(uint32_t button_id);
     using fn_menu_toggle_callback = void(__cdecl*)(uint32_t button_id, bool is_on);
     using fn_menu_slider_callback = void(__cdecl*)(uint32_t slider_id, float value);
@@ -159,7 +150,6 @@ namespace Bootstrap {
     using fn_qm_get_slider_value      = float(__cdecl*)(uint32_t module_id, uint32_t slider_id);
     using fn_qm_add_separator         = uint32_t(__cdecl*)(uint32_t module_id, uint32_t foldout_id);
 
-    // Callback types — TweenService
     using fn_tween_completion_callback = void(__cdecl*)(uint32_t tween_id);
     using fn_tween_anchored_position = uint32_t(__cdecl*)(uint32_t module_id,
         void* rect_transform, float from_x, float from_y, float to_x, float to_y,
@@ -188,7 +178,6 @@ namespace Bootstrap {
         float to_x, float to_y, float to_z,
         float duration_ms, int32_t ease_type, fn_tween_completion_callback on_complete);
 
-    // Callback types — NameplateService
     using fn_np_create_plate = uint32_t(__cdecl*)(uint32_t module_id, void* player,
         float pos_x, float pos_y, float pos_z,
         char const* label, uint32_t label_len,
@@ -211,14 +200,12 @@ namespace Bootstrap {
         char const* plate_id, uint32_t plate_id_len,
         float x, float y, float z);
 
-    // Callback types — ClientUsage
     using fn_cu_register_client = void(__cdecl*)(uint32_t module_id,
         char const* client_name, uint32_t client_name_len,
         char const* api_key, uint32_t api_key_len);
     using fn_cu_is_client_registered = bool(__cdecl*)(
         char const* client_name, uint32_t client_name_len);
 
-    // KeyAuth types
     struct KeyAuthUserInfo {
         char username[128];
         char user_id[64];
@@ -248,14 +235,12 @@ namespace Bootstrap {
         char expires_at[32];
     };
 
-    // Callback types — KeyAuth
     using fn_ka_is_ready       = bool(__cdecl*)();
     using fn_ka_get_user       = bool(__cdecl*)(KeyAuthUserInfo* out);
     using fn_ka_has_product    = bool(__cdecl*)(char const* product_id, uint32_t id_len, KeyAuthProductResult* out);
     using fn_ka_redeem_license = bool(__cdecl*)(char const* key, uint32_t key_len, KeyAuthRedeemResult* out);
     using fn_ka_get_licenses   = uint32_t(__cdecl*)(KeyAuthProductResult* out_buf, uint32_t buf_count);
 
-    // Performance types
     enum class PerfSetting : int32_t {
         MasterTextureLimit = 0,
         AntiAliasing = 1,
@@ -267,17 +252,13 @@ namespace Bootstrap {
         LodBias = 101
     };
 
-    // Callback types — Performance
     using fn_perf_get_int = int32_t(__cdecl*)(int32_t setting_id);
     using fn_perf_set_int = void(__cdecl*)(int32_t setting_id, int32_t value);
     using fn_perf_get_float = float(__cdecl*)(int32_t setting_id);
     using fn_perf_set_float = void(__cdecl*)(int32_t setting_id, float value);
     using fn_perf_force_gc = void(__cdecl*)(int32_t generation);
     using fn_perf_full_cleanup = void(__cdecl*)();
-    using fn_perf_set_camera_rendering_path = void(__cdecl*)(void* camera, int32_t path);
-    using fn_perf_get_camera_rendering_path = int32_t(__cdecl*)(void* camera);
 
-    // Callback types — WebSocket
     using fn_ws_open_callback    = void(__cdecl*)(uint32_t handle);
     using fn_ws_message_callback = void(__cdecl*)(uint32_t handle, uint8_t const* data, uint32_t len, bool binary);
     using fn_ws_close_callback   = void(__cdecl*)(uint32_t handle, uint16_t code, char const* reason, uint32_t reason_len);
@@ -293,7 +274,6 @@ namespace Bootstrap {
                                     fn_ws_open_callback on_open, fn_ws_message_callback on_message,
                                     fn_ws_close_callback on_close, fn_ws_error_callback on_error);
 
-    // Callback types — Filesystem
     using fn_fs_write_file  = bool(__cdecl*)(uint32_t module_id, char const* path, uint32_t path_len, uint8_t const* data, uint32_t data_len);
     using fn_fs_read_file   = uint32_t(__cdecl*)(uint32_t module_id, char const* path, uint32_t path_len, char* out_buf, uint32_t buf_size);
     using fn_fs_file_exists = bool(__cdecl*)(uint32_t module_id, char const* path, uint32_t path_len);
@@ -304,11 +284,9 @@ namespace Bootstrap {
     using fn_fs_file_size   = uint64_t(__cdecl*)(uint32_t module_id, char const* path, uint32_t path_len);
     using fn_fs_append_file = bool(__cdecl*)(uint32_t module_id, char const* path, uint32_t path_len, uint8_t const* data, uint32_t data_len);
 
-    // Callback types — Clipboard
     using fn_clipboard_set = bool(__cdecl*)(char const* text, uint32_t text_len);
     using fn_clipboard_get = uint32_t(__cdecl*)(char* out_buf, uint32_t buf_size);
 
-    // Player Rank types
     enum class PlayerRank : uint8_t {
         Visitor = 0, NewUser, User, Known, Trusted, Administrator, Troll
     };
@@ -321,11 +299,9 @@ namespace Bootstrap {
         float r, g, b, a;
     };
 
-    // Callback types — Player Rank
     using fn_get_player_rank = uint8_t(__cdecl*)(void* player);
     using fn_get_rank_color  = void(__cdecl*)(uint8_t rank, float* r, float* g, float* b, float* a);
 
-    // Sprite enum — VRC built-ins + Bundle sprites
     enum class Sprite : int32_t {
         Rocket, Notification, MapIcon, Sound,
         VRCPlus, VRCPlusExperiment, Store, Settings, Report,
@@ -415,28 +391,23 @@ namespace Bootstrap {
     };
 
     struct BootstrapVtable {
-        // Module registration
         fn_register_module register_module;
         fn_unregister_module unregister_module;
 
-        // Rendering
         fn_register_render_callback register_render_callback;
         fn_unregister_render_callback unregister_render_callback;
         fn_get_imgui_context get_imgui_context;
 
-        // Unity Console
         fn_register_log_callback register_log_callback;
         fn_unregister_log_callback unregister_log_callback;
         fn_get_console_options get_console_options;
         fn_set_console_options set_console_options;
 
-        // Unity Explorer
         fn_show_gameobject_in_explorer show_gameobject_in_explorer;
         fn_show_component_in_explorer show_component_in_explorer;
         fn_register_explorer_callback register_explorer_callback;
         fn_unregister_explorer_callback unregister_explorer_callback;
 
-        // VRChat
         fn_get_vrc_player_data get_vrc_player_data;
         fn_get_player_data get_player_data;
         fn_get_nameplate_data get_nameplate_data;
@@ -447,7 +418,6 @@ namespace Bootstrap {
         fn_unregister_player_event unregister_player_event;
         fn_invoke_player_event invoke_player_event;
 
-        // Config
         fn_config_set_int config_set_int;
         fn_config_get_int config_get_int;
         fn_config_set_float config_set_float;
@@ -460,12 +430,10 @@ namespace Bootstrap {
         fn_config_has_key config_has_key;
         fn_config_remove_key config_remove_key;
 
-        // Message Bus
         fn_subscribe_message subscribe_message;
         fn_unsubscribe_message unsubscribe_message;
         fn_publish_message publish_message;
 
-        // QuickMenu
         fn_qm_create_page qm_create_page;
         fn_qm_create_sub_page qm_create_sub_page;
         fn_qm_remove_page qm_remove_page;
@@ -503,14 +471,12 @@ namespace Bootstrap {
         fn_qm_get_slider_value qm_get_slider_value;
         fn_qm_add_separator qm_add_separator;
 
-        // TweenService
         fn_tween_anchored_position tween_anchored_position;
         fn_tween_local_position tween_local_position;
         fn_tween_local_scale tween_local_scale;
         fn_tween_cancel tween_cancel;
         fn_tween_cancel_all tween_cancel_all;
 
-        // NameplateService
         fn_np_create_plate np_create_plate;
         fn_np_destroy_plate np_destroy_plate;
         fn_np_destroy_plates_by_tag np_destroy_plates_by_tag;
@@ -519,18 +485,16 @@ namespace Bootstrap {
         fn_np_set_plate_icon_color np_set_plate_icon_color;
         fn_np_set_plate_position np_set_plate_position;
 
-        // ClientUsage
         fn_cu_register_client cu_register_client;
         fn_cu_is_client_registered cu_is_client_registered;
 
-        // TweenService (extended)
+        /// TweenService (extended) - appended for ABI compatibility.
         fn_tween_float tween_float;
         fn_tween_cancel_all_for_target tween_cancel_all_for_target;
         fn_tween_anchored_position_ex tween_anchored_position_ex;
         fn_tween_local_position_ex tween_local_position_ex;
         fn_tween_local_scale_ex tween_local_scale_ex;
 
-        // Performance
         fn_perf_get_int perf_get_int;
         fn_perf_set_int perf_set_int;
         fn_perf_get_float perf_get_float;
@@ -538,21 +502,18 @@ namespace Bootstrap {
         fn_perf_force_gc perf_force_gc;
         fn_perf_full_cleanup perf_full_cleanup;
 
-        // KeyAuth
         fn_ka_is_ready       ka_is_ready;
         fn_ka_get_user       ka_get_user;
         fn_ka_has_product    ka_has_product;
         fn_ka_redeem_license ka_redeem_license;
         fn_ka_get_licenses   ka_get_licenses;
 
-        // WebSocket
         fn_ws_connect       ws_connect;
         fn_ws_send          ws_send;
         fn_ws_close         ws_close;
         fn_ws_is_connected  ws_is_connected;
         fn_ws_set_callbacks ws_set_callbacks;
 
-        // Config (extended)
         fn_config_set_vec2  config_set_vec2;
         fn_config_get_vec2  config_get_vec2;
         fn_config_set_vec3  config_set_vec3;
@@ -566,7 +527,6 @@ namespace Bootstrap {
         fn_config_set_json  config_set_json;
         fn_config_get_json  config_get_json;
 
-        // Filesystem
         fn_fs_write_file  fs_write_file;
         fn_fs_read_file   fs_read_file;
         fn_fs_file_exists fs_file_exists;
@@ -577,11 +537,9 @@ namespace Bootstrap {
         fn_fs_file_size   fs_file_size;
         fn_fs_append_file fs_append_file;
 
-        // Clipboard
         fn_clipboard_set clipboard_set;
         fn_clipboard_get clipboard_get;
 
-        // Player Rank
         fn_get_player_rank get_player_rank;
         fn_get_rank_color  get_rank_color;
 

@@ -82,10 +82,6 @@ namespace IL2CPP::Module::Unity {
         }
     };
 
-    // ================================================================
-    //  Deferred inline definitions for AssetBundle methods
-    // ================================================================
-
     inline AssetBundleRequest AssetBundle::LoadAllAssetsAsync() {
         static auto m = MethodHandler::resolve("UnityEngine.AssetBundle", "LoadAllAssetsAsync", 0);
         return AssetBundleRequest{ MethodHandler::invoke<void*>(m, raw()) };

@@ -42,7 +42,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- Field of View ----
         [[nodiscard]] float GetFieldOfView() const {
             static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_fieldOfView", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -53,7 +52,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- Clip Planes ----
         [[nodiscard]] float GetNearClipPlane() const {
             static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_nearClipPlane", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -74,7 +72,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- Orthographic ----
         [[nodiscard]] bool GetOrthographic() const {
             static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_orthographic", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -95,7 +92,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- Depth ----
         [[nodiscard]] float GetDepth() const {
             static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_depth", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -106,7 +102,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- Culling Mask ----
         [[nodiscard]] int GetCullingMask() const {
             static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_cullingMask", 0);
             return MethodHandler::invoke<int>(m, raw());
@@ -118,7 +113,6 @@ namespace IL2CPP::Module::Unity {
         }
         void SetCullingMask(LayerMask mask) { SetCullingMask(mask.value()); }
 
-        // ---- Viewport Rect ----
         [[nodiscard]] Rect GetPixelRect() const {
             static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_pixelRect", 0);
             return MethodHandler::invoke<Rect>(m, raw());
@@ -135,7 +129,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- Screen/Viewport Conversions ----
         [[nodiscard]] Vector3 ScreenToWorldPoint(const Vector3& screenPos) const {
             static auto m = MethodHandler::resolve("UnityEngine.Camera", "ScreenToWorldPoint", 1);
             Vector3 v = screenPos;
@@ -164,19 +157,16 @@ namespace IL2CPP::Module::Unity {
             return MethodHandler::invoke<Vector3>(m, raw(), params);
         }
 
-        // ---- Static: All Cameras ----
         [[nodiscard]] static int GetAllCamerasCount() {
             static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_allCamerasCount", 0);
             return MethodHandler::invoke<int>(m, nullptr);
         }
 
-        // ---- Projection ----
         void ResetProjectionMatrix() {
             static auto m = MethodHandler::resolve("UnityEngine.Camera", "ResetProjectionMatrix", 0);
             MethodHandler::invoke(m, raw());
         }
 
-        // ---- Utility Methods ----
 
         [[nodiscard]] bool IsWorldPointVisible(const Vector3& worldPos, float screenWidth, float screenHeight) const {
             Vector3 screenPoint = WorldToScreenPoint(worldPos);

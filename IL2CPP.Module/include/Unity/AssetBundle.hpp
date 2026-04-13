@@ -10,11 +10,10 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include <Windows.h>
+#include <windows.h>
 
 namespace IL2CPP::Module::Unity {
 
-    // Forward declarations — defined in AssetBundleCreateRequest.hpp
     class AssetBundleRequest;
     class AssetBundleUnloadOperation;
 
@@ -52,7 +51,6 @@ namespace IL2CPP::Module::Unity {
     public:
         using Object::Object;
 
-        // === Static loading ===
 
         [[nodiscard]] static AssetBundle LoadFromFile(std::string_view path) {
             static auto m = MethodHandler::resolve("UnityEngine.AssetBundle", "LoadFromFile", 1);
@@ -78,7 +76,6 @@ namespace IL2CPP::Module::Unity {
             return Object::FindObjectsOfTypeAs<AssetBundle>("UnityEngine.AssetBundle");
         }
 
-        // === Instance: asset loading ===
 
         [[nodiscard]] Object LoadAsset(std::string_view name) {
             static auto m = MethodHandler::resolve("UnityEngine.AssetBundle", "LoadAsset", 1);
@@ -110,13 +107,11 @@ namespace IL2CPP::Module::Unity {
             return T{ obj.raw() };
         }
 
-        // Async methods — declared here, defined in AssetBundleCreateRequest.hpp
         [[nodiscard]] AssetBundleRequest LoadAllAssetsAsync();
         [[nodiscard]] AssetBundleRequest LoadAllAssetsAsync(std::string_view typeName);
         [[nodiscard]] AssetBundleRequest LoadAssetWithSubAssetsAsync(std::string_view name, bool performTypeChecks = false);
         [[nodiscard]] AssetBundleRequest LoadAssetWithSubAssetsAsync(std::string_view name, std::string_view typeName, bool performTypeChecks = false);
 
-        // === Instance: query ===
 
         [[nodiscard]] std::vector<std::string> GetAllAssetNames() {
             static auto m = MethodHandler::resolve("UnityEngine.AssetBundle", "GetAllAssetNames", 0);
@@ -133,7 +128,6 @@ namespace IL2CPP::Module::Unity {
             return MethodHandler::invoke<bool>(m, raw());
         }
 
-        // === Instance: lifecycle ===
 
         void Unload(bool unloadAllLoadedObjects) {
             static auto m = MethodHandler::resolve("UnityEngine.AssetBundle", "Unload", 1);

@@ -1,5 +1,5 @@
-#include <include/MethodHandler.hpp>
-#include <include/il2cpp_module.hpp>
+#include <MethodHandler.hpp>
+#include <il2cpp_module.hpp>
 #include <string>
 
 namespace IL2CPP::Module {

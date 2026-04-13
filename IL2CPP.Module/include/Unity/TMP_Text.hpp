@@ -1,11 +1,11 @@
 #pragma once
 #include "MaskableGraphic.hpp"
 #include "../MethodHandler.hpp"
+#include "../System/String.hpp"
 #include <IL2CPP.Common/il2cpp_types.hpp>
 #include <IL2CPP.Common/il2cpp_shared.hpp>
 #include <string>
 #include <string_view>
-#include <Windows.h>
 
 namespace IL2CPP::Module::Unity {
 
@@ -13,22 +13,13 @@ namespace IL2CPP::Module::Unity {
     public:
         using MaskableGraphic::MaskableGraphic;
 
-        // ---- text (get) ----
         [[nodiscard]] std::string GetText() const {
             static auto m = MethodHandler::resolve("TMPro.TMP_Text", "get_text", 0);
             void* str = MethodHandler::invoke<void*>(m, raw());
             if (!str) return "";
-            int len = *reinterpret_cast<int*>(static_cast<char*>(str) + 0x10);
-            if (len <= 0) return "";
-            const wchar_t* wstr = reinterpret_cast<const wchar_t*>(static_cast<char*>(str) + 0x14);
-            int bytes = WideCharToMultiByte(CP_UTF8, 0, wstr, len, nullptr, 0, nullptr, nullptr);
-            if (bytes <= 0) return "";
-            std::string out(static_cast<size_t>(bytes), '\0');
-            WideCharToMultiByte(CP_UTF8, 0, wstr, len, out.data(), bytes, nullptr, nullptr);
-            return out;
+            return System::String{ str }.to_string();
         }
 
-        // ---- text (set) ----
         void SetText(std::string_view value) {
             static auto m = MethodHandler::resolve("TMPro.TMP_Text", "set_text", 1);
             auto* e = GetExports();
@@ -39,7 +30,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- fontSize ----
         [[nodiscard]] float GetFontSize() const {
             static auto m = MethodHandler::resolve("TMPro.TMP_Text", "get_fontSize", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -50,7 +40,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- color ----
         [[nodiscard]] Color GetColor() const {
             static auto m = MethodHandler::resolve("TMPro.TMP_Text", "get_color", 0);
             return MethodHandler::invoke<Color>(m, raw());
@@ -62,7 +51,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- alignment ----
         [[nodiscard]] int GetAlignment() const {
             static auto m = MethodHandler::resolve("TMPro.TMP_Text", "get_alignment", 0);
             return MethodHandler::invoke<int>(m, raw());
@@ -73,7 +61,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- enableWordWrapping ----
         [[nodiscard]] bool GetEnableWordWrapping() const {
             static auto m = MethodHandler::resolve("TMPro.TMP_Text", "get_enableWordWrapping", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -84,7 +71,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- fontStyle ----
         [[nodiscard]] int GetFontStyle() const {
             static auto m = MethodHandler::resolve("TMPro.TMP_Text", "get_fontStyle", 0);
             return MethodHandler::invoke<int>(m, raw());
@@ -95,7 +81,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- richText ----
         [[nodiscard]] bool GetRichText() const {
             static auto m = MethodHandler::resolve("TMPro.TMP_Text", "get_richText", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -106,8 +91,7 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- SetText (method, takes string param) ----
-        void CallSetText(std::string_view text) {
+        void SetTextDirect(std::string_view text) {
             static auto m = MethodHandler::resolve("TMPro.TMP_Text", "SetText", 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;
@@ -117,7 +101,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- ForceMeshUpdate ----
         void ForceMeshUpdate() {
             static auto m = MethodHandler::resolve("TMPro.TMP_Text", "ForceMeshUpdate", 0);
             MethodHandler::invoke(m, raw());

@@ -14,7 +14,6 @@ namespace IL2CPP::VRChat {
     public:
         using ApiModel::ApiModel;
 
-        // Identity & Profile
         [[nodiscard]] std::string GetDisplayName();
         [[nodiscard]] std::string GetUsername();
         [[nodiscard]] std::string GetPronouns();
@@ -26,7 +25,6 @@ namespace IL2CPP::VRChat {
         [[nodiscard]] std::string GetNote();
         [[nodiscard]] std::string GetUserLanguageCode();
 
-        // Avatar Information
         [[nodiscard]] std::string GetAvatarId();
         [[nodiscard]] std::string GetFallbackId();
         [[nodiscard]] std::string GetCurrentAvatarImageUrl();
@@ -34,22 +32,19 @@ namespace IL2CPP::VRChat {
         [[nodiscard]] std::vector<std::string> GetCurrentAvatarTags();
         [[nodiscard]] bool GetAllowAvatarCopying();
 
-        // Profile Images
         [[nodiscard]] std::string GetUserIcon();
         [[nodiscard]] std::string GetProfilePicOverride();
         [[nodiscard]] std::string GetIconUrl();
         [[nodiscard]] std::string GetThumbnailUrl();
 
-        // Social & Relationships
         [[nodiscard]] bool GetIsFriend();
         [[nodiscard]] std::string GetLocation();
         [[nodiscard]] std::vector<ApiBadge> GetBadges();
 
-        // Verification & Platform
         [[nodiscard]] bool GetAgeVerified();
         [[nodiscard]] bool GetIsAdult();
         [[nodiscard]] bool GetIsOnMobile();
-        [[nodiscard]] std::string GetLast_platform();
+        [[nodiscard]] std::string GetLastPlatform();
         [[nodiscard]] std::string GetPlatform();
         [[nodiscard]] PlayerRank GetPlayerRank();
     };

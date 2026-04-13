@@ -1,4 +1,4 @@
-#include <include/VRChat/VRC_Interactable.hpp>
+#include <VRChat/VRC_Interactable.hpp>
 
 namespace IL2CPP::VRChat {
 

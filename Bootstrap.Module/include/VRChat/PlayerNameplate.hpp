@@ -8,23 +8,19 @@ namespace IL2CPP::VRChat {
     public:
         using MonoBehaviour::MonoBehaviour;
 
-        // Main Containers
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetContents();
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetMainContainer();
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetTextContainer();
 
-        // Text Elements
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetSubText();
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetPronouns();
 
-        // Icons & Status
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetIcon();
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetPlatform();
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetFriendIcon();
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetDevBanner();
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetDevIcon();
 
-        // Status Icons
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetQuickStats();
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetInteractionStatus();
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetPlayerStatusIcons();
@@ -34,7 +30,6 @@ namespace IL2CPP::VRChat {
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetEarmuffsIcon();
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetFocusViewIcon();
 
-        // Group & Progress
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetGroupInfo();
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetAvatarProgress();
     };

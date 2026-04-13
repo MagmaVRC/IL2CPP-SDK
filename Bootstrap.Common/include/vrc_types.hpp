@@ -1,6 +1,9 @@
 #pragma once
 #include <cstdint>
 
+/// VRChat runtime type descriptors.
+/// `void*` fields are IL2CPP class/singleton pointers.
+/// `int` fields are byte offsets into IL2CPP instances.
 namespace Bootstrap {
 
     enum class PlayerEvent : uint8_t {

@@ -2,10 +2,10 @@
 #define UNITY_VERSION_2022_3_8_HIGHER
 #endif
 
-#include <include/Reflection.hpp>
-#include <include/ManagedObject.hpp>
-#include <include/Deobfuscation.hpp>
-#include <include/il2cpp_module.hpp>
+#include <Reflection.hpp>
+#include <ManagedObject.hpp>
+#include <Deobfuscation.hpp>
+#include <il2cpp_module.hpp>
 #include <cstring>
 
 namespace IL2CPP::Module {
@@ -25,14 +25,9 @@ namespace IL2CPP::Module {
             return colonPos ? colonPos + 2 : result;
         }
 
-        // Resolve a member name by trying deobfuscated class name first, then stabilized.
-        // Chain: rawClassName -> stableClassName -> humanClassName
-        // Lookup "humanClassName::rawMemberName" for deobfuscated name,
-        // falling back to "stableClassName::rawMemberName" for stabilized name.
         inline const char* resolve_member_name(const char* rawClassName, const char* rawMemberName) {
             const char* stableClassName = Deobfuscation::GetStableName(rawClassName);
 
-            // Chain-resolve: stable class -> human class name
             const char* humanClassName = Deobfuscation::GetStableName(stableClassName);
             if (humanClassName && humanClassName != stableClassName &&
                 std::strcmp(humanClassName, stableClassName) != 0) {
@@ -42,7 +37,6 @@ namespace IL2CPP::Module {
                     return extract_member_name(deobf);
             }
 
-            // Fall back to stabilized name
             std::string key = build_member_key(stableClassName, rawMemberName);
             const char* stable = Deobfuscation::GetStableName(key.c_str());
             if (stable && stable != key.c_str() && std::strcmp(stable, key.c_str()) != 0)
@@ -73,7 +67,6 @@ namespace IL2CPP::Module {
             return result ? result : "";
         }
 
-        // Fallback: get from class
         Class klass = get_class();
         if (klass) return klass.ns();
         return "";
@@ -82,7 +75,6 @@ namespace IL2CPP::Module {
     std::string Type::raw_full_name() const {
         Class klass = get_class();
         if (klass) return klass.raw_full_name();
-        // Fallback to raw name only
         const char* n = raw_name();
         return n ? n : "";
     }
@@ -90,25 +82,23 @@ namespace IL2CPP::Module {
     std::string Type::full_name() const {
         if (!m_native || !E()) return "";
         
-        // Use Core's cached helper for O(1) lookup after first call
         if (E()->m_helperGetTypeStableFullName) {
             const char* result = reinterpret_cast<const char*(IL2CPP_CALLTYPE)(void*)>(
                 E()->m_helperGetTypeStableFullName)(m_native);
             if (result && *result) return result;
         }
 
-        // Fallback: get from class
         Class klass = get_class();
         if (klass) return klass.full_name();
         
-        // Fallback to name only
         const char* n = name();
         return n ? n : "";
     }
 
     Class Type::get_class() const {
-        // Try to get the underlying class for this type
         if (!m_native || !E() || !E()->m_classFromIl2cppType) return Class(nullptr);
+        auto addr = reinterpret_cast<uintptr_t>(m_native);
+        if (addr < 0x10000 || addr > 0x7FFFFFFFFFFF) return Class(nullptr);
         void* klass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*)>(E()->m_classFromIl2cppType)(m_native);
         return Class(klass);
     }
@@ -116,8 +106,6 @@ namespace IL2CPP::Module {
     const char* Type::name() const {
         if (!m_native || !E()) return "";
         
-        // Use Core's helper which handles all type kinds and generates stable names on-demand
-        // Don't try fallbacks - they can crash with invalid type pointers
         if (E()->m_helperGetTypeStableName) {
             const char* result = reinterpret_cast<const char*(IL2CPP_CALLTYPE)(void*)>(
                 E()->m_helperGetTypeStableName)(m_native);
@@ -150,19 +138,19 @@ namespace IL2CPP::Module {
 
     const char* Field::raw_name() const {
         if (!m_native) return "";
-        // il2cppFieldInfo::m_pName is the first field
-        return *reinterpret_cast<const char**>(m_native);
+        return reinterpret_cast<il2cppFieldInfo*>(m_native)->name();
     }
 
     const char* Field::name() const {
         const char* raw = raw_name();
         if (!raw || !*raw) return raw;
 
-        // Try qualified lookup: deobfuscated name first, then stabilized
-        void* parentClass = *reinterpret_cast<void**>(static_cast<char*>(m_native) + 2 * sizeof(void*));
+        int32_t parentOff = (E() && E()->m_offFieldParent >= 0) ? E()->m_offFieldParent : 0x10; // canonical: FieldInfo.parent;
+        void* parentClass = *reinterpret_cast<void**>(static_cast<char*>(m_native) + parentOff);
         if (IsValid(parentClass)) {
+            int32_t classNameOff = (E() && E()->m_offClassName >= 0) ? E()->m_offClassName : 0x10;
             const char* rawClassName = *reinterpret_cast<const char**>(
-                static_cast<char*>(parentClass) + 2 * sizeof(void*));
+                static_cast<char*>(parentClass) + classNameOff);
             if (IsValid(rawClassName)) {
                 const char* resolved = resolve_member_name(rawClassName, raw);
                 if (resolved) return resolved;
@@ -184,14 +172,17 @@ namespace IL2CPP::Module {
 
     Type Field::type() const {
         if (!m_native) return Type{};
-        // il2cppFieldInfo::m_pType is the second field (offset sizeof(void*))
-        return Type{ *reinterpret_cast<void**>(static_cast<char*>(m_native) + sizeof(void*)) };
+        int32_t off = (E() && E()->m_offFieldType >= 0) ? E()->m_offFieldType : 0x08; // canonical: FieldInfo.type;
+        void* type = *reinterpret_cast<void**>(static_cast<char*>(m_native) + off);
+        return Type{ type };
     }
 
     int Field::offset() const {
         if (!m_native) return -1;
-        // il2cppFieldInfo::m_iOffset is at offset 3*sizeof(void*) (after name, type, parentClass)
-        return *reinterpret_cast<int32_t*>(static_cast<char*>(m_native) + 3 * sizeof(void*));
+        int32_t off = (E() && E()->m_offFieldOffset >= 0) ? E()->m_offFieldOffset : 0x18; // canonical: FieldInfo.offset;
+        int val = *reinterpret_cast<int32_t*>(static_cast<char*>(m_native) + off);
+        if (val < 0 || val > 0x10000) return -1;
+        return val;
     }
 
     uint32_t Field::attributes() const {
@@ -200,7 +191,6 @@ namespace IL2CPP::Module {
         if (!t) return 0;
         void* typePtr = t.raw();
         if (!typePtr) return 0;
-        // Attributes are at offset 0x8 in il2cppType
         return *reinterpret_cast<const uint16_t*>(static_cast<const char*>(typePtr) + 0x8);
     }
 
@@ -276,27 +266,27 @@ namespace IL2CPP::Module {
 
     const char* Method::raw_name() const {
         if (!m_native) return "";
-        // il2cppMethodInfo: m_pMethodPointer, [m_pVirtualMethodPointer], m_pInvokerMethod, m_pName
-#ifdef UNITY_VERSION_2022_3_8_HIGHER
-        return *reinterpret_cast<const char**>(static_cast<char*>(m_native) + 3 * sizeof(void*));
-#else
-        return *reinterpret_cast<const char**>(static_cast<char*>(m_native) + 2 * sizeof(void*));
-#endif
+        if (E() && E()->m_methodGetName) {
+            const char* n = reinterpret_cast<const char*(IL2CPP_CALLTYPE)(void*)>(
+                E()->m_methodGetName)(m_native);
+            if (n) return n;
+        }
+        if (E() && E()->m_offMethodName >= 0) {
+            auto* n = *reinterpret_cast<const char**>(static_cast<char*>(m_native) + E()->m_offMethodName);
+            return n ? n : "";
+        }
+        return "";
     }
 
     const char* Method::name() const {
         const char* raw = raw_name();
         if (!raw || !*raw) return raw;
 
-        // Get parent class pointer carefully
-#ifdef UNITY_VERSION_2022_3_8_HIGHER
-        void* parentClass = *reinterpret_cast<void**>(static_cast<char*>(m_native) + 4 * sizeof(void*));
-#else
-        void* parentClass = *reinterpret_cast<void**>(static_cast<char*>(m_native) + 3 * sizeof(void*));
-#endif
+        int32_t declOff = (E() && E()->m_offMethodDeclType >= 0) ? E()->m_offMethodDeclType : 0x18; // canonical: MethodInfo.klass;
+        void* parentClass = *reinterpret_cast<void**>(static_cast<char*>(m_native) + declOff);
         if (IsValid(parentClass)) {
             const char* rawClassName = *reinterpret_cast<const char**>(
-                static_cast<char*>(parentClass) + 2 * sizeof(void*));
+                static_cast<char*>(parentClass) + ((E() && E()->m_offClassName >= 0) ? E()->m_offClassName : 0x10));
 
             if (IsValid(rawClassName)) {
                 const char* resolved = resolve_member_name(rawClassName, raw);
@@ -319,19 +309,25 @@ namespace IL2CPP::Module {
 
     void* Method::pointer() const {
         if (!m_native) return nullptr;
-        // m_pMethodPointer is the first field
-        return *reinterpret_cast<void**>(m_native);
+        return reinterpret_cast<il2cppMethodInfo*>(m_native)->code_pointer();
     }
 
     uint8_t Method::param_count() const {
         if (!m_native) return 0;
-#ifdef UNITY_VERSION_2022_3_8_HIGHER
-        constexpr size_t base = 9 * sizeof(void*);
-#else
-        constexpr size_t base = 8 * sizeof(void*);
-#endif
-        constexpr size_t offset = base + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t);
-        return *reinterpret_cast<uint8_t*>(static_cast<char*>(m_native) + offset);
+        if (E() && E()->m_offMethodArgCount >= 0) {
+            return *reinterpret_cast<const uint8_t*>(
+                static_cast<const char*>(m_native) + E()->m_offMethodArgCount);
+        }
+        if (E() && E()->m_methodGetParam) {
+            uint8_t count = 0;
+            auto fn = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, uint32_t)>(E()->m_methodGetParam);
+            for (uint8_t i = 0; i < 32; ++i) {
+                if (!fn(m_native, i)) break;
+                ++count;
+            }
+            return count;
+        }
+        return 0;
     }
 
     uint32_t Method::flags(uint32_t* impl_flags) const {
@@ -410,24 +406,17 @@ namespace IL2CPP::Module {
     Type Method::return_type() const {
         if (!m_native) return Type{};
         
-        // Use Core's helper for safer access
         if (E() && E()->m_helperGetMethodReturnType) {
             void* retType = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*)>(
                 E()->m_helperGetMethodReturnType)(m_native);
-            // Validate the returned pointer
             if (IsValid(retType)) {
                 return Type{ retType };
             }
             return Type{};  // Return empty type if pointer is invalid
         }
 
-        // Fallback to direct access (with validation)
-        void* retType = nullptr;
-#ifdef UNITY_VERSION_2022_3_8_HIGHER
-        retType = *reinterpret_cast<void**>(static_cast<char*>(m_native) + 5 * sizeof(void*));
-#else
-        retType = *reinterpret_cast<void**>(static_cast<char*>(m_native) + 4 * sizeof(void*));
-#endif
+        int32_t retOff = (E() && E()->m_offMethodRetType >= 0) ? E()->m_offMethodRetType : 0x20; // canonical: MethodInfo.return_type;
+        void* retType = *reinterpret_cast<void**>(static_cast<char*>(m_native) + retOff);
         return IsValid(retType) ? Type{ retType } : Type{};
     }
 
@@ -445,19 +434,18 @@ namespace IL2CPP::Module {
 
     const char* Property::raw_name() const {
         if (!m_native) return "";
-        // il2cppPropertyInfo: m_pParentClass, m_pName, m_pGet, m_pSet, ...
-        return *reinterpret_cast<const char**>(static_cast<char*>(m_native) + sizeof(void*));
+        int32_t off = (E() && E()->m_offPropName >= 0) ? E()->m_offPropName : 0x08;
+        return *reinterpret_cast<const char**>(static_cast<char*>(m_native) + off);
     }
 
     const char* Property::name() const {
         const char* raw = raw_name();
         if (!raw || !*raw) return raw;
 
-        // Get parent class for qualified lookup (with pointer validation)
         void* parentClass = *reinterpret_cast<void**>(m_native);
         if (IsValid(parentClass)) {
             const char* rawClassName = *reinterpret_cast<const char**>(
-                static_cast<char*>(parentClass) + 2 * sizeof(void*));
+                static_cast<char*>(parentClass) + ((E() && E()->m_offClassName >= 0) ? E()->m_offClassName : 0x10));
             if (IsValid(rawClassName)) {
                 const char* resolved = resolve_member_name(rawClassName, raw);
                 if (resolved) return resolved;
@@ -472,7 +460,6 @@ namespace IL2CPP::Module {
         if (g) {
             return g.raw_return_type_name();
         }
-        // Fallback to setter's first param type
         Method s = setter();
         if (s && s.param_count() > 0) {
             Type paramType = s.get_param_type(0);
@@ -486,7 +473,6 @@ namespace IL2CPP::Module {
         if (g) {
             return g.return_type_name();
         }
-        // Fallback to setter's first param type
         Method s = setter();
         if (s && s.param_count() > 0) {
             Type paramType = s.get_param_type(0);
@@ -497,12 +483,14 @@ namespace IL2CPP::Module {
 
     Method Property::getter() const {
         if (!m_native) return Method{};
-        return Method{ *reinterpret_cast<void**>(static_cast<char*>(m_native) + 2 * sizeof(void*)) };
+        int32_t off = (E() && E()->m_offPropGetter >= 0) ? E()->m_offPropGetter : 0x10;
+        return Method{ *reinterpret_cast<void**>(static_cast<char*>(m_native) + off) };
     }
 
     Method Property::setter() const {
         if (!m_native) return Method{};
-        return Method{ *reinterpret_cast<void**>(static_cast<char*>(m_native) + 3 * sizeof(void*)) };
+        int32_t off = (E() && E()->m_offPropSetter >= 0) ? E()->m_offPropSetter : 0x18;
+        return Method{ *reinterpret_cast<void**>(static_cast<char*>(m_native) + off) };
     }
 
     void* Property::parent_class_raw() const {
@@ -519,7 +507,6 @@ namespace IL2CPP::Module {
     bool Property::is_private() const {
         Method g = getter();
         Method s = setter();
-        // Private if both accessors are private (or don't exist)
         bool getterPrivate = !g || g.is_private();
         bool setterPrivate = !s || s.is_private();
         return getterPrivate && setterPrivate && (g || s);  // Must have at least one accessor
@@ -536,7 +523,6 @@ namespace IL2CPP::Module {
     const char* Property::access_modifier() const {
         Method g = getter();
         Method s = setter();
-        // Use the most accessible modifier from getter/setter
         if ((g && g.is_public()) || (s && s.is_public())) return "public";
         if ((g && g.is_protected()) || (s && s.is_protected())) return "protected";
         if ((g && g.is_internal()) || (s && s.is_internal())) return "internal";
@@ -546,41 +532,38 @@ namespace IL2CPP::Module {
 
     const char* Class::raw_name() const {
         if (!m_native) return "";
-        // il2cppClass::m_pName is the third field (after m_pImage, m_pGC)
-        return *reinterpret_cast<const char**>(static_cast<char*>(m_native) + 2 * sizeof(void*));
+        int32_t off = (E() && E()->m_offClassName >= 0) ? E()->m_offClassName : 0x10; // canonical: Il2CppClass.name
+        auto* ptr = *reinterpret_cast<const char**>(static_cast<char*>(m_native) + off);
+        return (ptr && reinterpret_cast<uintptr_t>(ptr) >= 0x10000) ? ptr : "";
     }
 
     const char* Class::name() const {
         if (!m_native) return "";
-        
-        // Use Core's helper which can generate stable names on-demand
+
         if (E() && E()->m_helperGetClassStableName) {
             const char* result = reinterpret_cast<const char*(IL2CPP_CALLTYPE)(void*)>(
                 E()->m_helperGetClassStableName)(m_native);
             if (result && *result) return result;
         }
 
-        // Fallback: return raw name
         return raw_name();
     }
 
     const char* Class::raw_ns() const {
         if (!m_native) return "";
-        // il2cppClass::m_pNamespace is the fourth field
-        return *reinterpret_cast<const char**>(static_cast<char*>(m_native) + 3 * sizeof(void*));
+        int32_t off = (E() && E()->m_offClassNamespace >= 0) ? E()->m_offClassNamespace : 0x18;
+        return *reinterpret_cast<const char**>(static_cast<char*>(m_native) + off);
     }
 
     const char* Class::ns() const {
         if (!m_native) return "";
         
-        // Use Core's helper for stable namespace
         if (E() && E()->m_helperGetClassStableNamespace) {
             const char* result = reinterpret_cast<const char*(IL2CPP_CALLTYPE)(void*)>(
                 E()->m_helperGetClassStableNamespace)(m_native);
             if (result) return result;
         }
 
-        // Fallback: try deobfuscating raw namespace
         const char* raw = raw_ns();
         if (!raw || !*raw) return raw;
         return Deobfuscation::GetStableName(raw);
@@ -589,14 +572,12 @@ namespace IL2CPP::Module {
     std::string Class::full_name() const {
         if (!m_native) return "";
         
-        // Use Core's helper for stable full name (returns persistent pointer)
         if (E() && E()->m_helperGetClassStableFullName) {
             const char* result = reinterpret_cast<const char*(IL2CPP_CALLTYPE)(void*)>(
                 E()->m_helperGetClassStableFullName)(m_native);
             if (result && *result) return result;
         }
 
-        // Fallback: concatenate ns + name
         const char* n = ns();
         const char* c = name();
         if (n && n[0]) return std::string(n) + "." + c;
@@ -660,7 +641,6 @@ namespace IL2CPP::Module {
             E()->m_classGetFieldFromName)(m_native, nameStr.c_str());
         if (result) return Field{ result };
 
-        // Try unqualified reverse lookup
         const char* original = Deobfuscation::GetOriginalName(nameStr.c_str());
         if (original && original != nameStr.c_str() && std::strcmp(original, nameStr.c_str()) != 0) {
             result = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, const char*)>(
@@ -668,7 +648,6 @@ namespace IL2CPP::Module {
             if (result) return Field{ result };
         }
 
-        // Try qualified reverse lookup using stable class name (member mappings key off stable, not human names)
         std::string rawFull = raw_full_name();
         const char* stableName = Deobfuscation::GetStableName(rawFull.c_str());
         std::string qualifiedKey = build_member_key(stableName, nameStr.c_str());
@@ -700,7 +679,6 @@ namespace IL2CPP::Module {
             E()->m_classGetMethodFromName)(m_native, nameStr.c_str(), argc);
         if (result) return Method{ result };
 
-        // Try unqualified reverse lookup
         const char* original = Deobfuscation::GetOriginalName(nameStr.c_str());
         if (original && original != nameStr.c_str() && std::strcmp(original, nameStr.c_str()) != 0) {
             result = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, const char*, int)>(
@@ -708,7 +686,6 @@ namespace IL2CPP::Module {
             if (result) return Method{ result };
         }
 
-        // Try qualified reverse lookup using stable class name (member mappings key off stable, not human names)
         std::string rawFull = raw_full_name();
         const char* stableName = Deobfuscation::GetStableName(rawFull.c_str());
         std::string qualifiedKey = build_member_key(stableName, nameStr.c_str());
@@ -745,7 +722,6 @@ namespace IL2CPP::Module {
             E()->m_classGetPropertyFromName)(m_native, nameStr.c_str());
         if (result) return Property{ result };
 
-        // Try unqualified reverse lookup
         const char* original = Deobfuscation::GetOriginalName(nameStr.c_str());
         if (original && original != nameStr.c_str() && std::strcmp(original, nameStr.c_str()) != 0) {
             result = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, const char*)>(
@@ -753,7 +729,6 @@ namespace IL2CPP::Module {
             if (result) return Property{ result };
         }
 
-        // Try qualified reverse lookup using stable class name (member mappings key off stable, not human names)
         std::string rawFull = raw_full_name();
         const char* stableName = Deobfuscation::GetStableName(rawFull.c_str());
         std::string qualifiedKey = build_member_key(stableName, nameStr.c_str());
@@ -785,7 +760,6 @@ namespace IL2CPP::Module {
             E()->m_helperFindClass)(nameStr.c_str());
         if (result) return Class{ result };
 
-        // Try original obfuscated name
         const char* original = Deobfuscation::GetOriginalName(nameStr.c_str());
         if (original && original != nameStr.c_str() && std::strcmp(original, nameStr.c_str()) != 0) {
             result = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(
@@ -803,8 +777,10 @@ namespace IL2CPP::Module {
 
     const char* Image::name() const {
         if (!m_native) return "";
-        // il2cppImage::m_pName is the first field
-        return *reinterpret_cast<const char**>(m_native);
+        auto* ptr = *reinterpret_cast<const char* const*>(m_native);
+        if (reinterpret_cast<uintptr_t>(ptr) < 0x10000 || reinterpret_cast<uintptr_t>(ptr) > 0x7FFFFFFFFFFF)
+            return "";
+        return ptr;
     }
 
     uint32_t Image::class_count() const {
@@ -832,13 +808,10 @@ namespace IL2CPP::Module {
 
     Image Assembly::get_image() const {
         if (!m_native) return Image{};
-        // il2cppAssembly::m_pImage is typically at offset 0
-        // But let's use the API if available
         if (E() && E()->m_assemblyGetImage) {
             return Image{ reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*)>(
                 E()->m_assemblyGetImage)(m_native) };
         }
-        // Fallback: direct struct access
         return Image{ *reinterpret_cast<void**>(m_native) };
     }
 
@@ -846,14 +819,12 @@ namespace IL2CPP::Module {
         std::vector<Assembly> result;
         if (!E() || !E()->m_domainGetAssemblies) return result;
 
-        // Get current domain first
         void* domain = nullptr;
         if (E()->m_domainGet) {
             domain = reinterpret_cast<void*(IL2CPP_CALLTYPE)()>(E()->m_domainGet)();
         }
         if (!domain) return result;
 
-        // Get assembly count and array
         size_t count = 0;
         void** assemblies = reinterpret_cast<void**(IL2CPP_CALLTYPE)(void*, size_t*)>(
             E()->m_domainGetAssemblies)(domain, &count);

@@ -10,7 +10,6 @@ namespace IL2CPP::Module::System {
 
     template<typename T>
     class Array : public ManagedObject {
-        // Offsets into the il2cppArray struct (after il2cppObject header)
         static constexpr int kBoundsOffset    = 0x10;  // il2cppArrayBounds*
         static constexpr int kMaxLengthOffset = 0x18;  // uintptr_t
         static constexpr int kValuesOffset    = 0x20;  // T m_pValues (start of data inline)

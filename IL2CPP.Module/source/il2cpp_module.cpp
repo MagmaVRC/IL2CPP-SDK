@@ -1,7 +1,7 @@
-#include <include/il2cpp_module.hpp>
+#include <il2cpp_module.hpp>
 #include <IL2CPP.Common/il2cpp_unity_shared.hpp>
 #include <SharedMemory.Common/shared_memory.hpp>
-#include <Windows.h>
+#include <windows.h>
 #include <atomic>
 
 namespace IL2CPP::Module {
@@ -30,6 +30,8 @@ namespace IL2CPP::Module {
             g_conn.connected.store(false, std::memory_order_release);
             return false;
         }
+
+        IL2CPP::g_structOffsets = g_conn.exports;
 
         g_conn.unity = SharedMemory::Resolve<unity_functions>("IL2CPP.Unity");
         if (g_conn.unity && g_conn.unity->m_uVersion != unity_version) {
@@ -95,6 +97,8 @@ namespace IL2CPP::Module {
 
     il2cppClass* ClassFromType(il2cppType* type) {
         if (!E() || !E()->m_classFromIl2cppType || !type) return nullptr;
+        auto addr = reinterpret_cast<uintptr_t>(type);
+        if (addr < 0x10000 || addr > 0x7FFFFFFFFFFF) return nullptr;
         return reinterpret_cast<il2cppClass*(IL2CPP_CALLTYPE)(void*)>(E()->m_classFromIl2cppType)(type);
     }
 
@@ -125,12 +129,15 @@ namespace IL2CPP::Module {
     int GetFieldOffset(il2cppClass* klass, const char* fieldName) {
         auto* field = GetFieldByName(klass, fieldName);
         if (!field) return -1;
-        return *reinterpret_cast<int32_t*>(reinterpret_cast<char*>(field) + 0x18);
+        int32_t off = (E() && E()->m_offFieldOffset >= 0) ? E()->m_offFieldOffset : 0x18;
+        return *reinterpret_cast<int32_t*>(reinterpret_cast<char*>(field) + off);
     }
 
     void GetStaticFieldValue(il2cppFieldInfo* field, void* outValue) {
         if (!E() || !E()->m_fieldStaticGetValue || !field || !outValue) return;
-        reinterpret_cast<void(IL2CPP_CALLTYPE)(void*, void*)>(E()->m_fieldStaticGetValue)(field, outValue);
+        __try {
+            reinterpret_cast<void(IL2CPP_CALLTYPE)(void*, void*)>(E()->m_fieldStaticGetValue)(field, outValue);
+        } __except(1) { }
     }
 
     void SetStaticFieldValue(il2cppFieldInfo* field, void* value) {
@@ -272,12 +279,23 @@ namespace IL2CPP::Module {
             auto* assembly = assemblies[a];
             if (!assembly) continue;
 
-            auto* image = *reinterpret_cast<il2cppImage**>(assembly);
+            auto* image = reinterpret_cast<il2cppImage*(IL2CPP_CALLTYPE)(void*)>(
+                E()->m_assemblyGetImage)(assembly);
             if (!image) continue;
 
-            const char* imageName = *reinterpret_cast<const char**>(
-                reinterpret_cast<char*>(image) + sizeof(void*));
-            if (!imageName || assemblyName != imageName) continue;
+            bool nameMatch = false;
+            auto* imgBytes = reinterpret_cast<const char*>(image);
+            for (int i = 0; i < 56; ++i) {
+                if (imgBytes[i] >= 'A' && imgBytes[i] <= 'z') {
+                    std::string_view candidate(imgBytes + i);
+                    if (candidate.find(assemblyName) != std::string_view::npos) {
+                        nameMatch = true;
+                        break;
+                    }
+                    break;
+                }
+            }
+            if (!nameMatch) continue;
 
             size_t classCount = reinterpret_cast<size_t(IL2CPP_CALLTYPE)(void*)>(
                 E()->m_imageGetClassCount)(image);

@@ -1,6 +1,5 @@
 #pragma once
 #include <cstdint>
-#include <string_view>
 
 namespace Logger {
 
@@ -41,6 +40,12 @@ namespace Logger {
         return static_cast<LevelMask>(1 << static_cast<uint8_t>(lvl));
     }
 
+    enum class FilterMode : uint8_t {
+        disabled = 0,
+        whitelist = 1,
+        blacklist = 2
+    };
+
     enum class Color : uint8_t {
         black = 0,
         dark_blue = 1,
@@ -59,12 +64,6 @@ namespace Logger {
         yellow = 14,
         white = 15,
         default_color = 255
-    };
-
-    enum class FilterMode : uint8_t {
-        disabled = 0,
-        whitelist = 1,
-        blacklist = 2
     };
 
     struct ModuleId {
@@ -106,9 +105,8 @@ namespace Logger {
         LevelMask   mask;
         Color       fg;
         Color       bg;
-        uint8_t     _pad = 0;
+        uint8_t     _pad = {};
     };
-
 
     using fn_log = void(__cdecl*)(LogEntry const*);
     using fn_register_module = uint32_t(__cdecl*)(char const* name, uint32_t name_len);
@@ -135,7 +133,7 @@ namespace Logger {
         fn_is_enabled         is_enabled;
         fn_flush              flush;
         uint32_t              version;
-        uint32_t              _pad = 0;
+        uint32_t              _pad = {};
     };
 
     constexpr uint32_t vtable_version = 1;

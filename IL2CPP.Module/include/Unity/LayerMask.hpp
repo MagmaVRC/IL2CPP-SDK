@@ -1,14 +1,12 @@
 #pragma once
 #include "../MethodHandler.hpp"
+#include "../System/String.hpp"
 #include <IL2CPP.Common/il2cpp_types.hpp>
 #include <IL2CPP.Common/il2cpp_shared.hpp>
 #include <string>
 #include <string_view>
-#include <Windows.h>
 
-namespace IL2CPP::Module {
-    [[nodiscard]] IL2CPP::il2cpp_exports const* GetExports() noexcept;
-}
+namespace IL2CPP::Module { [[nodiscard]] IL2CPP::il2cpp_exports const* GetExports() noexcept; }
 
 namespace IL2CPP::Module::Unity {
 
@@ -22,14 +20,7 @@ namespace IL2CPP::Module::Unity {
             void* params[] = { &layer };
             void* str = MethodHandler::invoke<void*>(m, nullptr, params);
             if (!str) return "";
-            int len = *reinterpret_cast<int*>(static_cast<char*>(str) + 0x10);
-            if (len <= 0) return "";
-            wchar_t* wstr = reinterpret_cast<wchar_t*>(static_cast<char*>(str) + 0x14);
-            int bytes = WideCharToMultiByte(CP_UTF8, 0, wstr, len, nullptr, 0, nullptr, nullptr);
-            if (bytes <= 0) return "";
-            std::string out(static_cast<size_t>(bytes), '\0');
-            WideCharToMultiByte(CP_UTF8, 0, wstr, len, out.data(), bytes, nullptr, nullptr);
-            return out;
+            return System::String{ str }.to_string();
         }
 
         /// Convert a layer name to its index.

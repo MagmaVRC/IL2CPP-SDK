@@ -3,12 +3,12 @@
 #include "../Reflection.hpp"
 #include "../MethodHandler.hpp"
 #include "../System/Array.hpp"
+#include "../System/String.hpp"
 #include <IL2CPP.Common/il2cpp_types.hpp>
 #include <IL2CPP.Common/il2cpp_shared.hpp>
 #include <string>
 #include <string_view>
 #include <vector>
-#include <Windows.h>
 
 namespace IL2CPP::Module::Unity {
 
@@ -21,7 +21,6 @@ namespace IL2CPP::Module::Unity {
         /// Check if the Unity native pointer is still valid.
         [[nodiscard]] bool IsValid() const noexcept {
             if (!valid()) return false;
-            // UnityEngine.Object has m_CachedPtr at offset 0x10 (after il2cppObject header)
             void* cachedPtr = read<void*>(0x10);
             return IsValidPointer(cachedPtr);
         }
@@ -47,25 +46,7 @@ namespace IL2CPP::Module::Unity {
             static auto m = MethodHandler::resolve("UnityEngine.Object", "get_name", 0);
             void* str = MethodHandler::invoke<void*>(m, raw());
             if (!str) return "";
-
-            const int len = *reinterpret_cast<int*>(static_cast<char*>(str) + 0x10);
-            if (len <= 0) return "";
-
-            const wchar_t* wstr =
-                reinterpret_cast<const wchar_t*>(static_cast<char*>(str) + 0x14);
-
-            const int bytes = WideCharToMultiByte(
-                CP_UTF8, 0, wstr, len, nullptr, 0, nullptr, nullptr);
-            if (bytes <= 0) return "";
-
-            std::string out;
-            out.resize(static_cast<size_t>(bytes));
-
-            const int written = WideCharToMultiByte(
-                CP_UTF8, 0, wstr, len, out.data(), bytes, nullptr, nullptr);
-            if (written != bytes) return "";
-
-            return out;
+            return System::String{ str }.to_string();
         }
 
         /// Set the object name.
@@ -222,7 +203,6 @@ namespace IL2CPP::Module::Unity {
         [[nodiscard]] Object InstantiateWithParent(Transform parent, bool worldPositionStays = false) const;
     };
 
-    // Type alias for backwards compatibility
     using ObjectArray = std::vector<Object>;
 
 } // namespace IL2CPP::Module::Unity

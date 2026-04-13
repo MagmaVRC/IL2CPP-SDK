@@ -3,7 +3,7 @@
 #include <IL2CPP.Common/il2cpp_shared.hpp>
 #include <string>
 #include <string_view>
-#include <Windows.h>
+#include <windows.h>
 
 namespace IL2CPP::Module::System {
 
@@ -14,7 +14,6 @@ namespace IL2CPP::Module::System {
         /// Get the string length (char count).
         [[nodiscard]] int length() const {
             if (!valid()) return 0;
-            // il2cppString layout: il2cppObject header (0x10), then int m_iLength, then wchar_t[]
             return read<int>(0x10);
         }
 

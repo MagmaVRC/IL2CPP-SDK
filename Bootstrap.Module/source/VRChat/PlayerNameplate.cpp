@@ -1,5 +1,5 @@
-#include <include/VRChat/PlayerNameplate.hpp>
-#include <include/bootstrap_internal.hpp>
+#include <VRChat/PlayerNameplate.hpp>
+#include <bootstrap_internal.hpp>
 
 namespace IL2CPP::VRChat {
 

@@ -23,13 +23,11 @@ namespace IL2CPP::VRChat {
             }
         };
 
-        // Identity
         [[nodiscard]] std::string GetDisplayName();
         void SetDisplayName(std::string_view name);
         [[nodiscard]] int GetPlayerId();
         [[nodiscard]] bool IsLocal();
 
-        // Status & Permissions
         [[nodiscard]] bool IsMaster();
         [[nodiscard]] bool IsInstanceOwner();
         [[nodiscard]] bool IsModerator();
@@ -37,11 +35,9 @@ namespace IL2CPP::VRChat {
         [[nodiscard]] bool IsSuspended();
         [[nodiscard]] bool IsValid();
 
-        // VR & Locomotion State
         [[nodiscard]] bool IsUserInVR();
         [[nodiscard]] bool IsPlayerGrounded();
 
-        // Transform & Movement
         [[nodiscard]] TrackingData GetTrackingData(TrackingDataType tt);
         [[nodiscard]] IL2CPP::Vector3 GetVelocity();
         [[nodiscard]] IL2CPP::Vector3 GetPosition();
@@ -56,7 +52,6 @@ namespace IL2CPP::VRChat {
         void Respawn();
         void Respawn(int idx);
 
-        // Movement Settings
         [[nodiscard]] float GetGravityStrength();
         [[nodiscard]] float GetRunSpeed();
         [[nodiscard]] float GetWalkSpeed();
@@ -73,7 +68,6 @@ namespace IL2CPP::VRChat {
         void UseAttachedStation();
         void Immobilize(bool i);
 
-        // Voice Settings
         [[nodiscard]] float GetVoiceGain();
         [[nodiscard]] float GetVoiceDistanceNear();
         [[nodiscard]] float GetVoiceDistanceFar();
@@ -86,7 +80,6 @@ namespace IL2CPP::VRChat {
         void SetVoiceVolumetricRadius(float r);
         void SetVoiceLowpass(bool e);
 
-        // Avatar Audio Settings
         void SetAvatarAudioGain(float g);
         void SetAvatarAudioFarRadius(float d);
         void SetAvatarAudioNearRadius(float d);
@@ -94,7 +87,6 @@ namespace IL2CPP::VRChat {
         void SetAvatarAudioForceSpatial(bool f);
         void SetAvatarAudioCustomCurve(bool a);
 
-        // Avatar Scaling
         [[nodiscard]] float GetAvatarEyeHeightAsMeters();
         [[nodiscard]] float GetAvatarEyeHeightMaximumAsMeters();
         [[nodiscard]] float GetAvatarEyeHeightMinimumAsMeters();
@@ -106,24 +98,19 @@ namespace IL2CPP::VRChat {
         void SetAvatarEyeHeightMinimumByMeters(float m);
         void SetManualAvatarScalingAllowed(bool e);
 
-        // Nameplate
         void SetNamePlateColor(IL2CPP::Color c);
         void RestoreNamePlateColor();
         void SetNamePlateVisibility(bool f);
         void RestoreNamePlateVisibility();
 
-        // Ownership
         [[nodiscard]] bool IsOwner(IL2CPP::Module::Unity::GameObject obj);
         void TakeOwnership(IL2CPP::Module::Unity::GameObject obj);
 
-        // Interactions
         void EnablePickups(bool e);
 
-        // Object References
         [[nodiscard]] IL2CPP::Module::Unity::GameObject GetGameObject();
         [[nodiscard]] VRCPlayer GetVRCPlayer();
 
-        // Static Methods
         static int GetPlayerCount();
         static int GetPlayerId(VRCPlayerApi p);
         static VRCPlayerApi GetPlayerByGameObject(IL2CPP::Module::Unity::GameObject o);

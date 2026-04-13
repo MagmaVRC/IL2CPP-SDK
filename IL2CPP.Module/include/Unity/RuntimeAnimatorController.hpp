@@ -9,7 +9,6 @@ namespace IL2CPP::Module::Unity {
     public:
         using Object::Object;
 
-        // ---- animationClips ----
         [[nodiscard]] std::vector<AnimationClip> GetAnimationClips() const {
             static auto m = MethodHandler::resolve("UnityEngine.RuntimeAnimatorController", "get_animationClips", 0);
             void* arr = MethodHandler::invoke<void*>(m, raw());

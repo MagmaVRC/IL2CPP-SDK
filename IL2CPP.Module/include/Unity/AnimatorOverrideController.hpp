@@ -8,7 +8,6 @@ namespace IL2CPP::Module::Unity {
     public:
         using RuntimeAnimatorController::RuntimeAnimatorController;
 
-        // ---- runtimeAnimatorController ----
         [[nodiscard]] RuntimeAnimatorController GetRuntimeAnimatorController() const {
             static auto m = MethodHandler::resolve("UnityEngine.AnimatorOverrideController", "get_runtimeAnimatorController", 0);
             return RuntimeAnimatorController{ MethodHandler::invoke<void*>(m, raw()) };
@@ -20,13 +19,11 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- overridesCount ----
         [[nodiscard]] int GetOverridesCount() const {
             static auto m = MethodHandler::resolve("UnityEngine.AnimatorOverrideController", "get_overridesCount", 0);
             return MethodHandler::invoke<int>(m, raw());
         }
 
-        // ---- indexer: get/set clip override by original clip ----
         [[nodiscard]] AnimationClip GetClipOverride(AnimationClip original) const {
             static auto m = MethodHandler::resolve("UnityEngine.AnimatorOverrideController", "get_Item", 1);
             void* r = original.raw();

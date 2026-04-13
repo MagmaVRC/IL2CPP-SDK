@@ -1,6 +1,6 @@
-#include <include/VRChat/VRCPlayerApi.hpp>
-#include <include/VRChat/VRCPlayer.hpp>
-#include <include/bootstrap_internal.hpp>
+#include <VRChat/VRCPlayerApi.hpp>
+#include <VRChat/VRCPlayer.hpp>
+#include <bootstrap_internal.hpp>
 #include <IL2CPP.Module/include/MethodHandler.hpp>
 #include <IL2CPP.Module/include/Reflection.hpp>
 #include <IL2CPP.Module/include/Unity/GameObject.hpp>

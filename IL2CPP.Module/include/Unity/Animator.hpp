@@ -11,7 +11,6 @@ namespace IL2CPP::Module::Unity {
     public:
         using Behaviour::Behaviour;
 
-        // ---- speed ----
         [[nodiscard]] float GetSpeed() const {
             static auto m = MethodHandler::resolve("UnityEngine.Animator", "get_speed", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -22,7 +21,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- playbackTime ----
         [[nodiscard]] float GetPlaybackTime() const {
             static auto m = MethodHandler::resolve("UnityEngine.Animator", "get_playbackTime", 0);
             return MethodHandler::invoke<float>(m, raw());
@@ -33,7 +31,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- runtimeAnimatorController ----
         [[nodiscard]] void* GetRuntimeAnimatorController() const {
             static auto m = MethodHandler::resolve("UnityEngine.Animator", "get_runtimeAnimatorController", 0);
             return MethodHandler::invoke<void*>(m, raw());
@@ -44,7 +41,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- avatar ----
         [[nodiscard]] void* GetAvatar() const {
             static auto m = MethodHandler::resolve("UnityEngine.Animator", "get_avatar", 0);
             return MethodHandler::invoke<void*>(m, raw());
@@ -55,7 +51,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- applyRootMotion ----
         [[nodiscard]] bool GetApplyRootMotion() const {
             static auto m = MethodHandler::resolve("UnityEngine.Animator", "get_applyRootMotion", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -66,7 +61,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- updateMode ----
         [[nodiscard]] int GetUpdateMode() const {
             static auto m = MethodHandler::resolve("UnityEngine.Animator", "get_updateMode", 0);
             return MethodHandler::invoke<int>(m, raw());
@@ -77,19 +71,16 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- hasRootMotion (get-only) ----
         [[nodiscard]] bool GetHasRootMotion() const {
             static auto m = MethodHandler::resolve("UnityEngine.Animator", "get_hasRootMotion", 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
-        // ---- isHuman (get-only) ----
         [[nodiscard]] bool GetIsHuman() const {
             static auto m = MethodHandler::resolve("UnityEngine.Animator", "get_isHuman", 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
-        // ---- String-param methods ----
         void SetFloat(std::string_view name, float value) {
             static auto m = MethodHandler::resolve("UnityEngine.Animator", "SetFloat", 2);
             auto* e = GetExports();
@@ -175,7 +166,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- Rebind / Update / IsInTransition ----
         void Rebind() {
             static auto m = MethodHandler::resolve("UnityEngine.Animator", "Rebind", 0);
             MethodHandler::invoke(m, raw());

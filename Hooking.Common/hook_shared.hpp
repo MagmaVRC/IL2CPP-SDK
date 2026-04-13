@@ -1,6 +1,5 @@
 #pragma once
 #include <cstdint>
-#include <cstddef>
 #include <string_view>
 
 namespace Hooking {
@@ -8,7 +7,7 @@ namespace Hooking {
     enum class HookType : uint8_t {
         detour = 0,
         prefix = 1,
-        suffix = 2,
+        suffix = 2
     };
 
     enum class HookStatus : uint8_t {
@@ -46,7 +45,7 @@ namespace Hooking {
         uint32_t     id;
         uint32_t     name_length;
         uint32_t     hook_count;
-        uint32_t     _pad = 0;
+        uint32_t     _pad = {};
     };
 
     struct UiRenderContext {
@@ -130,7 +129,7 @@ namespace Hooking {
         fn_unregister_ui_wndproc  unregister_ui_wndproc;
         fn_is_ui_ready            is_ui_ready;
         uint32_t                  version;
-        uint32_t                  _pad = 0;
+        uint32_t                  _pad = {};
     };
 
     constexpr uint32_t vtable_version = 1;

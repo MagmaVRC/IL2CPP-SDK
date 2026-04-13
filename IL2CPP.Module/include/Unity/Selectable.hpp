@@ -9,7 +9,6 @@ namespace IL2CPP::Module::Unity {
     public:
         using UIBehaviour::UIBehaviour;
 
-        // ---- interactable (get/set) ----
         [[nodiscard]] bool GetInteractable() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Selectable", "get_interactable", 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -20,13 +19,11 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- IsInteractable ----
         [[nodiscard]] bool IsInteractable() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Selectable", "IsInteractable", 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
-        // ---- targetGraphic (get/set, raw pointer) ----
         [[nodiscard]] void* GetTargetGraphicRaw() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Selectable", "get_targetGraphic", 0);
             return MethodHandler::invoke<void*>(m, raw());
@@ -37,7 +34,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- image (get/set, raw pointer) ----
         [[nodiscard]] void* GetImageRaw() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Selectable", "get_image", 0);
             return MethodHandler::invoke<void*>(m, raw());
@@ -48,7 +44,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- transition (get/set) ----
         [[nodiscard]] int GetTransition() const {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Selectable", "get_transition", 0);
             return MethodHandler::invoke<int>(m, raw());
@@ -59,7 +54,6 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        // ---- Select ----
         void Select() {
             static auto m = MethodHandler::resolve("UnityEngine.UI.Selectable", "Select", 0);
             MethodHandler::invoke(m, raw());

@@ -8,13 +8,11 @@ namespace IL2CPP::Module::Unity {
     public:
         using MonoBehaviour::MonoBehaviour;
 
-        // ---- IsActive ----
         [[nodiscard]] bool IsActive() const {
             static auto m = MethodHandler::resolve("UnityEngine.EventSystems.UIBehaviour", "IsActive", 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
-        // ---- IsDestroyed ----
         [[nodiscard]] bool IsDestroyed() const {
             static auto m = MethodHandler::resolve("UnityEngine.EventSystems.UIBehaviour", "IsDestroyed", 0);
             return MethodHandler::invoke<bool>(m, raw());

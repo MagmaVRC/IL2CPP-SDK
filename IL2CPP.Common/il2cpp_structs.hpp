@@ -2,10 +2,11 @@
 #include <cstdint>
 #include <string_view>
 #include <type_traits>
+#include <IL2CPP.Common/il2cpp_shared.hpp>
 
 namespace IL2CPP {
 
-	extern "C" [[nodiscard]] __forceinline bool IsValid(const void* ptr) noexcept
+	[[nodiscard]] __forceinline bool IsValid(const void* ptr) noexcept
 	{
 		if (!ptr) return false;
 		constexpr uintptr_t minAddr = 0x10000;
@@ -47,19 +48,17 @@ namespace IL2CPP {
 		int m_iMajor;
 		int m_iMinor;
 		int m_iBuild;
-		int m_bRevision;
+		int m_iRevision;
 		unsigned char m_uPublicKeyToken[8];
 		uint8_t _pad[4] = {};
 	};
 
 	struct il2cppAssembly
 	{
-		il2cppImage* m_pImage;
-		unsigned int m_uToken;
-		int m_ReferencedAssemblyStart;
-		int m_ReferencedAssemblyCount;
-		uint32_t _pad = 0;
-		il2cppAssemblyName m_aName;
+		uint8_t _opaque[0x80] = {};
+
+		/// Returns the assembly's image using the runtime-discovered offset.
+		il2cppImage* get_image() const;
 	};
 
 #ifdef UNITY_VERSION_2022_3_8_HIGHER_
@@ -110,6 +109,8 @@ namespace IL2CPP {
 		uint32_t _pad = 0;
 	};
 
+	/// Field offsets are shuffled between builds.
+	/// Use safe_name()/safe_namespace()/safe_parent() instead of direct field access.
 	struct il2cppClass
 	{
 		void* m_pImage;
@@ -164,7 +165,7 @@ namespace IL2CPP {
 		uint8_t m_uGenericRecursionDepth;
 		uint8_t m_uRank;
 		uint8_t m_uMinAlignment;
-		uint8_t m_uNaturalAligment;
+		uint8_t m_uNaturalAlignment;
 		uint8_t m_uPackingSize;
 		uint8_t m_bInitialized : 1;
 		uint8_t m_bEnumType : 1;
@@ -180,6 +181,10 @@ namespace IL2CPP {
 		uint8_t m_bIsSealed : 1;
 		uint8_t _pad2[4] = {};
 		il2cppVirtualInvokeData m_vtable[255];
+
+		[[nodiscard]] const char* safe_name() const noexcept;
+		[[nodiscard]] const char* safe_namespace() const noexcept;
+		[[nodiscard]] il2cppClass* safe_parent() const noexcept;
 	};
 
 	struct il2cppSystemType {
@@ -187,15 +192,27 @@ namespace IL2CPP {
 		void* m_pMonitor = nullptr;
 	};
 
+	struct il2cpp_exports;
+
+	/// Runtime-discovered struct offsets, set by IL2CPP.Core during init.
+	inline const il2cpp_exports* g_structOffsets = nullptr;
+
+	/// Opaque struct — field layout is shuffled between builds.
 	struct il2cppFieldInfo
 	{
-		const char* m_pName;
-		il2cppType* m_pType;
-		il2cppClass* m_pParentClass;
-		int m_iOffset;
-		int m_iAttributeIndex;
-		unsigned int m_uToken;
-		uint32_t _pad = 0;
+		uint8_t _opaque[0x20];
+
+		[[nodiscard]] const char*  name() const noexcept;
+		[[nodiscard]] il2cppClass* parent() const noexcept;
+		[[nodiscard]] il2cppType*  type() const noexcept;
+		[[nodiscard]] int          offset() const noexcept;
+		[[nodiscard]] unsigned int token() const noexcept;
+
+		__declspec(property(get=name))    const char*  m_pName;
+		__declspec(property(get=parent))  il2cppClass* m_pParent;
+		__declspec(property(get=type))    il2cppType*  m_pType;
+		__declspec(property(get=offset))  int          m_iOffset;
+		__declspec(property(get=token))   unsigned int m_uToken;
 	};
 
 	struct il2cppParameterInfo
@@ -206,48 +223,38 @@ namespace IL2CPP {
 		il2cppType* m_pParameterType;
 	};
 
+	/// Opaque struct — method field layout is shuffled between builds.
 	struct il2cppMethodInfo
 	{
-		void* m_pMethodPointer;
-		void* m_pVirtualMethodPointer;
-		void* m_pInvokerMethod;
-		const char* m_pName;
-		il2cppClass* m_pClass;
-		il2cppType* m_pReturnType;
-		il2cppType** m_pParameters;
+		uint8_t _opaque[0x58];
 
-		union
-		{
-			void* m_pRGCTX;
-			void* m_pMethodDefinition;
-		};
+		[[nodiscard]] void*        code_pointer() const noexcept;
+		[[nodiscard]] void*        virtual_pointer() const noexcept;
+		[[nodiscard]] const char*  name() const noexcept;
+		[[nodiscard]] il2cppType*  return_type() const noexcept;
+		[[nodiscard]] il2cppClass* declaring_type() const noexcept;
+		[[nodiscard]] uint8_t      arg_count() const noexcept;
 
-		union
-		{
-			void* m_pGenericMethod;
-			void* m_pGenericContainer;
-		};
-
-		unsigned int m_uToken;
-		unsigned short m_uFlags;
-		unsigned short m_uFlags2;
-		unsigned short m_uSlot;
-		unsigned char m_uArgsCount;
-		unsigned char m_uGeneric : 1;
-		unsigned char m_uInflated : 1;
-		unsigned char m_uWrapperType : 1;
-		unsigned char m_uMarshaledFromNative : 1;
-		uint8_t _pad[4] = {};
+		__declspec(property(get=code_pointer))     void*        m_pMethodPointer;
+		__declspec(property(get=virtual_pointer))   void*        m_pVirtualMethodPointer;
+		__declspec(property(get=name))              const char*  m_pName;
+		__declspec(property(get=return_type))       il2cppType*  m_pReturnType;
+		__declspec(property(get=declaring_type))    il2cppClass* m_pDeclaringType;
+		__declspec(property(get=arg_count))         uint8_t      m_uArgCount;
 	};
 
+	/// Opaque struct — property layout is shuffled between builds.
 	struct il2cppPropertyInfo
 	{
-		il2cppClass* m_pParentClass;
-		const char* m_pName;
-		il2cppMethodInfo* m_pGet;
-		il2cppMethodInfo* m_pSet;
-		unsigned int m_uAttributes;
-		unsigned int m_uToken;
+		uint8_t _opaque[0x30];
+
+		[[nodiscard]] const char* get_name() const noexcept;
+		[[nodiscard]] il2cppMethodInfo* get_getter() const noexcept;
+		[[nodiscard]] il2cppMethodInfo* get_setter() const noexcept;
+
+		__declspec(property(get=get_getter)) il2cppMethodInfo* m_pGet;
+		__declspec(property(get=get_setter)) il2cppMethodInfo* m_pSet;
+		__declspec(property(get=get_name))   const char* m_pName;
 	};
 
 	struct il2cppArrayBounds
@@ -261,7 +268,6 @@ namespace IL2CPP {
 		il2cppClass* m_pClass = nullptr;
 		void* m_pMonitor = nullptr;
 
-		// --- Non-inline methods (implemented in IL2CPP.Core) ---
 		il2cppFieldInfo* GetFields(void** m_pIterator);
 		il2cppMethodInfo* GetMethods(void** m_pIterator);
 
@@ -277,8 +283,6 @@ namespace IL2CPP {
 		void* CallMethod_Impl(void* m_pMethod);
 		void* CallMethod_Impl(void* m_pMethod, void* m_pArg);
 		void* CallMethod_Impl(void* m_pMethod, void* m_pArg, void* m_pArg2);
-
-		// --- Inline methods ---
 
 		static __forceinline bool IsAlive(il2cppObject* obj) {
 			return obj && obj->m_pClass;
@@ -329,19 +333,20 @@ namespace IL2CPP {
 
 		template<typename T>
 		T GetValue(il2cppFieldInfo* m_pField) {
-			return GetValue<T>(m_pField->m_iOffset);
+			return GetValue<T>(m_pField->offset());
 		}
 		template<typename T>
 		void SetValue(il2cppFieldInfo* m_pField, T m_tValue) {
-			SetValue<T>(m_pField->m_iOffset, m_tValue);
+			SetValue<T>(m_pField->offset(), m_tValue);
 		}
 
 		template<typename T>
 		T GetValue(std::string_view m_pMemberName) {
 			il2cppFieldInfo* pField = GetField(m_pMemberName);
 			if (pField) {
-				if (pField->m_iOffset >= 0)
-					return *reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(this) + pField->m_iOffset);
+				int off = pField->offset();
+				if (off >= 0)
+					return *reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(this) + off);
 			}
 			else if (auto prop = GetProperty(m_pMemberName); prop && prop->m_pGet)
 				return reinterpret_cast<T>(CallMethod_Impl(prop->m_pGet->m_pMethodPointer, nullptr));
@@ -351,8 +356,9 @@ namespace IL2CPP {
 		void SetValue(std::string_view m_pMemberName, T m_tValue) {
 			il2cppFieldInfo* pField = GetField(m_pMemberName);
 			if (pField) {
-				if (pField->m_iOffset >= 0) {
-					*reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(this) + pField->m_iOffset) = m_tValue;
+				int off = pField->offset();
+				if (off >= 0) {
+					*reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(this) + off) = m_tValue;
 					return;
 				}
 			}
@@ -365,5 +371,155 @@ namespace IL2CPP {
 			}
 		}
 	};
+
+	inline const char* il2cppFieldInfo::name() const noexcept {
+		if (g_structOffsets && g_structOffsets->m_fieldGetName) {
+			return reinterpret_cast<const char*(__fastcall*)(const void*)>(
+				g_structOffsets->m_fieldGetName)(this);
+		}
+		if (g_structOffsets && g_structOffsets->m_offFieldName >= 0) {
+			auto ptr = *reinterpret_cast<const char* const*>(
+				reinterpret_cast<const char*>(this) + g_structOffsets->m_offFieldName);
+			return (reinterpret_cast<uintptr_t>(ptr) >= 0x10000 &&
+					reinterpret_cast<uintptr_t>(ptr) <= 0x7FFFFFFFFFFF) ? ptr : nullptr;
+		}
+		return nullptr;
+	}
+
+	inline il2cppClass* il2cppFieldInfo::parent() const noexcept {
+		if (g_structOffsets && g_structOffsets->m_fieldGetParent) {
+			return reinterpret_cast<il2cppClass*(__fastcall*)(const void*)>(
+				g_structOffsets->m_fieldGetParent)(this);
+		}
+		if (g_structOffsets && g_structOffsets->m_offFieldParent >= 0) {
+			auto ptr = *reinterpret_cast<il2cppClass* const*>(
+				reinterpret_cast<const char*>(this) + g_structOffsets->m_offFieldParent);
+			return (reinterpret_cast<uintptr_t>(ptr) >= 0x10000 &&
+					reinterpret_cast<uintptr_t>(ptr) <= 0x7FFFFFFFFFFF) ? ptr : nullptr;
+		}
+		return nullptr;
+	}
+
+	inline il2cppType* il2cppFieldInfo::type() const noexcept {
+		int32_t off = (g_structOffsets && g_structOffsets->m_offFieldType >= 0)
+			? g_structOffsets->m_offFieldType : 0x08;
+		return *reinterpret_cast<il2cppType* const*>(
+			reinterpret_cast<const char*>(this) + off);
+	}
+
+	inline int il2cppFieldInfo::offset() const noexcept {
+		int val = -1;
+		if (g_structOffsets && g_structOffsets->m_fieldGetOffset) {
+			val = static_cast<int>(reinterpret_cast<int64_t(__fastcall*)(const void*)>(
+				g_structOffsets->m_fieldGetOffset)(this));
+		} else if (g_structOffsets && g_structOffsets->m_offFieldOffset >= 0) {
+			val = *reinterpret_cast<const int*>(
+				reinterpret_cast<const char*>(this) + g_structOffsets->m_offFieldOffset);
+		}
+		// Reject unresolved metadata tokens (high byte set) — real offsets are < 0x10000.
+		if (val < 0 || val > 0x10000) return -1;
+		return val;
+	}
+
+	inline unsigned int il2cppFieldInfo::token() const noexcept {
+		return *reinterpret_cast<const unsigned int*>(
+			reinterpret_cast<const char*>(this) + 0x00);
+	}
+
+	inline void* il2cppMethodInfo::code_pointer() const noexcept {
+		int32_t off = (g_structOffsets && g_structOffsets->m_offMethodPointer >= 0)
+			? g_structOffsets->m_offMethodPointer : 0x00;
+		return *reinterpret_cast<void* const*>(
+			reinterpret_cast<const char*>(this) + off);
+	}
+
+	inline void* il2cppMethodInfo::virtual_pointer() const noexcept {
+		int32_t off = (g_structOffsets && g_structOffsets->m_offMethodVirtual >= 0)
+			? g_structOffsets->m_offMethodVirtual : 0x08;
+		return *reinterpret_cast<void* const*>(
+			reinterpret_cast<const char*>(this) + off);
+	}
+
+	inline const char* il2cppMethodInfo::name() const noexcept {
+		if (g_structOffsets && g_structOffsets->m_methodGetName) {
+			return reinterpret_cast<const char*(__fastcall*)(const void*)>(
+				g_structOffsets->m_methodGetName)(this);
+		}
+		if (g_structOffsets && g_structOffsets->m_offMethodName >= 0) {
+			return *reinterpret_cast<const char* const*>(
+				reinterpret_cast<const char*>(this) + g_structOffsets->m_offMethodName);
+		}
+		return nullptr;
+	}
+
+	inline il2cppType* il2cppMethodInfo::return_type() const noexcept {
+		int32_t off = (g_structOffsets && g_structOffsets->m_offMethodRetType >= 0)
+			? g_structOffsets->m_offMethodRetType : 0x20;
+		return *reinterpret_cast<il2cppType* const*>(
+			reinterpret_cast<const char*>(this) + off);
+	}
+
+	inline il2cppClass* il2cppMethodInfo::declaring_type() const noexcept {
+		int32_t off = (g_structOffsets && g_structOffsets->m_offMethodDeclType >= 0)
+			? g_structOffsets->m_offMethodDeclType : 0x18;
+		return *reinterpret_cast<il2cppClass* const*>(
+			reinterpret_cast<const char*>(this) + off);
+	}
+
+	inline uint8_t il2cppMethodInfo::arg_count() const noexcept {
+		if (g_structOffsets && g_structOffsets->m_offMethodArgCount >= 0)
+			return *reinterpret_cast<const uint8_t*>(
+				reinterpret_cast<const char*>(this) + g_structOffsets->m_offMethodArgCount);
+		return 0;
+	}
+
+	inline const char* il2cppClass::safe_name() const noexcept {
+		int32_t off = (g_structOffsets && g_structOffsets->m_offClassName >= 0)
+			? g_structOffsets->m_offClassName : 0x10;
+		auto ptr = *reinterpret_cast<const char* const*>(
+			reinterpret_cast<const char*>(this) + off);
+		return (reinterpret_cast<uintptr_t>(ptr) >= 0x10000 &&
+		        reinterpret_cast<uintptr_t>(ptr) <= 0x7FFFFFFFFFFF) ? ptr : nullptr;
+	}
+
+	inline const char* il2cppClass::safe_namespace() const noexcept {
+		int32_t off = (g_structOffsets && g_structOffsets->m_offClassNamespace >= 0)
+			? g_structOffsets->m_offClassNamespace : 0x18;
+		auto ptr = *reinterpret_cast<const char* const*>(
+			reinterpret_cast<const char*>(this) + off);
+		return (reinterpret_cast<uintptr_t>(ptr) >= 0x10000 &&
+		        reinterpret_cast<uintptr_t>(ptr) <= 0x7FFFFFFFFFFF) ? ptr : nullptr;
+	}
+
+	inline il2cppClass* il2cppClass::safe_parent() const noexcept {
+		int32_t off = (g_structOffsets && g_structOffsets->m_offClassParent >= 0)
+			? g_structOffsets->m_offClassParent : 0x58;
+		auto ptr = *reinterpret_cast<il2cppClass* const*>(
+			reinterpret_cast<const char*>(this) + off);
+		if (ptr == this) return nullptr;
+		return (reinterpret_cast<uintptr_t>(ptr) >= 0x10000 &&
+		        reinterpret_cast<uintptr_t>(ptr) <= 0x7FFFFFFFFFFF) ? ptr : nullptr;
+	}
+
+	inline const char* il2cppPropertyInfo::get_name() const noexcept {
+		int32_t off = (g_structOffsets && g_structOffsets->m_offPropName >= 0)
+			? g_structOffsets->m_offPropName : 0x08;
+		return *reinterpret_cast<const char* const*>(
+			reinterpret_cast<const char*>(this) + off);
+	}
+
+	inline il2cppMethodInfo* il2cppPropertyInfo::get_getter() const noexcept {
+		int32_t off = (g_structOffsets && g_structOffsets->m_offPropGetter >= 0)
+			? g_structOffsets->m_offPropGetter : 0x10;
+		return *reinterpret_cast<il2cppMethodInfo* const*>(
+			reinterpret_cast<const char*>(this) + off);
+	}
+
+	inline il2cppMethodInfo* il2cppPropertyInfo::get_setter() const noexcept {
+		int32_t off = (g_structOffsets && g_structOffsets->m_offPropSetter >= 0)
+			? g_structOffsets->m_offPropSetter : 0x18;
+		return *reinterpret_cast<il2cppMethodInfo* const*>(
+			reinterpret_cast<const char*>(this) + off);
+	}
 
 } // namespace IL2CPP
