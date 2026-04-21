@@ -144,6 +144,7 @@ namespace IL2CPP::Module {
 #include "Unity/UnityWebRequest.hpp"
 #include "Unity/PlayerPrefs.hpp"
 
+#include "Unity/UnityCallbacks.hpp"
 #include "Unity/SceneManager.hpp"
 
 #include "System/String.hpp"
