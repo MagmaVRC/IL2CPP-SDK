@@ -29,7 +29,7 @@ namespace IL2CPP::Module::Unity {
             return MethodHandler::invoke<bool>(m, raw());
         }
 
-        /// Start a coroutine by method name.
+        /// <summary>Start a coroutine by method name.</summary>
         [[nodiscard]] ManagedObject StartCoroutine(std::string_view method) {
             static auto m = MethodHandler::resolve("UnityEngine.MonoBehaviour", "StartCoroutine", 1);
             auto* exports = GetExports();

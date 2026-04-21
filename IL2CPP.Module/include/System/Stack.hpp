@@ -23,7 +23,7 @@ namespace IL2CPP::Module::System {
             return Array<T>{ read<void*>(kArrayOffset) };
         }
 
-        /// Peek at the top element without popping.
+        /// <summary>Peek at the top element without popping.</summary>
         [[nodiscard]] T* peek() {
             if (empty()) return nullptr;
             auto arr = internal_array();
@@ -31,7 +31,7 @@ namespace IL2CPP::Module::System {
             return arr.try_at(count() - 1);
         }
 
-        /// Convert to std::vector (top of stack is last element).
+        /// <summary>Convert to std::vector (top of stack is last element).</summary>
         [[nodiscard]] std::vector<T> to_vector() const {
             if (empty()) return {};
             auto arr = internal_array();
@@ -47,7 +47,7 @@ namespace IL2CPP::Module::System {
             return result;
         }
 
-        /// Iterate all elements from bottom to top.
+        /// <summary>Iterate all elements from bottom to top.</summary>
         template<typename Func>
         void for_each(Func f) const {
             if (empty()) return;

@@ -3,6 +3,7 @@
 #include <SharedMemory.Common/shared_memory.hpp>
 #include <windows.h>
 #include <atomic>
+#include <cstring>
 
 namespace IL2CPP::Module {
 
@@ -17,6 +18,101 @@ namespace IL2CPP::Module {
         ConnectionState g_conn;
 
         inline auto* E() { return g_conn.exports; }
+
+        static il2cppClass* SafeGetParent(il2cppClass* klass) noexcept {
+            if (!klass || !E()) return nullptr;
+            if (E()->m_offClassParent >= 0) {
+                __try {
+                    auto* parent = *reinterpret_cast<il2cppClass**>(
+                        reinterpret_cast<char*>(klass) + E()->m_offClassParent);
+                    return parent;
+                } __except(1) {
+                    return nullptr;
+                }
+            }
+            if (!E()->m_classGetParent) return nullptr;
+            __try {
+                return reinterpret_cast<il2cppClass*(IL2CPP_CALLTYPE)(void*)>(
+                    E()->m_classGetParent)(klass);
+            } __except(1) {
+                return nullptr;
+            }
+        }
+
+        static bool SafeCStringEquals(const char* lhs, const char* rhs) noexcept {
+            if (!lhs || !rhs) return false;
+            __try {
+                return std::strcmp(lhs, rhs) == 0;
+            } __except(1) {
+                return false;
+            }
+        }
+
+        static il2cppPropertyInfo* FindPropertyByIteration(
+            il2cppClass* klass, const char* name) noexcept
+        {
+            if (!E() || !E()->m_classGetProperties || !klass || !name) return nullptr;
+
+            auto* current = klass;
+            while (current) {
+                void* iter = nullptr;
+                __try {
+                    while (auto* prop = reinterpret_cast<il2cppPropertyInfo*(IL2CPP_CALLTYPE)(void*, void**)>(
+                        E()->m_classGetProperties)(current, &iter))
+                    {
+                        if (!IsValid(prop)) continue;
+                        const char* propName = prop->get_name();
+                        if (!propName || !*propName) continue;
+                        if (SafeCStringEquals(propName, name))
+                            return prop;
+                    }
+                } __except(1) {
+                    // Skip this class level and continue walking parents.
+                }
+
+                current = SafeGetParent(current);
+            }
+
+            return nullptr;
+        }
+
+        static bool NeedsFieldMaterialization(il2cppClass* klass) noexcept {
+            if (!klass || !E()) return false;
+            if (E()->m_offClassFields < 0 || E()->m_offClassFieldCount < 0) return false;
+
+            __try {
+                auto* klassBytes = reinterpret_cast<const char*>(klass);
+                uintptr_t fieldsPtr = *reinterpret_cast<const uintptr_t*>(
+                    klassBytes + E()->m_offClassFields);
+                uint32_t countDword = *reinterpret_cast<const uint32_t*>(
+                    klassBytes + E()->m_offClassFieldCount);
+                uint16_t fieldCount = static_cast<uint16_t>(countDword & 0xFFFF);
+                return fieldCount != 0 && fieldsPtr == 0;
+            } __except(1) {
+                return false;
+            }
+        }
+
+        static bool TryRuntimeClassInit(void* rawFn, void* klass) noexcept {
+            if (!rawFn || !klass) return false;
+            using InitFn = void(IL2CPP_CALLTYPE)(void*);
+            __try {
+                reinterpret_cast<InitFn>(rawFn)(klass);
+                return true;
+            } __except(1) {
+                return false;
+            }
+        }
+
+        static void EnsureClassInitializedForFields(il2cppClass* klass) noexcept {
+            if (!NeedsFieldMaterialization(klass)) return;
+
+            static void* initFn = reinterpret_cast<void*>(
+                ResolveCall("il2cpp_runtime_class_init"));
+            if (!initFn) return;
+
+            TryRuntimeClassInit(initFn, klass);
+        }
 
     }
 
@@ -116,6 +212,7 @@ namespace IL2CPP::Module {
 
     il2cppFieldInfo* GetFields(il2cppClass* klass, void** iter) {
         if (!E() || !E()->m_classGetFields || !klass) return nullptr;
+        EnsureClassInitializedForFields(klass);
         return reinterpret_cast<il2cppFieldInfo*(IL2CPP_CALLTYPE)(void*, void**)>(
             E()->m_classGetFields)(klass, iter);
     }
@@ -129,7 +226,9 @@ namespace IL2CPP::Module {
     int GetFieldOffset(il2cppClass* klass, const char* fieldName) {
         auto* field = GetFieldByName(klass, fieldName);
         if (!field) return -1;
-        int32_t off = (E() && E()->m_offFieldOffset >= 0) ? E()->m_offFieldOffset : 0x18;
+        // Stride-0x30 (1832): offset@+0x20. Stride-0x20 (Unity 2022 canonical): offset@+0x18.
+        // Default to 0x20 to match Reflection.cpp Field::offset() fallback.
+        int32_t off = (E() && E()->m_offFieldOffset >= 0) ? E()->m_offFieldOffset : 0x20;
         return *reinterpret_cast<int32_t*>(reinterpret_cast<char*>(field) + off);
     }
 
@@ -202,9 +301,8 @@ namespace IL2CPP::Module {
     }
 
     il2cppPropertyInfo* GetPropertyByName(il2cppClass* klass, const char* name) {
-        if (!E() || !E()->m_classGetPropertyFromName || !klass || !name) return nullptr;
-        return reinterpret_cast<il2cppPropertyInfo*(IL2CPP_CALLTYPE)(void*, const char*)>(
-            E()->m_classGetPropertyFromName)(klass, name);
+        if (!E() || !klass || !name) return nullptr;
+        return FindPropertyByIteration(klass, name);
     }
 
     il2cppObject* NewObject(il2cppClass* klass) {

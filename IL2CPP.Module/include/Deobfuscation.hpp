@@ -46,28 +46,28 @@ namespace IL2CPP::Module {
                 e->m_helperGetStableNameByShort)(shortName);
         }
 
-        /// Convenience: get the stable name by short name as a std::string (empty if not found).
+        /// <summary>Convenience: get the stable name by short name as a std::string (empty if not found).</summary>
         [[nodiscard]] static std::string GetStableNameByShortStr(std::string_view shortName) {
             std::string s(shortName);
             const char* result = GetStableNameByShort(s.c_str());
             return result ? result : std::string{};
         }
 
-        /// Convenience: get the stable name as a std::string.
+        /// <summary>Convenience: get the stable name as a std::string.</summary>
         [[nodiscard]] static std::string GetStableNameStr(std::string_view obfuscated) {
             std::string obf(obfuscated);
             const char* result = GetStableName(obf.c_str());
             return result ? result : std::string(obfuscated);
         }
 
-        /// Convenience: get the original name as a std::string.
+        /// <summary>Convenience: get the original name as a std::string.</summary>
         [[nodiscard]] static std::string GetOriginalNameStr(std::string_view stableName) {
             std::string stable(stableName);
             const char* result = GetOriginalName(stable.c_str());
             return result ? result : std::string(stableName);
         }
 
-        /// Check if a name appears to be obfuscated (contains non-ASCII / non-printable chars).
+        /// <summary>Check if a name appears to be obfuscated (contains non-ASCII / non-printable chars).</summary>
         [[nodiscard]] static bool IsObfuscated(const char* name) noexcept {
             if (!name || !*name) return false;
             for (const unsigned char* p = reinterpret_cast<const unsigned char*>(name); *p; ++p) {

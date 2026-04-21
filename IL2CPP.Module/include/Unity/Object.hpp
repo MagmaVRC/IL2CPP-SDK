@@ -18,14 +18,14 @@ namespace IL2CPP::Module::Unity {
     public:
         using ManagedObject::ManagedObject;
 
-        /// Check if the Unity native pointer is still valid.
+        /// <summary>Check if the Unity native pointer is still valid.</summary>
         [[nodiscard]] bool IsValid() const noexcept {
             if (!valid()) return false;
             void* cachedPtr = read<void*>(0x10);
             return IsValidPointer(cachedPtr);
         }
 
-        /// Destroy this object.
+        /// <summary>Destroy this object.</summary>
         void Destroy(float delay = 0.f) {
             static auto m = MethodHandler::resolve("UnityEngine.Object", "Destroy", 2);
             void* self = raw();
@@ -33,7 +33,7 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, nullptr, params);
         }
 
-        /// Destroy this object immediately (use with caution).
+        /// <summary>Destroy this object immediately (use with caution).</summary>
         void DestroyImmediate() {
             static auto m = MethodHandler::resolve("UnityEngine.Object", "DestroyImmediate", 1);
             void* self = raw();
@@ -41,7 +41,7 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, nullptr, params);
         }
 
-        /// Get the object name.
+        /// <summary>Get the object name.</summary>
         [[nodiscard]] std::string GetName() const {
             static auto m = MethodHandler::resolve("UnityEngine.Object", "get_name", 0);
             void* str = MethodHandler::invoke<void*>(m, raw());
@@ -49,7 +49,7 @@ namespace IL2CPP::Module::Unity {
             return System::String{ str }.to_string();
         }
 
-        /// Set the object name.
+        /// <summary>Set the object name.</summary>
         void SetName(std::string_view name) {
             static auto m = MethodHandler::resolve("UnityEngine.Object", "set_name", 1);
             auto* exports = GetExports();
@@ -60,7 +60,7 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        /// Instantiate (clone) this object.
+        /// <summary>Instantiate (clone) this object.</summary>
         [[nodiscard]] Object Instantiate() const {
             static auto m = MethodHandler::resolve("UnityEngine.Object", "Internal_CloneSingle", 1);
             void* self = raw();
@@ -68,7 +68,7 @@ namespace IL2CPP::Module::Unity {
             return Object{ MethodHandler::invoke<void*>(m, nullptr, params) };
         }
 
-        /// Mark this object as DontDestroyOnLoad.
+        /// <summary>Mark this object as DontDestroyOnLoad.</summary>
         void DontDestroyOnLoad() {
             static auto m = MethodHandler::resolve("UnityEngine.Object", "DontDestroyOnLoad", 1);
             void* self = raw();
@@ -76,7 +76,7 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, nullptr, params);
         }
 
-        /// Static: Destroy an object by handle.
+        /// <summary>Static: Destroy an object by handle.</summary>
         static void Destroy(Object obj, float delay = 0.f) {
             static auto m = MethodHandler::resolve("UnityEngine.Object", "Destroy", 2);
             void* o = obj.raw();
@@ -116,7 +116,7 @@ namespace IL2CPP::Module::Unity {
         }
 
 
-        /// Helper: convert raw IL2CPP array to std::vector of wrapped objects.
+        /// <summary>Helper: convert raw IL2CPP array to std::vector of wrapped objects.</summary>
         template<typename T>
         static std::vector<T> FromArray(void* rawArray) {
             if (!rawArray) return {};

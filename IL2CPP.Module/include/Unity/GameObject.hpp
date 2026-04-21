@@ -15,7 +15,7 @@ namespace IL2CPP::Module::Unity {
     public:
         using Object::Object;
 
-        /// Static: Find a GameObject by name.
+        /// <summary>Static: Find a GameObject by name.</summary>
         [[nodiscard]] static GameObject Find(std::string_view name) {
             static auto m = MethodHandler::resolve("UnityEngine.GameObject", "Find", 1);
             auto* exports = GetExports();
@@ -26,7 +26,7 @@ namespace IL2CPP::Module::Unity {
             return GameObject{ MethodHandler::invoke<void*>(m, nullptr, params) };
         }
 
-        /// Static: Find a GameObject by tag.
+        /// <summary>Static: Find a GameObject by tag.</summary>
         [[nodiscard]] static GameObject FindWithTag(std::string_view tag) {
             static auto m = MethodHandler::resolve("UnityEngine.GameObject", "FindWithTag", 1);
             auto* exports = GetExports();
@@ -37,7 +37,7 @@ namespace IL2CPP::Module::Unity {
             return GameObject{ MethodHandler::invoke<void*>(m, nullptr, params) };
         }
 
-        /// Static: Find all GameObjects with the specified tag.
+        /// <summary>Static: Find all GameObjects with the specified tag.</summary>
         [[nodiscard]] static std::vector<GameObject> FindGameObjectsWithTag(std::string_view tag) {
             static auto m = MethodHandler::resolve("UnityEngine.GameObject", "FindGameObjectsWithTag", 1);
             auto* exports = GetExports();
@@ -49,7 +49,7 @@ namespace IL2CPP::Module::Unity {
             return Object::FromArray<GameObject>(array);
         }
 
-        /// Static: Create a primitive GameObject (Sphere, Cube, etc.).
+        /// <summary>Static: Create a primitive GameObject (Sphere, Cube, etc.).</summary>
         [[nodiscard]] static GameObject CreatePrimitive(PrimitiveType type) {
             static auto m = MethodHandler::resolve("UnityEngine.GameObject", "CreatePrimitive", 1);
             int val = static_cast<int>(type);
@@ -57,11 +57,11 @@ namespace IL2CPP::Module::Unity {
             return GameObject{ MethodHandler::invoke<void*>(m, nullptr, params) };
         }
 
-        /// Get the Transform component.
+        /// <summary>Get the Transform component.</summary>
         [[nodiscard]] Transform GetTransform() const;
 
 
-        /// Get a component by System.Type.
+        /// <summary>Get a component by System.Type.</summary>
         [[nodiscard]] Component GetComponent(Il2CppSystemType* systemType) const {
             static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponent", 1);
             if (!systemType) return Component{};
@@ -69,7 +69,7 @@ namespace IL2CPP::Module::Unity {
             return Component{ MethodHandler::invoke<void*>(m, raw(), params) };
         }
 
-        /// Get a component by Class.
+        /// <summary>Get a component by Class.</summary>
         [[nodiscard]] Component GetComponent(Class klass) const {
             if (!klass) return Component{};
             Type t = klass.get_type();
@@ -77,14 +77,14 @@ namespace IL2CPP::Module::Unity {
             return GetComponent(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()));
         }
 
-        /// Get a component by name.
+        /// <summary>Get a component by name.</summary>
         [[nodiscard]] Component GetComponentByName(std::string_view name) const {
             Class klass = Class::find(name);
             if (!klass) return Component{};
             return GetComponent(klass);
         }
 
-        /// Get a component in children.
+        /// <summary>Get a component in children.</summary>
         [[nodiscard]] Component GetComponentInChildren(Il2CppSystemType* systemType, bool includeInactive = false) const {
             static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponentInChildren", 2);
             if (!systemType) return Component{};
@@ -92,7 +92,7 @@ namespace IL2CPP::Module::Unity {
             return Component{ MethodHandler::invoke<void*>(m, raw(), params) };
         }
 
-        /// Get a component in children by Class.
+        /// <summary>Get a component in children by Class.</summary>
         [[nodiscard]] Component GetComponentInChildren(Class klass, bool includeInactive = false) const {
             if (!klass) return Component{};
             Type t = klass.get_type();
@@ -100,7 +100,7 @@ namespace IL2CPP::Module::Unity {
             return GetComponentInChildren(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()), includeInactive);
         }
 
-        /// Get a component in parent.
+        /// <summary>Get a component in parent.</summary>
         [[nodiscard]] Component GetComponentInParent(Il2CppSystemType* systemType, bool includeInactive = false) const {
             static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponentInParent", 2);
             if (!systemType) return Component{};
@@ -108,7 +108,7 @@ namespace IL2CPP::Module::Unity {
             return Component{ MethodHandler::invoke<void*>(m, raw(), params) };
         }
 
-        /// Get a component in parent by Class.
+        /// <summary>Get a component in parent by Class.</summary>
         [[nodiscard]] Component GetComponentInParent(Class klass, bool includeInactive = false) const {
             if (!klass) return Component{};
             Type t = klass.get_type();
@@ -116,7 +116,7 @@ namespace IL2CPP::Module::Unity {
             return GetComponentInParent(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()), includeInactive);
         }
 
-        /// Add a component.
+        /// <summary>Add a component.</summary>
         [[nodiscard]] Component AddComponent(Il2CppSystemType* systemType) {
             static auto m = MethodHandler::resolve("UnityEngine.GameObject", "AddComponent", 1);
             if (!systemType) return Component{};
@@ -124,7 +124,7 @@ namespace IL2CPP::Module::Unity {
             return Component{ MethodHandler::invoke<void*>(m, raw(), params) };
         }
 
-        /// Add a component by Class.
+        /// <summary>Add a component by Class.</summary>
         [[nodiscard]] Component AddComponent(Class klass) {
             if (!klass) return Component{};
             Type t = klass.get_type();
@@ -133,7 +133,7 @@ namespace IL2CPP::Module::Unity {
         }
 
 
-        /// Get all components of the specified type.
+        /// <summary>Get all components of the specified type.</summary>
         [[nodiscard]] std::vector<Component> GetComponents(Il2CppSystemType* systemType) const {
             static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponents", 1);
             if (!systemType) return {};
@@ -142,7 +142,7 @@ namespace IL2CPP::Module::Unity {
             return Object::FromArray<Component>(array);
         }
 
-        /// Get all components of the specified class.
+        /// <summary>Get all components of the specified class.</summary>
         [[nodiscard]] std::vector<Component> GetComponents(Class klass) const {
             if (!klass) return {};
             Type t = klass.get_type();
@@ -150,14 +150,14 @@ namespace IL2CPP::Module::Unity {
             return GetComponents(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()));
         }
 
-        /// Get all components of the specified class by name.
+        /// <summary>Get all components of the specified class by name.</summary>
         [[nodiscard]] std::vector<Component> GetComponents(std::string_view className) const {
             Class klass = Class::find(className);
             if (!klass) return {};
             return GetComponents(klass);
         }
 
-        /// Get all components and return as std::vector<T>.
+        /// <summary>Get all components and return as std::vector&lt;T&gt;.</summary>
         template<typename T> requires std::is_base_of_v<ManagedObject, T>
         [[nodiscard]] std::vector<T> GetComponentsAs(Il2CppSystemType* systemType) const {
             static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponents", 1);
@@ -175,7 +175,7 @@ namespace IL2CPP::Module::Unity {
             return GetComponentsAs<T>(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()));
         }
 
-        /// Get all components of the specified type in children.
+        /// <summary>Get all components of the specified type in children.</summary>
         [[nodiscard]] std::vector<Component> GetComponentsInChildren(Il2CppSystemType* systemType, bool includeInactive = false) const {
             static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponentsInChildren", 2);
             if (!systemType) return {};
@@ -184,7 +184,7 @@ namespace IL2CPP::Module::Unity {
             return Object::FromArray<Component>(array);
         }
 
-        /// Get all components of the specified class in children.
+        /// <summary>Get all components of the specified class in children.</summary>
         [[nodiscard]] std::vector<Component> GetComponentsInChildren(Class klass, bool includeInactive = false) const {
             if (!klass) return {};
             Type t = klass.get_type();
@@ -192,7 +192,7 @@ namespace IL2CPP::Module::Unity {
             return GetComponentsInChildren(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()), includeInactive);
         }
 
-        /// Get all components in children and return as std::vector<T>.
+        /// <summary>Get all components in children and return as std::vector&lt;T&gt;.</summary>
         template<typename T> requires std::is_base_of_v<ManagedObject, T>
         [[nodiscard]] std::vector<T> GetComponentsInChildrenAs(Il2CppSystemType* systemType, bool includeInactive = false) const {
             static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponentsInChildren", 2);
@@ -202,7 +202,7 @@ namespace IL2CPP::Module::Unity {
             return Object::FromArray<T>(array);
         }
 
-        /// Get all components of the specified type in parent.
+        /// <summary>Get all components of the specified type in parent.</summary>
         [[nodiscard]] std::vector<Component> GetComponentsInParent(Il2CppSystemType* systemType, bool includeInactive = false) const {
             static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponentsInParent", 2);
             if (!systemType) return {};
@@ -211,7 +211,7 @@ namespace IL2CPP::Module::Unity {
             return Object::FromArray<Component>(array);
         }
 
-        /// Get all components of the specified class in parent.
+        /// <summary>Get all components of the specified class in parent.</summary>
         [[nodiscard]] std::vector<Component> GetComponentsInParent(Class klass, bool includeInactive = false) const {
             if (!klass) return {};
             Type t = klass.get_type();
@@ -219,7 +219,7 @@ namespace IL2CPP::Module::Unity {
             return GetComponentsInParent(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()), includeInactive);
         }
 
-        /// Get all components in parent and return as std::vector<T>.
+        /// <summary>Get all components in parent and return as std::vector&lt;T&gt;.</summary>
         template<typename T> requires std::is_base_of_v<ManagedObject, T>
         [[nodiscard]] std::vector<T> GetComponentsInParentAs(Il2CppSystemType* systemType, bool includeInactive = false) const {
             static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponentsInParent", 2);
@@ -229,7 +229,7 @@ namespace IL2CPP::Module::Unity {
             return Object::FromArray<T>(array);
         }
 
-        /// Try to get a component of the specified type.
+        /// <summary>Try to get a component of the specified type.</summary>
         [[nodiscard]] bool TryGetComponent(Il2CppSystemType* systemType, Component& out) const {
             static auto m = MethodHandler::resolve("UnityEngine.GameObject", "TryGetComponent", 2);
             if (!systemType) return false;
@@ -243,7 +243,7 @@ namespace IL2CPP::Module::Unity {
             return false;
         }
 
-        /// Try to get a component of the specified class.
+        /// <summary>Try to get a component of the specified class.</summary>
         [[nodiscard]] bool TryGetComponent(Class klass, Component& out) const {
             if (!klass) return false;
             Type t = klass.get_type();

@@ -44,12 +44,12 @@ namespace IL2CPP::Module::System {
     public:
         using ManagedObject::ManagedObject;
 
-        /// Get the number of active entries.
+        /// <summary>Get the number of active entries.</summary>
         [[nodiscard]] int count() const { return raw_count() - free_count(); }
 
         [[nodiscard]] bool empty() const { return count() == 0; }
 
-        /// Try to get a value by key. Returns nullptr if not found.
+        /// <summary>Try to get a value by key. Returns nullptr if not found.</summary>
         [[nodiscard]] TValue* try_get_value(TKey key) {
             auto b = buckets();
             auto e = entries();
@@ -67,18 +67,18 @@ namespace IL2CPP::Module::System {
             return nullptr;
         }
 
-        /// Get a value by key, returns default if not found.
+        /// <summary>Get a value by key, returns default if not found.</summary>
         [[nodiscard]] TValue get_value(TKey key) {
             auto* v = try_get_value(key);
             return v ? *v : TValue{};
         }
 
-        /// Check if a key exists.
+        /// <summary>Check if a key exists.</summary>
         [[nodiscard]] bool contains_key(TKey key) {
             return try_get_value(key) != nullptr;
         }
 
-        /// Iterate all active entries.
+        /// <summary>Iterate all active entries.</summary>
         template<typename Func>
         void for_each(Func f) {
             auto e = entries();
@@ -94,7 +94,7 @@ namespace IL2CPP::Module::System {
             }
         }
 
-        /// Iterate all active entries (const).
+        /// <summary>Iterate all active entries (const).</summary>
         template<typename Func>
         void for_each(Func f) const {
             auto e = entries();

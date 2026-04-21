@@ -24,7 +24,7 @@ namespace IL2CPP::Module::System {
 
         [[nodiscard]] bool empty() const { return size() == 0; }
 
-        /// Get a pointer to the start of the data.
+        /// <summary>Get a pointer to the start of the data.</summary>
         [[nodiscard]] T* data() {
             if (!valid()) return nullptr;
             return reinterpret_cast<T*>(static_cast<char*>(raw()) + kValuesOffset);
@@ -35,16 +35,16 @@ namespace IL2CPP::Module::System {
             return reinterpret_cast<const T*>(static_cast<const char*>(raw()) + kValuesOffset);
         }
 
-        /// Access by index (unchecked).
+        /// <summary>Access by index (unchecked).</summary>
         [[nodiscard]] T& operator[](uintptr_t i) { return data()[i]; }
         [[nodiscard]] const T& operator[](uintptr_t i) const { return data()[i]; }
 
-        /// Safe access by index. Returns nullptr if out of bounds.
+        /// <summary>Safe access by index. Returns nullptr if out of bounds.</summary>
         [[nodiscard]] T* try_at(uintptr_t i) {
             return i < size() ? &data()[i] : nullptr;
         }
 
-        /// Get as std::span.
+        /// <summary>Get as std::span.</summary>
         [[nodiscard]] std::span<T> as_span() { return { data(), size() }; }
         [[nodiscard]] std::span<const T> as_span() const { return { data(), size() }; }
 
@@ -54,13 +54,13 @@ namespace IL2CPP::Module::System {
         [[nodiscard]] const T* begin() const { return data(); }
         [[nodiscard]] const T* end() const { return data() + size(); }
 
-        /// Convert to std::vector.
+        /// <summary>Convert to std::vector.</summary>
         [[nodiscard]] std::vector<T> to_vector() const {
             if (!valid()) return {};
             return { begin(), end() };
         }
 
-        /// Filter elements by predicate.
+        /// <summary>Filter elements by predicate.</summary>
         template<typename Pred>
         [[nodiscard]] std::vector<T> filter(Pred pred) const {
             std::vector<T> result;
@@ -69,7 +69,7 @@ namespace IL2CPP::Module::System {
             return result;
         }
 
-        /// Map elements via a function.
+        /// <summary>Map elements via a function.</summary>
         template<typename Func>
         [[nodiscard]] auto map(Func f) const -> std::vector<std::invoke_result_t<Func, const T&>> {
             using U = std::invoke_result_t<Func, const T&>;
@@ -79,19 +79,19 @@ namespace IL2CPP::Module::System {
             return result;
         }
 
-        /// ForEach.
+        /// <summary>ForEach.</summary>
         template<typename Func>
         void for_each(Func f) { std::ranges::for_each(*this, f); }
 
-        /// Check if any element matches.
+        /// <summary>Check if any element matches.</summary>
         template<typename Pred>
         [[nodiscard]] bool any(Pred pred) const { return std::ranges::any_of(*this, pred); }
 
-        /// Check if all elements match.
+        /// <summary>Check if all elements match.</summary>
         template<typename Pred>
         [[nodiscard]] bool all(Pred pred) const { return std::ranges::all_of(*this, pred); }
 
-        /// Check if contains a value.
+        /// <summary>Check if contains a value.</summary>
         [[nodiscard]] bool contains(const T& value) const { return std::ranges::find(*this, value) != end(); }
     };
 

@@ -11,26 +11,26 @@ namespace IL2CPP::Module::System {
     public:
         using ManagedObject::ManagedObject;
 
-        /// Get the string length (char count).
+        /// <summary>Get the string length (char count).</summary>
         [[nodiscard]] int length() const {
             if (!valid()) return 0;
             return read<int>(0x10);
         }
 
-        /// Get a pointer to the internal wide character buffer.
+        /// <summary>Get a pointer to the internal wide character buffer.</summary>
         [[nodiscard]] const wchar_t* chars() const {
             if (!valid()) return nullptr;
             return ptr_at<const wchar_t>(0x14);
         }
 
-        /// Convert to std::wstring.
+        /// <summary>Convert to std::wstring.</summary>
         [[nodiscard]] std::wstring to_wstring() const {
             int len = length();
             if (len <= 0 || !chars()) return L"";
             return std::wstring(chars(), len);
         }
 
-        /// Convert to std::string (UTF-8).
+        /// <summary>Convert to std::string (UTF-8).</summary>
         [[nodiscard]] std::string to_string() const {
             auto ws = to_wstring();
             if (ws.empty()) return {};
@@ -41,23 +41,23 @@ namespace IL2CPP::Module::System {
             return out;
         }
 
-        /// Implicit conversion to std::string.
+        /// <summary>Implicit conversion to std::string.</summary>
         [[nodiscard]] operator std::string() const { return to_string(); }
 
-        /// Clear the string content in-place.
+        /// <summary>Clear the string content in-place.</summary>
         void clear() {
             if (!valid()) return;
             write<int>(0x10, 0);
         }
 
-        /// Create a new managed String from a C string.
+        /// <summary>Create a new managed String from a C string.</summary>
         [[nodiscard]] static String create(const char* str) {
             auto* exports = GetExports();
             if (!exports || !exports->m_stringNew || !str) return String{};
             return String{ reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(exports->m_stringNew)(str) };
         }
 
-        /// Create a new managed String from a std::string_view.
+        /// <summary>Create a new managed String from a std::string_view.</summary>
         [[nodiscard]] static String create(std::string_view str) {
             return create(std::string(str).c_str());
         }

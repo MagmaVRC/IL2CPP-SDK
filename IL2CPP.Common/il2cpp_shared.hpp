@@ -63,8 +63,6 @@ namespace IL2CPP {
         void*       m_classFromSystemType;
         void*       m_classGetType;
         void*       m_classGetParent;
-        void*       m_classGetDeclaringType;
-        void*       m_classGetElementClass;
         void*       m_classGetFields;
         void*       m_classGetFieldFromName;
         void*       m_classGetMethods;
@@ -72,16 +70,11 @@ namespace IL2CPP {
         void*       m_classGetProperties;
         void*       m_classGetPropertyFromName;
         void*       m_classGetEvents;
-        void*       m_classGetNestedTypes;
-        void*       m_classGetInterfaces;
         void*       m_classEnumBasetype;
         void*       m_classIsGeneric;
         void*       m_classIsSubclassOf;
         void*       m_classIsEnum;
-        void*       m_classHasAttribute;
         void*       m_classGetStaticFieldData;
-        void*       m_classGetBitmap;
-        void*       m_classGetBitmapSize;
 
         void*       m_imageGetClassCount;
         void*       m_imageGetClass;
@@ -98,14 +91,10 @@ namespace IL2CPP {
         void*       m_fieldSetValue;
         void*       m_fieldStaticGetValue;
         void*       m_fieldStaticSetValue;
-        void*       m_fieldHasAttribute;
 
-        void*       m_methodGetObject;
         void*       m_methodGetParam;
         void*       m_methodGetParamName;
         void*       m_methodGetFlags;
-        void*       m_methodHasAttribute;
-        void*       m_methodGetName;
 
         void*       m_objectNew;
         void*       m_valueBox;
@@ -115,21 +104,12 @@ namespace IL2CPP {
 
         void*       m_stringNew;
 
-        void*       m_arrayClassGet;
         void*       m_arrayNew;
-        void*       m_arrayNewSpecific;
-        void*       m_arrayNewFull;
 
         void*       m_alloc;
         void*       m_free;
 
         void*       m_gcCollect;
-        void*       m_gcCollectALittle;
-
-        // Field accessor function pointers (populated by fingerprint tier)
-        void*       m_fieldGetOffset    = nullptr;  // il2cpp_field_get_offset(FieldInfo*) → int
-        void*       m_fieldGetName      = nullptr;  // il2cpp_field_get_name(FieldInfo*) → const char*
-        void*       m_fieldGetParent    = nullptr;  // il2cpp_field_get_parent(FieldInfo*) → Il2CppClass*
 
         void*       m_helperFindClass;
         void*       m_helperResolveCall;
@@ -176,20 +156,38 @@ namespace IL2CPP {
         int32_t     m_offClassFlags     = -1;   // class → uint32_t flags
         int32_t     m_offClassParent    = -1;   // class → il2cppClass* parent
         int32_t     m_offClassImage     = -1;   // class → il2cppImage*
+        int32_t     m_offClassFields     = -1;  // class → FieldInfo* array (klass+0x98 in 1832)
+        int32_t     m_offClassFieldCount = -1;  // class → uint16_t field_count (runtime-discovered)
+        int32_t     m_offClassMethods     = -1; // class → MethodInfo** array (runtime-discovered)
+        int32_t     m_offClassMethodCount = -1; // class → uint16_t method_count (runtime-discovered)
+
+        // Assembly offsets
+        int32_t     m_offAsmName         = -1;  // assembly → const char* name
+
+        // Image offsets
+        int32_t     m_offImgName         = -1;  // image → const char* name
 
         // Field struct offsets (populated by DiscoverFieldMethodOffsets or fingerprint decoding)
-        int32_t     m_offFieldType      = -1;   // field → Il2CppType*
-        int32_t     m_offFieldOffset    = -1;   // field → int32_t offset
-        int32_t     m_offFieldName      = -1;   // field → const char* name
-        int32_t     m_offFieldParent    = -1;   // field → Il2CppClass* parent
+        int32_t     m_offFieldType         = -1; // field → Il2CppType*
+        int32_t     m_offFieldOffset       = -1; // field → int32_t offset
+        int32_t     m_offFieldName         = -1; // field → const char* name
+        int32_t     m_offFieldParent       = -1; // field → Il2CppClass* parent
+        int32_t     m_offFieldToken        = -1; // field → uint32_t metadata token (1830+)
+        int32_t     m_offFieldTypeInflated = -1; // field → Il2CppType* generic-inflated (1832+)
+        int32_t     m_fieldInfoStride      = -1; // FieldInfo sizeof (0x20 2022 / 0x28 1830 / 0x30 1832)
 
         // Method struct offsets (populated by DiscoverFieldMethodOffsets)
-        int32_t     m_offMethodPointer  = -1;   // method → void* native code pointer
-        int32_t     m_offMethodVirtual  = -1;   // method → void* virtual/invoker pointer
-        int32_t     m_offMethodName     = -1;   // method → const char* name
-        int32_t     m_offMethodRetType  = -1;   // method → Il2CppType* return_type
-        int32_t     m_offMethodDeclType = -1;   // method → Il2CppClass* declaring_type
-        int32_t     m_offMethodArgCount = -1;   // method → uint8_t arg count
+        int32_t     m_offMethodPointer    = -1; // method → void* native code pointer
+        int32_t     m_offMethodVirtual    = -1; // method → void* virtual/invoker pointer
+        int32_t     m_offMethodName       = -1; // method → const char* name
+        int32_t     m_offMethodRetType    = -1; // method → Il2CppType* return_type
+        int32_t     m_offMethodDeclType   = -1; // method → Il2CppClass* declaring_type
+        int32_t     m_offMethodArgCount   = -1; // method → uint8_t arg count (param count)
+        int32_t     m_offMethodFlags      = -1; // method → uint16_t MethodAttributes flags
+        int32_t     m_offMethodSlot       = -1; // method → uint16_t vtable slot (0xFFFF if non-virtual)
+        int32_t     m_offMethodToken      = -1; // method → uint32_t or uint64_t metadata token
+        int32_t     m_offMethodParameters = -1; // method → void* parameters array
+        int32_t     m_methodInfoStride    = -1; // MethodInfo sizeof (0x50 1830 / 0x60 1832)
 
         // Property struct offsets (populated by DiscoverPropertyOffsets)
         int32_t     m_offPropName       = -1;   // property → const char* name
@@ -197,6 +195,6 @@ namespace IL2CPP {
         int32_t     m_offPropSetter     = -1;   // property → il2cppMethodInfo* set
     };
 
-    constexpr uint32_t exports_version = 12;  // bumped for method code pointer + virtual pointer offsets
+    constexpr uint32_t exports_version = 17;  // dropped has_attribute trio + 7 stale FP entries
 
 } // namespace IL2CPP

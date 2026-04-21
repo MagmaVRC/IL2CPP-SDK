@@ -29,7 +29,7 @@ namespace IL2CPP::Module::System {
     public:
         using ManagedObject::ManagedObject;
 
-        /// Get the number of active elements.
+        /// <summary>Get the number of active elements.</summary>
         [[nodiscard]] int count() const {
             if (!valid()) return 0;
             return read<int>(kCountOffset);
@@ -42,7 +42,7 @@ namespace IL2CPP::Module::System {
 
         [[nodiscard]] bool empty() const { return count() == 0; }
 
-        /// Check if the set contains a value (linear scan).
+        /// <summary>Check if the set contains a value (linear scan).</summary>
         [[nodiscard]] bool contains(const T& value) const {
             auto s = slots();
             if (!s) return false;
@@ -58,7 +58,7 @@ namespace IL2CPP::Module::System {
             return false;
         }
 
-        /// Iterate all active elements.
+        /// <summary>Iterate all active elements.</summary>
         template<typename Func>
         void for_each(Func f) {
             auto s = slots();
@@ -74,7 +74,7 @@ namespace IL2CPP::Module::System {
             }
         }
 
-        /// Iterate all active elements (const).
+        /// <summary>Iterate all active elements (const).</summary>
         template<typename Func>
         void for_each(Func f) const {
             auto s = slots();
@@ -90,7 +90,7 @@ namespace IL2CPP::Module::System {
             }
         }
 
-        /// Convert to std::vector.
+        /// <summary>Convert to std::vector.</summary>
         [[nodiscard]] std::vector<T> to_vector() const {
             std::vector<T> result;
             result.reserve(count());

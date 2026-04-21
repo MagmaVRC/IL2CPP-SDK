@@ -6,7 +6,19 @@
 namespace Bootstrap {
 
     constexpr uint32_t invalid_id = ~0u;
-    constexpr uint32_t vtable_version = 14;
+    constexpr uint32_t vtable_version = 15;
+
+    /// Menu lifecycle events fired by Bootstrap. Mods subscribe via
+    /// register_menu_event to run initialization once the menu layer is
+    /// safe to use (pages created, icons assigned, etc.). Late-registered
+    /// callbacks for already-fired events are invoked immediately.
+    enum class MenuEvent : uint32_t {
+        /// Fired once UNIxMenu has finished building AND the sprite cache
+        /// is populated — from this point qm_create_page / qm_set_page_icon
+        /// calls can use icons directly without falling through the pending
+        /// icon path.
+        Ready = 0,
+    };
 
     enum class UnityLogType : int { Error = 0, Assert, Warning, Log, Exception };
 
@@ -107,6 +119,10 @@ namespace Bootstrap {
     using fn_qm_navigate_to       = void(__cdecl*)(uint32_t page_id);
     using fn_qm_navigate_back     = void(__cdecl*)();
     using fn_qm_is_ready          = bool(__cdecl*)();
+
+    using fn_menu_event_callback  = void(__cdecl*)();
+    using fn_register_menu_event  = uint32_t(__cdecl*)(uint32_t module_id, MenuEvent event, fn_menu_event_callback cb);
+    using fn_unregister_menu_event = void(__cdecl*)(uint32_t module_id, uint32_t callback_id);
     using fn_qm_add_toggle        = uint32_t(__cdecl*)(uint32_t module_id, uint32_t page_id,
         char const* text, uint32_t text_len, bool default_state, fn_menu_toggle_callback callback,
         char const* config_key, uint32_t config_key_len);
@@ -542,6 +558,10 @@ namespace Bootstrap {
 
         fn_get_player_rank get_player_rank;
         fn_get_rank_color  get_rank_color;
+
+        /// Menu lifecycle events — appended for ABI compatibility.
+        fn_register_menu_event   register_menu_event;
+        fn_unregister_menu_event unregister_menu_event;
 
         uint32_t version;
         uint32_t _reserved = 0;

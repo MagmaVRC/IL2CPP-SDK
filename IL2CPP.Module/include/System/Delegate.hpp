@@ -164,7 +164,7 @@ namespace IL2CPP::Module::System {
             MethodHandler::invoke(m, raw());
         }
 
-        /// Directly call the underlying function pointer (faster than managed Invoke).
+        /// <summary>Directly call the underlying function pointer (faster than managed Invoke).</summary>
         void InvokeDirect() {
             if (!valid()) return;
             auto fn = reinterpret_cast<void(IL2CPP_CALLTYPE)(void*, void*)>(GetInvokeImpl());
@@ -232,7 +232,7 @@ namespace IL2CPP::Module::System {
     public:
         using Delegate::Delegate;
 
-        /// Signature: TResult(__fastcall*)(void* target, void* method)
+        /// <summary>Signature: TResult(__fastcall*)(void* target, void* method)</summary>
         TResult InvokeDirect() {
             if (!valid()) return TResult{};
             auto fn = reinterpret_cast<TResult(IL2CPP_CALLTYPE)(void*, void*)>(GetInvokeImpl());
@@ -253,7 +253,7 @@ namespace IL2CPP::Module::System {
     public:
         using Delegate::Delegate;
 
-        /// Signature: TResult(__fastcall*)(void* target, T arg, void* method)
+        /// <summary>Signature: TResult(__fastcall*)(void* target, T arg, void* method)</summary>
         TResult InvokeDirect(T arg) {
             if (!valid()) return TResult{};
             auto fn = reinterpret_cast<TResult(IL2CPP_CALLTYPE)(void*, T, void*)>(GetInvokeImpl());

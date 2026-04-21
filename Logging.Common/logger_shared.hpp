@@ -1,6 +1,30 @@
 #pragma once
 #include <cstdint>
 
+// UNIX_DEV_LOGS — compile-time toggle for developer-mode log call sites.
+// Intended for internal .Core modules only; mods and external consumers keep
+// calling lg.trace()/lg.debug() directly. When 0, UNIX_DEV_TRACE/UNIX_DEV_DEBUG
+// expand to ((void)0) so the call, its args, and any format strings are
+// compiled out entirely. Default: enabled in _DEBUG, stripped in release.
+// Override by defining UNIX_DEV_LOGS=0 or =1 in project preprocessor settings.
+#ifndef UNIX_DEV_LOGS
+#  ifdef _DEBUG
+#    define UNIX_DEV_LOGS 1
+#  else
+#    define UNIX_DEV_LOGS 0
+#  endif
+#endif
+
+#if UNIX_DEV_LOGS
+#  define UNIX_DEV_TRACE(lg, ...) (lg).trace(__VA_ARGS__)
+#  define UNIX_DEV_DEBUG(lg, ...) (lg).debug(__VA_ARGS__)
+#  define UNIX_DEV_LOG(expr)      (expr)
+#else
+#  define UNIX_DEV_TRACE(lg, ...) ((void)0)
+#  define UNIX_DEV_DEBUG(lg, ...) ((void)0)
+#  define UNIX_DEV_LOG(expr)      ((void)0)
+#endif
+
 namespace Logger {
 
     enum class Level : uint8_t {

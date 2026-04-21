@@ -9,6 +9,19 @@
 
 namespace IL2CPP::Module {
 
+    // Optional trace hook — Bootstrap sets this at startup to forward lines
+    // to its logger. When null, validate/apply run silently. Used to pinpoint
+    // which class kills ClassResolver::resolve — the last printed line is
+    // the class that crashed during field/method iteration.
+    using ResolverTraceFn = void(*)(const char* msg);
+    inline ResolverTraceFn g_resolverTrace = nullptr;
+
+    inline void SetResolverTrace(ResolverTraceFn fn) { g_resolverTrace = fn; }
+
+    inline void ResolverTrace(const char* msg) {
+        if (g_resolverTrace) g_resolverTrace(msg);
+    }
+
     class FieldQuery;
     class MethodQuery;
     class FieldCounter;
@@ -17,15 +30,138 @@ namespace IL2CPP::Module {
 
 
     namespace detail {
+        inline std::string_view ShortTypeName(std::string_view name) noexcept {
+            if (name.empty()) return name;
+            size_t pos = name.find_last_of(".+/");
+            return (pos == std::string_view::npos) ? name : name.substr(pos + 1);
+        }
+
+        inline bool TypeNameEquals(std::string_view lhs, std::string_view rhs) noexcept {
+            if (lhs.empty() || rhs.empty()) return false;
+            if (lhs == rhs) return true;
+            return ShortTypeName(lhs) == ShortTypeName(rhs);
+        }
+
+        inline bool FieldTypeNameMatches(Field field, Class fieldClass, std::string_view expected) {
+            if (expected.empty()) return true;
+
+            if (fieldClass) {
+                if (TypeNameEquals(fieldClass.name(), expected)) return true;
+                if (TypeNameEquals(fieldClass.raw_name(), expected)) return true;
+
+                std::string fullName = fieldClass.full_name();
+                if (TypeNameEquals(fullName, expected)) return true;
+
+                std::string rawFullName = fieldClass.raw_full_name();
+                if (TypeNameEquals(rawFullName, expected)) return true;
+            }
+
+            if (TypeNameEquals(field.type_name(), expected)) return true;
+            if (TypeNameEquals(field.raw_type_name(), expected)) return true;
+
+            Type fieldType = field.type();
+            if (fieldType) {
+                if (TypeNameEquals(fieldType.name(), expected)) return true;
+                if (TypeNameEquals(fieldType.raw_name(), expected)) return true;
+
+                std::string fullName = fieldType.full_name();
+                if (TypeNameEquals(fullName, expected)) return true;
+
+                std::string rawFullName = fieldType.raw_full_name();
+                if (TypeNameEquals(rawFullName, expected)) return true;
+            }
+
+            return false;
+        }
+
+        inline bool FieldMatchesTargetClass(Field field, Class fieldClass, Class targetClass) {
+            if (!targetClass) return false;
+            if (fieldClass && fieldClass.raw() == targetClass.raw()) return true;
+
+            if (FieldTypeNameMatches(field, fieldClass, targetClass.name())) return true;
+            if (FieldTypeNameMatches(field, fieldClass, targetClass.raw_name())) return true;
+
+            std::string fullName = targetClass.full_name();
+            if (!fullName.empty() && FieldTypeNameMatches(field, fieldClass, fullName)) return true;
+
+            std::string rawFullName = targetClass.raw_full_name();
+            if (!rawFullName.empty() && FieldTypeNameMatches(field, fieldClass, rawFullName)) return true;
+
+            return false;
+        }
+
+        inline bool FieldMatchesSelfType(Field field, Class fieldClass, Class klass) {
+            if (!klass) return false;
+            if (fieldClass && fieldClass.raw() == klass.raw()) return true;
+
+            if (FieldTypeNameMatches(field, fieldClass, klass.name())) return true;
+            if (FieldTypeNameMatches(field, fieldClass, klass.raw_name())) return true;
+
+            std::string fullName = klass.full_name();
+            if (!fullName.empty() && FieldTypeNameMatches(field, fieldClass, fullName)) return true;
+
+            std::string rawFullName = klass.raw_full_name();
+            if (!rawFullName.empty() && FieldTypeNameMatches(field, fieldClass, rawFullName)) return true;
+
+            return false;
+        }
+
+        // SEH-protected helper call. Factored into noexcept function so it can
+        // use __try even when callers have C++ objects needing unwinding.
+        inline void* SafeCallClassFromType(void* rawFn, void* type) noexcept {
+            using Fn = void*(IL2CPP_CALLTYPE)(void*);
+            __try {
+                return reinterpret_cast<Fn>(rawFn)(type);
+            } __except(1) {
+                return nullptr;
+            }
+        }
+
+        // Structural probe — verifies a pointer looks like a real Il2CppType
+        // before handing it to m_helperClassFromType. The helper validates its
+        // input and __fastfail's on garbage (bypassing our SEH); we must
+        // reject bogus pointers BEFORE the call.
+        //
+        // Il2CppType layout (canonical):
+        //   +0x00  data ptr (or TypeIndex union, readable)
+        //   +0x08  attrs (u16)  — sane values have high bits zero
+        //   +0x0A  type enum (u8) — 0x01..0x50 (TYPE_VOID..TYPE_PINNED)
+        inline bool LooksLikeIl2CppType(void* ptr) noexcept {
+            if (!ptr) return false;
+            auto p = reinterpret_cast<uintptr_t>(ptr);
+            if (p < 0x10000 || p >= 0x7FFFFFFFFFFFull) return false;
+            uint8_t typeEnum = 0;
+            uint16_t attrs = 0;
+            __try {
+                // Read type-enum byte at +0x0A
+                typeEnum = *reinterpret_cast<const uint8_t*>(
+                    static_cast<const char*>(ptr) + 0x0A);
+                // Read attrs u16 at +0x08
+                attrs = *reinterpret_cast<const uint16_t*>(
+                    static_cast<const char*>(ptr) + 0x08);
+            } __except(1) {
+                return false;
+            }
+            if (typeEnum == 0 || typeEnum > 0x50) return false;
+            // Attrs top 8 bits should be zero (it's a u16 field; the upper
+            // dword at +0x08..+0x0B contains attrs u16 + type u8 + byref/pinned
+            // flag byte). If the value looks like a pointer (high bits set),
+            // it's not a valid Il2CppType header.
+            if (attrs >= 0x8000) return false;
+            return true;
+        }
+
         inline Class ClassFromFieldType(Field field) {
             if (!field) return Class{};
             Type t = field.type();
             if (!t) return Class{};
+            // Prevalidate before calling helper — the runtime __fastfails on
+            // bad type structs, bypassing any SEH we could wrap around the
+            // call. Reject garbage up front.
+            if (!LooksLikeIl2CppType(t.raw())) return Class{};
             auto* e = GetExports();
             if (!e || !e->m_helperClassFromType) return Class{};
-            void* klass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*)>(
-                e->m_helperClassFromType)(t.raw());
-            return Class{ klass };
+            return Class{ SafeCallClassFromType(e->m_helperClassFromType, t.raw()) };
         }
 
         inline Class ClassFromMethodReturnType(Method method) {
@@ -51,12 +187,27 @@ namespace IL2CPP::Module {
             return Class{ klass };
         }
 
+        // SEH-protected attrs read — some obfuscated classes have garbage
+        // type pointers; accessing type+0x08 on them AVs. Factored to a
+        // noexcept helper so __try can be used (validate() has C++ objects
+        // that would otherwise block SEH).
+        inline uint16_t SafeReadTypeAttrs(const void* typePtr) noexcept {
+            if (!typePtr) return 0;
+            auto p = reinterpret_cast<uintptr_t>(typePtr);
+            if (p < 0x10000 || p >= 0x7FFFFFFFFFFFull) return 0;
+            __try {
+                return *reinterpret_cast<const uint16_t*>(
+                    static_cast<const char*>(typePtr) + 0x08);
+            } __except(1) {
+                return 0;
+            }
+        }
+
         inline bool is_field_static(Field field) {
             if (!field) return false;
             Type t = field.type();
             if (!t || !t.raw()) return false;
-            uint16_t attrs = *reinterpret_cast<const uint16_t*>(
-                static_cast<const char*>(t.raw()) + 0x8);
+            uint16_t attrs = SafeReadTypeAttrs(t.raw());
             return (attrs & FIELD_ATTRIBUTE_STATIC) != 0;
         }
 
@@ -88,74 +239,74 @@ namespace IL2CPP::Module {
         Field       m_matched;
 
     public:
-        /// Match fields whose type class matches exactly.
+        /// <summary>Match fields whose type class matches exactly.</summary>
         FieldQuery& byType(Class t) {
             m_targetType = t;
             m_hasTypeFilter = true;
             return *this;
         }
 
-        /// Match fields whose type class name matches.
+        /// <summary>Match fields whose type class name matches.</summary>
         FieldQuery& byTypeName(std::string_view n) {
             m_typeName = n;
             return *this;
         }
 
-        /// Match fields by name.
+        /// <summary>Match fields by name.</summary>
         FieldQuery& byName(std::string_view n) {
             m_name = n;
             return *this;
         }
 
-        /// Only match static fields.
+        /// <summary>Only match static fields.</summary>
         FieldQuery& isStatic() {
             m_static = true;
             return *this;
         }
 
-        /// Only match non-static (instance) fields.
+        /// <summary>Only match non-static (instance) fields.</summary>
         FieldQuery& notStatic() {
             m_static = false;
             return *this;
         }
 
-        /// Only match fields whose type equals the enclosing class.
+        /// <summary>Only match fields whose type equals the enclosing class.</summary>
         FieldQuery& isSelf() {
             m_selfType = true;
             return *this;
         }
 
-        /// Mark this query as required -- resolve() fails if not matched.
+        /// <summary>Mark this query as required -- resolve() fails if not matched.</summary>
         FieldQuery& required() {
             m_required = true;
             return *this;
         }
 
-        /// Capture the matched field's offset.
+        /// <summary>Capture the matched field's offset.</summary>
         FieldQuery& toOffset(int& dest) {
             m_offsetDest = &dest;
             return *this;
         }
 
-        /// Capture the raw il2cppFieldInfo* pointer.
+        /// <summary>Capture the raw il2cppFieldInfo* pointer.</summary>
         FieldQuery& toPtr(void*& dest) {
             m_ptrDest = &dest;
             return *this;
         }
 
-        /// Capture the raw il2cppFieldInfo* pointer (alias).
+        /// <summary>Capture the raw il2cppFieldInfo* pointer (alias).</summary>
         FieldQuery& toFieldRaw(void*& dest) {
             m_fieldRawDest = &dest;
             return *this;
         }
 
-        /// Capture the matched field's name.
+        /// <summary>Capture the matched field's name.</summary>
         FieldQuery& toName(std::string& dest) {
             m_nameDest = &dest;
             return *this;
         }
 
-        /// Register a deobfuscation mapping when this field matches.
+        /// <summary>Register a deobfuscation mapping when this field matches.</summary>
         FieldQuery& deobfuscate(std::string prefix, std::string name) {
             m_deobfPrefix = std::move(prefix);
             m_deobfName = std::move(name);
@@ -164,9 +315,9 @@ namespace IL2CPP::Module {
 
         [[nodiscard]] bool matches(Class klass, Field field, Class fieldClass, bool isStatic) const {
             if (m_matched) return false;
-            if (m_hasTypeFilter && fieldClass.raw() != m_targetType.raw()) return false;
-            if (m_selfType && fieldClass.raw() != klass.raw()) return false;
-            if (!m_typeName.empty() && !detail::str_eq(fieldClass.name(), m_typeName.c_str())) return false;
+            if (m_hasTypeFilter && !detail::FieldMatchesTargetClass(field, fieldClass, m_targetType)) return false;
+            if (m_selfType && !detail::FieldMatchesSelfType(field, fieldClass, klass)) return false;
+            if (!m_typeName.empty() && !detail::FieldTypeNameMatches(field, fieldClass, m_typeName)) return false;
             if (!m_name.empty() && !detail::str_eq(field.name(), m_name.c_str())) return false;
             if (m_static.has_value() && m_static.value() != isStatic) return false;
             return true;
@@ -215,19 +366,19 @@ namespace IL2CPP::Module {
         std::vector<Method> m_matched;
 
     public:
-        /// Match methods by name.
+        /// <summary>Match methods by name.</summary>
         MethodQuery& byName(std::string_view n) {
             m_name = n;
             return *this;
         }
 
-        /// Match methods with exactly N parameters.
+        /// <summary>Match methods with exactly N parameters.</summary>
         MethodQuery& withParams(int count) {
             m_paramCount = count;
             return *this;
         }
 
-        /// Match methods where parameter at `index` has the given type class.
+        /// <summary>Match methods where parameter at `index` has the given type class.</summary>
         MethodQuery& paramType(int index, Class type) {
             m_paramIndex = index;
             m_paramType = type;
@@ -235,45 +386,45 @@ namespace IL2CPP::Module {
             return *this;
         }
 
-        /// Match methods whose return type equals the given class.
+        /// <summary>Match methods whose return type equals the given class.</summary>
         MethodQuery& returnType(Class type) {
             m_returnType = type;
             m_hasReturnFilter = true;
             return *this;
         }
 
-        /// Collect all matching methods (instead of just the first).
+        /// <summary>Collect all matching methods (instead of just the first).</summary>
         MethodQuery& collectAll() {
             m_collectAll = true;
             return *this;
         }
 
-        /// Mark this query as required -- resolve() fails if not matched.
+        /// <summary>Mark this query as required -- resolve() fails if not matched.</summary>
         MethodQuery& required() {
             m_required = true;
             return *this;
         }
 
-        /// Capture the first matched method's function pointer.
+        /// <summary>Capture the first matched method's function pointer.</summary>
         MethodQuery& toPtr(void*& dest) {
             m_ptrDest = &dest;
             return *this;
         }
 
-        /// Capture the raw il2cppMethodInfo* pointer of the first match.
+        /// <summary>Capture the raw il2cppMethodInfo* pointer of the first match.</summary>
         MethodQuery& toMethodRaw(void*& dest) {
             m_methodRawDest = &dest;
             return *this;
         }
 
-        /// Collect all matched method pointers into a vector.
+        /// <summary>Collect all matched method pointers into a vector.</summary>
         MethodQuery& toPtrList(std::vector<void*>& dest) {
             m_ptrListDest = &dest;
             m_collectAll = true;
             return *this;
         }
 
-        /// Register a deobfuscation mapping for the first matched method.
+        /// <summary>Register a deobfuscation mapping for the first matched method.</summary>
         MethodQuery& deobfuscate(std::string prefix, std::string name) {
             m_deobfPrefix = std::move(prefix);
             m_deobfName = std::move(name);
@@ -355,9 +506,9 @@ namespace IL2CPP::Module {
             return *this;
         }
 
-        [[nodiscard]] bool matches(Field, Class fieldClass, bool isStatic) const {
-            if (m_hasTypeFilter && fieldClass.raw() != m_targetType.raw()) return false;
-            if (!m_typeName.empty() && !detail::str_eq(fieldClass.name(), m_typeName.c_str())) return false;
+        [[nodiscard]] bool matches(Field field, Class fieldClass, bool isStatic) const {
+            if (m_hasTypeFilter && !detail::FieldMatchesTargetClass(field, fieldClass, m_targetType)) return false;
+            if (!m_typeName.empty() && !detail::FieldTypeNameMatches(field, fieldClass, m_typeName)) return false;
             if (m_static.has_value() && m_static.value() != isStatic) return false;
             return true;
         }
@@ -417,6 +568,11 @@ namespace IL2CPP::Module {
             return *this;
         }
 
+        IndexedFieldCollector& requireMinCount(int n) {
+            m_requiredCount = n;
+            return *this;
+        }
+
         IndexedFieldCollector& bindOffset(int index, int& offsetDest) {
             m_bindings.push_back({ .index = index, .offsetDest = &offsetDest });
             return *this;
@@ -465,9 +621,9 @@ namespace IL2CPP::Module {
             return *this;
         }
 
-        [[nodiscard]] bool matches(Field, Class fieldClass, bool isStatic) const {
-            if (m_hasTypeFilter && fieldClass.raw() != m_targetType.raw()) return false;
-            if (!m_typeName.empty() && !detail::str_eq(fieldClass.name(), m_typeName.c_str())) return false;
+        [[nodiscard]] bool matches(Field field, Class fieldClass, bool isStatic) const {
+            if (m_hasTypeFilter && !detail::FieldMatchesTargetClass(field, fieldClass, m_targetType)) return false;
+            if (!m_typeName.empty() && !detail::FieldTypeNameMatches(field, fieldClass, m_typeName)) return false;
             if (m_static.has_value() && m_static.value() != isStatic) return false;
             return true;
         }
@@ -508,31 +664,31 @@ namespace IL2CPP::Module {
         std::string                         m_deobfName;
 
     public:
-        /// Construct a resolver for the given class handle.
+        /// <summary>Construct a resolver for the given class handle.</summary>
         explicit ClassResolver(Class klass) : m_klass(klass) {}
 
-        /// Construct from a raw il2cppClass* pointer.
+        /// <summary>Construct from a raw il2cppClass* pointer.</summary>
         explicit ClassResolver(void* rawClass) : m_klass(Class{ rawClass }) {}
 
-        /// Add a field query -- returns a reference to configure it fluently.
+        /// <summary>Add a field query -- returns a reference to configure it fluently.</summary>
         FieldQuery& field() { return m_fieldQueries.emplace_back(); }
 
-        /// Add a method query -- returns a reference to configure it fluently.
+        /// <summary>Add a method query -- returns a reference to configure it fluently.</summary>
         MethodQuery& method() { return m_methodQueries.emplace_back(); }
 
-        /// Add a field counter -- returns a reference to configure it fluently.
+        /// <summary>Add a field counter -- returns a reference to configure it fluently.</summary>
         FieldCounter& counter() { return m_fieldCounters.emplace_back(); }
 
-        /// Add an indexed field collector -- returns a reference to configure it fluently.
+        /// <summary>Add an indexed field collector -- returns a reference to configure it fluently.</summary>
         IndexedFieldCollector& collector() { return m_indexedCollectors.emplace_back(); }
 
-        /// Set a deobfuscation name for the class itself.
+        /// <summary>Set a deobfuscation name for the class itself.</summary>
         ClassResolver& deobfuscate(std::string name) {
             m_deobfName = std::move(name);
             return *this;
         }
 
-        /// Reset all query match state for re-validation.
+        /// <summary>Reset all query match state for re-validation.</summary>
         void reset() {
             for (auto& q : m_fieldQueries) q.reset();
             for (auto& q : m_methodQueries) q.reset();
@@ -540,18 +696,30 @@ namespace IL2CPP::Module {
             for (auto& c : m_indexedCollectors) c.reset();
         }
 
-        /// Validate all queries against the class. Returns true if all required queries match.
+        /// <summary>Validate all queries against the class. Returns true if all required queries match.</summary>
         [[nodiscard]] bool validate() {
             if (!m_klass) return false;
 
             reset();
 
+            // Trace entry so the last printed class pinpoints whichever one
+            // crashes during field/method iteration. raw_name() is a direct
+            // struct read — safe even when the stable-name helper returns
+            // garbage (which is the current suspected crash cause).
+            const bool trace = g_resolverTrace != nullptr;
+            if (trace) {
+                char buf[256];
+                snprintf(buf, sizeof(buf),
+                    "validate klass=%p raw='%s' fQ=%zu mQ=%zu ctr=%zu coll=%zu",
+                    m_klass.raw(), m_klass.raw_name(),
+                    m_fieldQueries.size(), m_methodQueries.size(),
+                    m_fieldCounters.size(), m_indexedCollectors.size());
+                g_resolverTrace(buf);
+            }
 
             auto fields = m_klass.get_fields();
             for (auto& field : fields) {
                 Class fieldClass = detail::ClassFromFieldType(field);
-                if (!fieldClass) continue;
-
                 bool isStatic = detail::is_field_static(field);
 
                 for (auto& counter : m_fieldCounters)
@@ -576,6 +744,12 @@ namespace IL2CPP::Module {
 
 
             if (!m_methodQueries.empty()) {
+                if (g_resolverTrace) {
+                    char buf[160];
+                    snprintf(buf, sizeof(buf), "  iter methods klass=%p raw='%s'",
+                        m_klass.raw(), m_klass.raw_name());
+                    g_resolverTrace(buf);
+                }
                 auto methods = m_klass.get_methods();
                 for (auto& method : methods)
                     for (auto& query : m_methodQueries)
@@ -589,7 +763,7 @@ namespace IL2CPP::Module {
             return true;
         }
 
-        /// Apply all captured results (write to destination variables, register deobf mappings).
+        /// <summary>Apply all captured results (write to destination variables, register deobf mappings).</summary>
         void apply() {
             for (const auto& q : m_fieldQueries) q.apply();
             for (const auto& q : m_methodQueries) q.apply();
@@ -600,17 +774,17 @@ namespace IL2CPP::Module {
             }
         }
 
-        /// Validate + apply in one call. Returns true if all required queries matched.
+        /// <summary>Validate + apply in one call. Returns true if all required queries matched.</summary>
         [[nodiscard]] bool resolve() {
             if (!validate()) return false;
             apply();
             return true;
         }
 
-        /// Get the underlying class handle.
+        /// <summary>Get the underlying class handle.</summary>
         [[nodiscard]] Class klass() const { return m_klass; }
 
-        /// Get the raw il2cppClass* pointer.
+        /// <summary>Get the raw il2cppClass* pointer.</summary>
         [[nodiscard]] void* raw() const { return m_klass.raw(); }
     };
 

@@ -8,7 +8,7 @@ namespace IL2CPP::Module::Unity {
     public:
         Physics() = delete;
 
-        /// Cast a ray and check for collisions.
+        /// <summary>Cast a ray and check for collisions.</summary>
         [[nodiscard]] static bool Raycast(const Vector3& origin, const Vector3& direction, RaycastHit& hit,
                                           float maxDistance = 1e10f, LayerMask layerMask = LayerMask(-1)) {
             static auto m = MethodHandler::resolve("UnityEngine.Physics", "Raycast", 5);
@@ -19,26 +19,26 @@ namespace IL2CPP::Module::Unity {
             return MethodHandler::invoke<bool>(m, nullptr, params);
         }
 
-        /// Cast a ray without needing hit info (simple collision check).
+        /// <summary>Cast a ray without needing hit info (simple collision check).</summary>
         [[nodiscard]] static bool Raycast(const Vector3& origin, const Vector3& direction,
                                           float maxDistance = 1e10f, LayerMask layerMask = LayerMask(-1)) {
             RaycastHit hit;
             return Raycast(origin, direction, hit, maxDistance, layerMask);
         }
 
-        /// Cast a ray from a Ray struct.
+        /// <summary>Cast a ray from a Ray struct.</summary>
         [[nodiscard]] static bool Raycast(const Ray& ray, RaycastHit& hit,
                                           float maxDistance = 1e10f, LayerMask layerMask = LayerMask(-1)) {
             return Raycast(ray.origin, ray.direction, hit, maxDistance, layerMask);
         }
 
-        /// Cast a ray from a Ray struct (simple collision check).
+        /// <summary>Cast a ray from a Ray struct (simple collision check).</summary>
         [[nodiscard]] static bool Raycast(const Ray& ray, float maxDistance = 1e10f, LayerMask layerMask = LayerMask(-1)) {
             RaycastHit hit;
             return Raycast(ray.origin, ray.direction, hit, maxDistance, layerMask);
         }
 
-        /// Cast a sphere along a ray and check for collisions.
+        /// <summary>Cast a sphere along a ray and check for collisions.</summary>
         [[nodiscard]] static bool SphereCast(const Vector3& origin, float radius, const Vector3& direction,
                                              RaycastHit& hit, float maxDistance = 1e10f, LayerMask layerMask = LayerMask(-1)) {
             static auto m = MethodHandler::resolve("UnityEngine.Physics", "SphereCast", 6);
@@ -49,14 +49,14 @@ namespace IL2CPP::Module::Unity {
             return MethodHandler::invoke<bool>(m, nullptr, params);
         }
 
-        /// Cast a sphere along a ray (simple collision check).
+        /// <summary>Cast a sphere along a ray (simple collision check).</summary>
         [[nodiscard]] static bool SphereCast(const Vector3& origin, float radius, const Vector3& direction,
                                              float maxDistance = 1e10f, LayerMask layerMask = LayerMask(-1)) {
             RaycastHit hit;
             return SphereCast(origin, radius, direction, hit, maxDistance, layerMask);
         }
 
-        /// Cast a sphere from a Ray struct.
+        /// <summary>Cast a sphere from a Ray struct.</summary>
         [[nodiscard]] static bool SphereCast(const Ray& ray, float radius, RaycastHit& hit,
                                              float maxDistance = 1e10f, LayerMask layerMask = LayerMask(-1)) {
             return SphereCast(ray.origin, radius, ray.direction, hit, maxDistance, layerMask);

@@ -20,16 +20,16 @@ namespace IL2CPP::Module {
         explicit ManagedObject(void* raw) : m_native(raw) {}
 
 
-        /// Get the raw il2cppObject* pointer.
+        /// <summary>Get the raw il2cppObject* pointer.</summary>
         [[nodiscard]] void* raw() const noexcept { return m_native; }
 
-        /// Implicit bool conversion - check if the object is valid.
+        /// <summary>Implicit bool conversion - check if the object is valid.</summary>
         [[nodiscard]] operator bool() const noexcept { return valid(); }
 
-        /// Check if the underlying pointer is a valid managed object.
+        /// <summary>Check if the underlying pointer is a valid managed object.</summary>
         [[nodiscard]] bool valid() const noexcept;
 
-        /// Get the class handle for this object.
+        /// <summary>Get the class handle for this object.</summary>
         [[nodiscard]] Class get_class() const;
 
 
@@ -39,7 +39,7 @@ namespace IL2CPP::Module {
             return *reinterpret_cast<T*>(static_cast<char*>(m_native) + fieldOffset);
         }
 
-        /// Get a field value by name. Returns default T{} if not found.
+        /// <summary>Get a field value by name. Returns default T{} if not found.</summary>
         template<typename T>
         [[nodiscard]] T get_field(std::string_view name) const {
             if (!valid()) return T{};
@@ -54,7 +54,7 @@ namespace IL2CPP::Module {
             return T{};
         }
 
-        /// Get a field value using a pre-resolved Field handle (skips name lookup).
+        /// <summary>Get a field value using a pre-resolved Field handle (skips name lookup).</summary>
         template<typename T>
         [[nodiscard]] T get_field(const Field& field) const {
             if (!valid() || !field) return T{};
@@ -65,7 +65,7 @@ namespace IL2CPP::Module {
             return T{};
         }
 
-        /// Set a field value by name.
+        /// <summary>Set a field value by name.</summary>
         template<typename T>
         void set_field(std::string_view name, T value) {
             if (!valid()) return;
@@ -85,7 +85,7 @@ namespace IL2CPP::Module {
             *reinterpret_cast<T*>(static_cast<char*>(m_native) + fieldOffset) = value;
         }
 
-        /// Set a field value using a pre-resolved Field handle (skips name lookup).
+        /// <summary>Set a field value using a pre-resolved Field handle (skips name lookup).</summary>
         template<typename T>
         void set_field(const Field& field, T value) {
             if (!valid() || !field) return;
@@ -95,7 +95,7 @@ namespace IL2CPP::Module {
             }
         }
 
-        /// Get a property value by name (calls the getter).
+        /// <summary>Get a property value by name (calls the getter).</summary>
         template<typename T>
         [[nodiscard]] T get_property(std::string_view name) const {
             if (!valid()) return T{};
@@ -114,7 +114,7 @@ namespace IL2CPP::Module {
             }
         }
 
-        /// Set a property value by name (calls the setter).
+        /// <summary>Set a property value by name (calls the setter).</summary>
         template<typename T>
         void set_property(std::string_view name, T value) {
             if (!valid()) return;
@@ -134,21 +134,21 @@ namespace IL2CPP::Module {
         }
 
 
-        /// Read a value at a raw offset from the object base.
+        /// <summary>Read a value at a raw offset from the object base.</summary>
         template<typename T>
         [[nodiscard]] T read(int offset) const {
             if (!m_native || offset < 0) return T{};
             return *reinterpret_cast<T*>(static_cast<char*>(m_native) + offset);
         }
 
-        /// Write a value at a raw offset from the object base.
+        /// <summary>Write a value at a raw offset from the object base.</summary>
         template<typename T>
         void write(int offset, T value) {
             if (!m_native || offset < 0) return;
             *reinterpret_cast<T*>(static_cast<char*>(m_native) + offset) = value;
         }
 
-        /// Get a typed pointer at a raw offset from the object base.
+        /// <summary>Get a typed pointer at a raw offset from the object base.</summary>
         template<typename T = void*>
         [[nodiscard]] T* ptr_at(int offset) const {
             if (!m_native || offset < 0) return nullptr;
@@ -156,7 +156,7 @@ namespace IL2CPP::Module {
         }
 
 
-        /// Call a method by name with typed return. Uses runtime invoke.
+        /// <summary>Call a method by name with typed return. Uses runtime invoke.</summary>
         template<typename TReturn>
         TReturn call_method(std::string_view name, void** params = nullptr, int argc = -1) const {
             if constexpr (std::is_void_v<TReturn>) {
@@ -184,17 +184,17 @@ namespace IL2CPP::Module {
             }
         }
 
-        /// Get a direct function pointer for a method, for fast calling.
+        /// <summary>Get a direct function pointer for a method, for fast calling.</summary>
         [[nodiscard]] void* get_method_pointer(std::string_view name, int argc = -1) const;
 
-        /// Get a field handle by name.
+        /// <summary>Get a field handle by name.</summary>
         [[nodiscard]] Field get_field_info(std::string_view name) const;
 
-        /// Get a method handle by name.
+        /// <summary>Get a method handle by name.</summary>
         [[nodiscard]] Method get_method_info(std::string_view name, int argc = -1) const;
 
 
-        /// Get a static field value by name.
+        /// <summary>Get a static field value by name.</summary>
         template<typename T>
         [[nodiscard]] T get_static_field(std::string_view name) const {
             if (!valid()) return T{};
@@ -207,7 +207,7 @@ namespace IL2CPP::Module {
             return value;
         }
 
-        /// Set a static field value by name.
+        /// <summary>Set a static field value by name.</summary>
         template<typename T>
         void set_static_field(std::string_view name, T value) {
             if (!valid()) return;
@@ -219,67 +219,67 @@ namespace IL2CPP::Module {
         }
 
 
-        /// Check if a field with the given name exists on this object's class.
+        /// <summary>Check if a field with the given name exists on this object's class.</summary>
         [[nodiscard]] bool has_field(std::string_view name) const;
 
-        /// Get the byte offset for a field by name. Returns -1 if not found.
+        /// <summary>Get the byte offset for a field by name. Returns -1 if not found.</summary>
         [[nodiscard]] int get_field_offset(std::string_view name) const;
 
-        /// Reverse lookup: get the Field metadata for a field at a specific offset.
+        /// <summary>Reverse lookup: get the Field metadata for a field at a specific offset.</summary>
         [[nodiscard]] Field get_field_by_offset(int offset) const;
 
-        /// Get the Nth field in declaration order (0-indexed).
+        /// <summary>Get the Nth field in declaration order (0-indexed).</summary>
         [[nodiscard]] Field get_field_by_index(int index) const;
 
-        /// Find all fields whose type name matches the given string.
+        /// <summary>Find all fields whose type name matches the given string.</summary>
         [[nodiscard]] std::vector<Field> find_fields_by_type(std::string_view typeName) const;
 
-        /// Find all fields matching an access modifier ("public", "private", "protected", "internal").
+        /// <summary>Find all fields matching an access modifier ("public", "private", "protected", "internal").</summary>
         [[nodiscard]] std::vector<Field> find_fields_by_access(std::string_view access) const;
 
-        /// Find all fields matching a predicate.
+        /// <summary>Find all fields matching a predicate.</summary>
         [[nodiscard]] std::vector<Field> find_fields(const std::function<bool(const Field&)>& predicate) const;
 
 
-        /// Get all fields for this object's class (convenience wrapper).
+        /// <summary>Get all fields for this object's class (convenience wrapper).</summary>
         [[nodiscard]] std::vector<Field> get_fields() const;
 
-        /// Iterate all fields with a callback. Returns early if the callback returns false.
+        /// <summary>Iterate all fields with a callback. Returns early if the callback returns false.</summary>
         void for_each_field(const std::function<bool(const Field&)>& callback) const;
 
-        /// Get a list of {name, offset} pairs for all instance fields.
+        /// <summary>Get a list of {name, offset} pairs for all instance fields.</summary>
         [[nodiscard]] std::vector<std::pair<const char*, int>> get_field_offsets() const;
 
 
-        /// Check if a method with the given name exists (optionally matching arg count).
+        /// <summary>Check if a method with the given name exists (optionally matching arg count).</summary>
         [[nodiscard]] bool has_method(std::string_view name, int argc = -1) const;
 
-        /// Get all methods for this object's class (convenience wrapper).
+        /// <summary>Get all methods for this object's class (convenience wrapper).</summary>
         [[nodiscard]] std::vector<Method> get_methods() const;
 
-        /// Iterate all methods with a callback. Returns early if the callback returns false.
+        /// <summary>Iterate all methods with a callback. Returns early if the callback returns false.</summary>
         void for_each_method(const std::function<bool(const Method&)>& callback) const;
 
-        /// Find all methods whose return type name matches the given string.
+        /// <summary>Find all methods whose return type name matches the given string.</summary>
         [[nodiscard]] std::vector<Method> find_methods_by_return_type(std::string_view typeName) const;
 
-        /// Find all methods with the given parameter count.
+        /// <summary>Find all methods with the given parameter count.</summary>
         [[nodiscard]] std::vector<Method> find_methods_by_param_count(int count) const;
 
 
-        /// Get the instance size in bytes (from the class metadata).
+        /// <summary>Get the instance size in bytes (from the class metadata).</summary>
         [[nodiscard]] uint32_t instance_size() const;
 
-        /// Get the class name as a string (namespace.name).
+        /// <summary>Get the class name as a string (namespace.name).</summary>
         [[nodiscard]] std::string get_class_name() const;
 
-        /// Call the managed ToString() method.
+        /// <summary>Call the managed ToString() method.</summary>
         [[nodiscard]] std::string to_string() const;
 
-        /// Check if this object is an instance of the given class (or a derived class).
+        /// <summary>Check if this object is an instance of the given class (or a derived class).</summary>
         [[nodiscard]] bool is_instance_of(const Class& klass) const;
 
-        /// Safe downcast: returns a T if this object is an instance of T's class, else default T.
+        /// <summary>Safe downcast: returns a T if this object is an instance of T's class, else default T.</summary>
         template<typename T>
             requires std::is_base_of_v<ManagedObject, T>
         [[nodiscard]] T try_cast() const {
@@ -288,7 +288,7 @@ namespace IL2CPP::Module {
             return T{ m_native };
         }
 
-        /// Safe downcast with type checking against a known class.
+        /// <summary>Safe downcast with type checking against a known class.</summary>
         template<typename T>
             requires std::is_base_of_v<ManagedObject, T>
         [[nodiscard]] T try_cast(const Class& targetClass) const {
@@ -298,20 +298,20 @@ namespace IL2CPP::Module {
         }
 
 
-        /// Unbox this managed object to a value type T.
+        /// <summary>Unbox this managed object to a value type T.</summary>
         template<typename T>
         [[nodiscard]] T unbox() const {
             if (!valid()) return T{};
             return *reinterpret_cast<T*>(IL2CPP::Unbox(m_native));
         }
 
-        /// Get a pointer to the unboxed data.
+        /// <summary>Get a pointer to the unboxed data.</summary>
         [[nodiscard]] void* unbox_ptr() const;
 
-        /// Box a value type into a managed object. Requires the class of the value type.
+        /// <summary>Box a value type into a managed object. Requires the class of the value type.</summary>
         [[nodiscard]] static ManagedObject box_value(const Class& klass, void* data);
 
-        /// Typed box helper.
+        /// <summary>Typed box helper.</summary>
         template<typename T>
         [[nodiscard]] static ManagedObject box(const Class& klass, T value) {
             return box_value(klass, &value);
@@ -329,7 +329,7 @@ namespace IL2CPP::Module {
         [[nodiscard]] bool operator!=(const ManagedObject& other) const noexcept { return m_native != other.m_native; }
     };
 
-    /// Check if a raw pointer looks like a valid IL2CPP object.
+    /// <summary>Check if a raw pointer looks like a valid IL2CPP object.</summary>
     [[nodiscard]] inline bool IsValidPointer(void* ptr) noexcept {
         if (!ptr) return false;
         constexpr uintptr_t minAddr = 0x10000;

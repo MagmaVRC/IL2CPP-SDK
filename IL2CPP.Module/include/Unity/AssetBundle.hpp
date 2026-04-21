@@ -29,7 +29,7 @@ namespace IL2CPP::Module::Unity {
             return result;
         }
 
-        /// Write raw bytes to a temp file and return the path.
+        /// <summary>Write raw bytes to a temp file and return the path.</summary>
         static std::string WriteTempFile(const void* data, size_t size) {
             char tempDir[MAX_PATH];
             char tempPath[MAX_PATH];

@@ -12,13 +12,13 @@ namespace IL2CPP::Module::System {
     public:
         using ManagedObject::ManagedObject;
 
-        /// Get the internal array as an Array<T> handle.
+        /// <summary>Get the internal array as an Array&lt;T&gt; handle.</summary>
         [[nodiscard]] Array<T> items() const {
             if (!valid()) return Array<T>{};
             return Array<T>{ read<void*>(kItemsOffset) };
         }
 
-        /// Get the list count (logical size, not capacity).
+        /// <summary>Get the list count (logical size, not capacity).</summary>
         [[nodiscard]] int count() const {
             if (!valid()) return 0;
             return read<int>(kSizeOffset);
@@ -26,14 +26,14 @@ namespace IL2CPP::Module::System {
 
         [[nodiscard]] bool empty() const { return count() == 0; }
 
-        /// Access by index through the internal array.
+        /// <summary>Access by index through the internal array.</summary>
         [[nodiscard]] T& operator[](uintptr_t i) { return items()[i]; }
         [[nodiscard]] const T& operator[](uintptr_t i) const { return items()[i]; }
 
-        /// Safe access.
+        /// <summary>Safe access.</summary>
         [[nodiscard]] T* try_at(uintptr_t i) { return items().try_at(i); }
 
-        /// Get as std::span (uses internal array size, not logical count).
+        /// <summary>Get as std::span (uses internal array size, not logical count).</summary>
         [[nodiscard]] std::span<T> as_span() { return items().as_span(); }
         [[nodiscard]] std::span<const T> as_span() const { return items().as_span(); }
 
@@ -43,7 +43,7 @@ namespace IL2CPP::Module::System {
         [[nodiscard]] const T* begin() const { return items().begin(); }
         [[nodiscard]] const T* end() const { return items().end(); }
 
-        /// Convert to std::vector.
+        /// <summary>Convert to std::vector.</summary>
         [[nodiscard]] std::vector<T> to_vector() const { return items().to_vector(); }
     };
 

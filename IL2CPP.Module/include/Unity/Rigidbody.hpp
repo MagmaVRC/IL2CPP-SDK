@@ -61,7 +61,7 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        /// Set the density of the rigidbody (recalculates mass from colliders).
+        /// <summary>Set the density of the rigidbody (recalculates mass from colliders).</summary>
         void SetDensity(float density) {
             static auto m = MethodHandler::resolve("UnityEngine.Rigidbody", "SetDensity", 1);
             void* params[] = { &density };

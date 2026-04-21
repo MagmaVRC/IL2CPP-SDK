@@ -46,7 +46,7 @@ namespace IL2CPP::Module::System {
             MethodHandler::invoke(m, nullptr, params);
         }
 
-        /// Read all bytes — returns raw IL2CPP byte array. Use Array<uint8_t> to access.
+        /// <summary>Read all bytes — returns raw IL2CPP byte array. Use Array&lt;uint8_t&gt; to access.</summary>
         [[nodiscard]] static void* ReadAllBytes(std::string_view path) {
             static auto m = MethodHandler::resolve("System.IO.File", "ReadAllBytes", 1);
             auto* e = GetExports();
@@ -56,7 +56,7 @@ namespace IL2CPP::Module::System {
             return MethodHandler::invoke<void*>(m, nullptr, params);
         }
 
-        /// Read all bytes into a native vector.
+        /// <summary>Read all bytes into a native vector.</summary>
         [[nodiscard]] static std::vector<uint8_t> ReadAllBytesNative(std::string_view path) {
             void* arr = ReadAllBytes(path);
             if (!arr) return {};

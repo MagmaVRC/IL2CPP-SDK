@@ -48,7 +48,7 @@ namespace IL2CPP::Module::System {
             return MethodHandler::invoke<void*>(m, raw(), params);
         }
 
-        /// GetBytes as a native vector.
+        /// <summary>GetBytes as a native vector.</summary>
         [[nodiscard]] std::vector<uint8_t> GetBytesNative(std::string_view str) const {
             void* arr = GetBytes(str);
             if (!arr) return {};
@@ -66,7 +66,7 @@ namespace IL2CPP::Module::System {
             return String{ result }.to_string();
         }
 
-        /// GetString from raw native data.
+        /// <summary>GetString from raw native data.</summary>
         [[nodiscard]] std::string GetStringFromNative(const void* data, size_t size) const {
             auto* e = GetExports();
             if (!e || !data || size == 0) return "";

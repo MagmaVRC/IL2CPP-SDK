@@ -67,8 +67,6 @@ namespace IL2CPP::Module {
         void set_value(void* obj, void* value) const;
         void get_static_value(void* out_value) const;
         void set_static_value(void* value) const;
-
-        [[nodiscard]] bool has_attribute(void* attr_class) const;
     };
 
     class Method {
@@ -102,8 +100,6 @@ namespace IL2CPP::Module {
         [[nodiscard]] Type return_type() const;
 
         void* invoke(void* obj, void** params, void** exc = nullptr) const;
-
-        [[nodiscard]] bool has_attribute(void* attr_class) const;
     };
 
     class Property {
@@ -148,7 +144,6 @@ namespace IL2CPP::Module {
         [[nodiscard]] bool is_subclass_of(const Class& parent) const;
         [[nodiscard]] bool is_enum() const;
         [[nodiscard]] bool is_generic() const;
-        [[nodiscard]] bool has_attribute(void* attr_class) const;
         [[nodiscard]] uint32_t instance_size() const;
         [[nodiscard]] void* static_field_data() const;
 

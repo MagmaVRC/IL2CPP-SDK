@@ -14,7 +14,7 @@ namespace IL2CPP::Module::Unity {
     public:
         LayerMaskUtils() = delete;
 
-        /// Convert a layer index to its name.
+        /// <summary>Convert a layer index to its name.</summary>
         [[nodiscard]] static std::string layer_to_name(int layer) {
             static auto m = MethodHandler::resolve("UnityEngine.LayerMask", "LayerToName", 1);
             void* params[] = { &layer };
@@ -23,7 +23,7 @@ namespace IL2CPP::Module::Unity {
             return System::String{ str }.to_string();
         }
 
-        /// Convert a layer name to its index.
+        /// <summary>Convert a layer name to its index.</summary>
         [[nodiscard]] static int name_to_layer(std::string_view name) {
             static auto m = MethodHandler::resolve("UnityEngine.LayerMask", "NameToLayer", 1);
             auto* exports = GetExports();

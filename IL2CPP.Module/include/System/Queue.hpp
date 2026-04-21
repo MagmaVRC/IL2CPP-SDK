@@ -35,7 +35,7 @@ namespace IL2CPP::Module::System {
             return read<int>(kTailOffset);
         }
 
-        /// Peek at the front element without dequeuing.
+        /// <summary>Peek at the front element without dequeuing.</summary>
         [[nodiscard]] T* peek() {
             if (empty()) return nullptr;
             auto arr = internal_array();
@@ -43,7 +43,7 @@ namespace IL2CPP::Module::System {
             return arr.try_at(head());
         }
 
-        /// Convert to std::vector (preserves queue order).
+        /// <summary>Convert to std::vector (preserves queue order).</summary>
         [[nodiscard]] std::vector<T> to_vector() const {
             if (empty()) return {};
             auto arr = internal_array();
@@ -61,7 +61,7 @@ namespace IL2CPP::Module::System {
             return result;
         }
 
-        /// Iterate all elements in queue order.
+        /// <summary>Iterate all elements in queue order.</summary>
         template<typename Func>
         void for_each(Func f) const {
             if (empty()) return;

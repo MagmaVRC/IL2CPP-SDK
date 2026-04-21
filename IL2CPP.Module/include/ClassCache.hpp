@@ -11,13 +11,13 @@ namespace IL2CPP::Module {
 
     class ClassCache {
     public:
-        /// Get the singleton instance
+        /// <summary>Get the singleton instance</summary>
         static ClassCache& Get() {
             static ClassCache instance;
             return instance;
         }
 
-        /// Load an assembly into the cache
+        /// <summary>Load an assembly into the cache</summary>
         void Load(std::string_view assembly) {
             auto* e = GetExports();
             if (!e || !e->m_helperCacheLoad) return;
@@ -26,7 +26,7 @@ namespace IL2CPP::Module {
                 e->m_helperCacheLoad)(asm_str.c_str());
         }
 
-        /// Load multiple assemblies at once
+        /// <summary>Load multiple assemblies at once</summary>
         void LoadMultiple(std::initializer_list<const char*> assemblies) {
             auto* e = GetExports();
             if (!e || !e->m_helperCacheLoadMultiple) return;
@@ -35,14 +35,14 @@ namespace IL2CPP::Module {
                 e->m_helperCacheLoadMultiple)(vec.data(), vec.size());
         }
 
-        /// Release all cached classes
+        /// <summary>Release all cached classes</summary>
         void ReleaseAll() {
             auto* e = GetExports();
             if (!e || !e->m_helperCacheRelease) return;
             reinterpret_cast<void(IL2CPP_CALLTYPE)()>(e->m_helperCacheRelease)();
         }
 
-        /// Release a specific assembly's cache
+        /// <summary>Release a specific assembly's cache</summary>
         void Release(std::string_view assembly) {
             auto* e = GetExports();
             if (!e || !e->m_helperCacheReleaseOne) return;

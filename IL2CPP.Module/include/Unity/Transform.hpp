@@ -201,7 +201,7 @@ namespace IL2CPP::Module::Unity {
         }
 
 
-        /// Rotate around a point in world space.
+        /// <summary>Rotate around a point in world space.</summary>
         void RotateAround(const Vector3& point, const Vector3& axis, float angle) {
             static auto m = MethodHandler::resolve("UnityEngine.Transform", "RotateAround", 3);
             Vector3 p = point;
@@ -210,7 +210,7 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
-        /// Rotate around a point in local space.
+        /// <summary>Rotate around a point in local space.</summary>
         void RotateAroundLocal(const Vector3& point, const Vector3& axis, float angle) {
             static auto m = MethodHandler::resolve("UnityEngine.Transform", "RotateAroundLocal", 3);
             Vector3 p = point;
@@ -220,7 +220,7 @@ namespace IL2CPP::Module::Unity {
         }
 
 
-        /// Make the transform look at a target position.
+        /// <summary>Make the transform look at a target position.</summary>
         void LookAt(const Vector3& worldPosition) {
             Vector3 dir = worldPosition - GetPosition();
             if (dir.SqrMagnitude() < 0.0001f) return;
@@ -234,13 +234,13 @@ namespace IL2CPP::Module::Unity {
             SetRotation(rot);
         }
 
-        /// Make the transform look at another transform's position.
+        /// <summary>Make the transform look at another transform's position.</summary>
         void LookAt(Transform target) {
             if (!target) return;
             LookAt(target.GetPosition());
         }
 
-        /// Rotate the transform by euler angles (degrees).
+        /// <summary>Rotate the transform by euler angles (degrees).</summary>
         void Rotate(const Vector3& eulers, Space relativeTo = Space::Self) {
             Quaternion deltaRot;
             deltaRot = deltaRot.Euler(eulers);
@@ -251,7 +251,7 @@ namespace IL2CPP::Module::Unity {
             }
         }
 
-        /// Rotate the transform around an axis by an angle (degrees).
+        /// <summary>Rotate the transform around an axis by an angle (degrees).</summary>
         void Rotate(const Vector3& axis, float angle, Space relativeTo = Space::Self) {
             float halfAngle = angle * DEG2RAD * 0.5f;
             float s = std::sin(halfAngle);
@@ -263,7 +263,7 @@ namespace IL2CPP::Module::Unity {
             }
         }
 
-        /// Translate the transform by a vector.
+        /// <summary>Translate the transform by a vector.</summary>
         void Translate(const Vector3& translation, Space relativeTo = Space::Self) {
             if (relativeTo == Space::Self) {
                 Vector3 worldTranslation = TransformDirection(translation);
@@ -273,7 +273,7 @@ namespace IL2CPP::Module::Unity {
             }
         }
 
-        /// Translate relative to another transform.
+        /// <summary>Translate relative to another transform.</summary>
         void Translate(const Vector3& translation, Transform relativeTo) {
             if (relativeTo) {
                 Vector3 worldTranslation = relativeTo.TransformDirection(translation);
