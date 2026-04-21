@@ -9,6 +9,12 @@ namespace IL2CPP::Module::System {
         static constexpr int kSizeOffset    = 0x18;  // int m_iSize
         static constexpr int kVersionOffset = 0x1C;  // int m_iVersion
 
+        [[nodiscard]] T* items_data() const {
+            void* arr = *reinterpret_cast<void**>(static_cast<char*>(m_native) + kItemsOffset);
+            if (!arr) return nullptr;
+            return reinterpret_cast<T*>(static_cast<char*>(arr) + Array<T>::kValuesOffset);
+        }
+
     public:
         using ManagedObject::ManagedObject;
 
@@ -27,24 +33,57 @@ namespace IL2CPP::Module::System {
         [[nodiscard]] bool empty() const { return count() == 0; }
 
         /// <summary>Access by index through the internal array.</summary>
-        [[nodiscard]] T& operator[](uintptr_t i) { return items()[i]; }
-        [[nodiscard]] const T& operator[](uintptr_t i) const { return items()[i]; }
+        [[nodiscard]] T& operator[](uintptr_t i) { return items_data()[i]; }
+        [[nodiscard]] const T& operator[](uintptr_t i) const { return items_data()[i]; }
 
         /// <summary>Safe access.</summary>
-        [[nodiscard]] T* try_at(uintptr_t i) { return items().try_at(i); }
+        [[nodiscard]] T* try_at(uintptr_t i) {
+            if (!valid()) return nullptr;
+            int cnt = read<int>(kSizeOffset);
+            if (i >= static_cast<uintptr_t>(cnt)) return nullptr;
+            return &items_data()[i];
+        }
 
-        /// <summary>Get as std::span (uses internal array size, not logical count).</summary>
-        [[nodiscard]] std::span<T> as_span() { return items().as_span(); }
-        [[nodiscard]] std::span<const T> as_span() const { return items().as_span(); }
+        /// <summary>Get as std::span over the logical count.</summary>
+        [[nodiscard]] std::span<T> as_span() {
+            if (!valid()) return {};
+            T* d = items_data();
+            return d ? std::span<T>{ d, static_cast<size_t>(read<int>(kSizeOffset)) } : std::span<T>{};
+        }
+        [[nodiscard]] std::span<const T> as_span() const {
+            if (!valid()) return {};
+            T* d = items_data();
+            return d ? std::span<const T>{ d, static_cast<size_t>(read<int>(kSizeOffset)) } : std::span<const T>{};
+        }
 
 
-        [[nodiscard]] T* begin() { return items().begin(); }
-        [[nodiscard]] T* end() { return items().end(); }
-        [[nodiscard]] const T* begin() const { return items().begin(); }
-        [[nodiscard]] const T* end() const { return items().end(); }
+        [[nodiscard]] T* begin() {
+            if (!valid()) return nullptr;
+            return items_data();
+        }
+        [[nodiscard]] T* end() {
+            if (!valid()) return nullptr;
+            T* d = items_data();
+            return d ? d + read<int>(kSizeOffset) : nullptr;
+        }
+        [[nodiscard]] const T* begin() const {
+            if (!valid()) return nullptr;
+            return items_data();
+        }
+        [[nodiscard]] const T* end() const {
+            if (!valid()) return nullptr;
+            T* d = items_data();
+            return d ? d + read<int>(kSizeOffset) : nullptr;
+        }
 
         /// <summary>Convert to std::vector.</summary>
-        [[nodiscard]] std::vector<T> to_vector() const { return items().to_vector(); }
+        [[nodiscard]] std::vector<T> to_vector() const {
+            if (!valid()) return {};
+            T* d = items_data();
+            if (!d) return {};
+            int cnt = read<int>(kSizeOffset);
+            return { d, d + cnt };
+        }
     };
 
 } // namespace IL2CPP::Module::System

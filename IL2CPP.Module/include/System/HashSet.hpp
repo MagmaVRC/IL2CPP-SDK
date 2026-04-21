@@ -21,13 +21,32 @@ namespace IL2CPP::Module::System {
         static constexpr int kLastIndexOffset = 0x24;
         static constexpr int kFreeListOffset  = 0x28;
 
-        [[nodiscard]] Array<Slot> slots() const {
-            if (!valid()) return Array<Slot>{};
-            return Array<Slot>{ read<void*>(kSlotsOffset) };
+        struct SlotsView {
+            Slot* data;
+            int   limit;
+        };
+
+        [[nodiscard]] SlotsView get_slots_view() const {
+            void* sArr = read<void*>(kSlotsOffset);
+            if (!sArr) return { nullptr, 0 };
+            int limit = read<int>(kLastIndexOffset);
+            int cap = static_cast<int>(*reinterpret_cast<uintptr_t*>(
+                static_cast<char*>(sArr) + Array<Slot>::kMaxLengthOffset));
+            if (limit > cap) limit = cap;
+            return {
+                reinterpret_cast<Slot*>(static_cast<char*>(sArr) + Array<Slot>::kValuesOffset),
+                limit
+            };
         }
 
     public:
         using ManagedObject::ManagedObject;
+
+        /// <summary>Get the internal slots array as an Array handle.</summary>
+        [[nodiscard]] Array<Slot> slots() const {
+            if (!valid()) return Array<Slot>{};
+            return Array<Slot>{ read<void*>(kSlotsOffset) };
+        }
 
         /// <summary>Get the number of active elements.</summary>
         [[nodiscard]] int count() const {
@@ -44,12 +63,8 @@ namespace IL2CPP::Module::System {
 
         /// <summary>Check if the set contains a value (linear scan).</summary>
         [[nodiscard]] bool contains(const T& value) const {
-            auto s = slots();
-            if (!s) return false;
-            int limit = last_index();
-            int cap = static_cast<int>(s.size());
-            if (limit > cap) limit = cap;
-            const Slot* data = s.data();
+            if (!valid()) return false;
+            auto [data, limit] = get_slots_view();
             if (!data) return false;
             for (int i = 0; i < limit; ++i) {
                 if (data[i].hashCode >= 0 && data[i].value == value)
@@ -61,12 +76,8 @@ namespace IL2CPP::Module::System {
         /// <summary>Iterate all active elements.</summary>
         template<typename Func>
         void for_each(Func f) {
-            auto s = slots();
-            if (!s) return;
-            int limit = last_index();
-            int cap = static_cast<int>(s.size());
-            if (limit > cap) limit = cap;
-            Slot* data = s.data();
+            if (!valid()) return;
+            auto [data, limit] = get_slots_view();
             if (!data) return;
             for (int i = 0; i < limit; ++i) {
                 if (data[i].hashCode >= 0)
@@ -77,12 +88,8 @@ namespace IL2CPP::Module::System {
         /// <summary>Iterate all active elements (const).</summary>
         template<typename Func>
         void for_each(Func f) const {
-            auto s = slots();
-            if (!s) return;
-            int limit = last_index();
-            int cap = static_cast<int>(s.size());
-            if (limit > cap) limit = cap;
-            const Slot* data = s.data();
+            if (!valid()) return;
+            auto [data, limit] = get_slots_view();
             if (!data) return;
             for (int i = 0; i < limit; ++i) {
                 if (data[i].hashCode >= 0)
@@ -92,9 +99,15 @@ namespace IL2CPP::Module::System {
 
         /// <summary>Convert to std::vector.</summary>
         [[nodiscard]] std::vector<T> to_vector() const {
+            if (!valid()) return {};
             std::vector<T> result;
-            result.reserve(count());
-            for_each([&](const T& v) { result.push_back(v); });
+            result.reserve(read<int>(kCountOffset));
+            auto [data, limit] = get_slots_view();
+            if (!data) return result;
+            for (int i = 0; i < limit; ++i) {
+                if (data[i].hashCode >= 0)
+                    result.push_back(data[i].value);
+            }
             return result;
         }
     };

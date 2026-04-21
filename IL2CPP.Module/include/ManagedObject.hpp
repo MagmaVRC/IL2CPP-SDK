@@ -10,10 +10,24 @@
 #include <vector>
 
 namespace IL2CPP::Module {
+    [[nodiscard]] __forceinline bool IsValidPointer(void* ptr) noexcept {
+        constexpr uintptr_t lo = 0x10000;
+        constexpr uintptr_t range = 0x7FFFFFFF0000 - lo;
+        return reinterpret_cast<uintptr_t>(ptr) - lo <= range;
+    }
 
     class ManagedObject {
     protected:
         void* m_native = nullptr;  // il2cppObject*
+
+        [[nodiscard]] bool valid() const noexcept {
+            if (!IsValidPointer(m_native)) return false;
+            return IsValidPointer(*reinterpret_cast<void**>(m_native));
+        }
+
+        [[nodiscard]] Class get_class_internal() const noexcept {
+            return Class{ *reinterpret_cast<void**>(m_native) };
+        }
 
     public:
         ManagedObject() = default;
@@ -26,11 +40,11 @@ namespace IL2CPP::Module {
         /// <summary>Implicit bool conversion - check if the object is valid.</summary>
         [[nodiscard]] operator bool() const noexcept { return valid(); }
 
-        /// <summary>Check if the underlying pointer is a valid managed object.</summary>
-        [[nodiscard]] bool valid() const noexcept;
-
         /// <summary>Get the class handle for this object.</summary>
-        [[nodiscard]] Class get_class() const;
+        [[nodiscard]] Class get_class() const noexcept {
+            if (!valid()) return Class{};
+            return get_class_internal();
+        }
 
 
         template<typename T>
@@ -43,8 +57,7 @@ namespace IL2CPP::Module {
         template<typename T>
         [[nodiscard]] T get_field(std::string_view name) const {
             if (!valid()) return T{};
-            Class klass = get_class();
-            if (!klass) return T{};
+            Class klass = get_class_internal();
             Field f = klass.get_field(name);
             if (!f) return T{};
             int off = f.offset();
@@ -69,8 +82,7 @@ namespace IL2CPP::Module {
         template<typename T>
         void set_field(std::string_view name, T value) {
             if (!valid()) return;
-            Class klass = get_class();
-            if (!klass) return;
+            Class klass = get_class_internal();
             Field f = klass.get_field(name);
             if (!f) return;
             int off = f.offset();
@@ -99,8 +111,7 @@ namespace IL2CPP::Module {
         template<typename T>
         [[nodiscard]] T get_property(std::string_view name) const {
             if (!valid()) return T{};
-            Class klass = get_class();
-            if (!klass) return T{};
+            Class klass = get_class_internal();
             Property prop = klass.get_property(name);
             if (!prop) return T{};
             Method getter = prop.getter();
@@ -118,8 +129,7 @@ namespace IL2CPP::Module {
         template<typename T>
         void set_property(std::string_view name, T value) {
             if (!valid()) return;
-            Class klass = get_class();
-            if (!klass) return;
+            Class klass = get_class_internal();
             Property prop = klass.get_property(name);
             if (!prop) return;
             Method setter = prop.setter();
@@ -161,16 +171,14 @@ namespace IL2CPP::Module {
         TReturn call_method(std::string_view name, void** params = nullptr, int argc = -1) const {
             if constexpr (std::is_void_v<TReturn>) {
                 if (!valid()) return;
-                Class klass = get_class();
-                if (!klass) return;
+                Class klass = get_class_internal();
                 Method m = klass.get_method(name, argc);
                 if (!m) return;
                 m.invoke(m_native, params);
             }
             else {
                 if (!valid()) return TReturn{};
-                Class klass = get_class();
-                if (!klass) return TReturn{};
+                Class klass = get_class_internal();
                 Method m = klass.get_method(name, argc);
                 if (!m) return TReturn{};
                 void* result = m.invoke(m_native, params);
@@ -198,8 +206,7 @@ namespace IL2CPP::Module {
         template<typename T>
         [[nodiscard]] T get_static_field(std::string_view name) const {
             if (!valid()) return T{};
-            Class klass = get_class();
-            if (!klass) return T{};
+            Class klass = get_class_internal();
             Field f = klass.get_field(name);
             if (!f || !f.is_static()) return T{};
             T value{};
@@ -211,8 +218,7 @@ namespace IL2CPP::Module {
         template<typename T>
         void set_static_field(std::string_view name, T value) {
             if (!valid()) return;
-            Class klass = get_class();
-            if (!klass) return;
+            Class klass = get_class_internal();
             Field f = klass.get_field(name);
             if (!f || !f.is_static()) return;
             f.set_static_value(&value);
@@ -328,15 +334,6 @@ namespace IL2CPP::Module {
         [[nodiscard]] bool operator==(const ManagedObject& other) const noexcept { return m_native == other.m_native; }
         [[nodiscard]] bool operator!=(const ManagedObject& other) const noexcept { return m_native != other.m_native; }
     };
-
-    /// <summary>Check if a raw pointer looks like a valid IL2CPP object.</summary>
-    [[nodiscard]] inline bool IsValidPointer(void* ptr) noexcept {
-        if (!ptr) return false;
-        constexpr uintptr_t minAddr = 0x10000;
-        constexpr uintptr_t maxAddr = 0x7FFFFFFF0000;
-        uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
-        return addr >= minAddr && addr <= maxAddr;
-    }
 
 } // namespace IL2CPP::Module
 

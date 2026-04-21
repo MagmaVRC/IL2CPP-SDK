@@ -14,12 +14,25 @@ namespace IL2CPP::Module::System {
         static constexpr int kMaxLengthOffset = 0x18;  // uintptr_t
         static constexpr int kValuesOffset    = 0x20;  // T m_pValues (start of data inline)
 
+        template<typename TKey, typename TValue> friend class Dictionary;
+        template<typename U> friend class List;
+        template<typename U> friend class HashSet;
+
+    private:
+        [[nodiscard]] T* data_internal() const {
+            return reinterpret_cast<T*>(static_cast<char*>(m_native) + kValuesOffset);
+        }
+
+        [[nodiscard]] uintptr_t size_internal() const {
+            return *reinterpret_cast<uintptr_t*>(static_cast<char*>(m_native) + kMaxLengthOffset);
+        }
+
     public:
         using ManagedObject::ManagedObject;
 
         [[nodiscard]] uintptr_t size() const {
             if (!valid()) return 0;
-            return read<uintptr_t>(kMaxLengthOffset);
+            return size_internal();
         }
 
         [[nodiscard]] bool empty() const { return size() == 0; }
@@ -27,32 +40,45 @@ namespace IL2CPP::Module::System {
         /// <summary>Get a pointer to the start of the data.</summary>
         [[nodiscard]] T* data() {
             if (!valid()) return nullptr;
-            return reinterpret_cast<T*>(static_cast<char*>(raw()) + kValuesOffset);
+            return data_internal();
         }
 
         [[nodiscard]] const T* data() const {
             if (!valid()) return nullptr;
-            return reinterpret_cast<const T*>(static_cast<const char*>(raw()) + kValuesOffset);
+            return const_cast<Array*>(this)->data_internal();
         }
 
         /// <summary>Access by index (unchecked).</summary>
-        [[nodiscard]] T& operator[](uintptr_t i) { return data()[i]; }
-        [[nodiscard]] const T& operator[](uintptr_t i) const { return data()[i]; }
+        [[nodiscard]] T& operator[](uintptr_t i) { return data_internal()[i]; }
+        [[nodiscard]] const T& operator[](uintptr_t i) const { return const_cast<Array*>(this)->data_internal()[i]; }
 
         /// <summary>Safe access by index. Returns nullptr if out of bounds.</summary>
         [[nodiscard]] T* try_at(uintptr_t i) {
-            return i < size() ? &data()[i] : nullptr;
+            if (!valid()) return nullptr;
+            return i < size_internal() ? &data_internal()[i] : nullptr;
         }
 
         /// <summary>Get as std::span.</summary>
-        [[nodiscard]] std::span<T> as_span() { return { data(), size() }; }
-        [[nodiscard]] std::span<const T> as_span() const { return { data(), size() }; }
+        [[nodiscard]] std::span<T> as_span() {
+            if (!valid()) return {};
+            return { data_internal(), size_internal() };
+        }
+        [[nodiscard]] std::span<const T> as_span() const {
+            if (!valid()) return {};
+            return { const_cast<Array*>(this)->data_internal(), const_cast<Array*>(this)->size_internal() };
+        }
 
 
         [[nodiscard]] T* begin() { return data(); }
-        [[nodiscard]] T* end() { return data() + size(); }
+        [[nodiscard]] T* end() {
+            if (!valid()) return nullptr;
+            return data_internal() + size_internal();
+        }
         [[nodiscard]] const T* begin() const { return data(); }
-        [[nodiscard]] const T* end() const { return data() + size(); }
+        [[nodiscard]] const T* end() const {
+            if (!valid()) return nullptr;
+            return const_cast<Array*>(this)->data_internal() + const_cast<Array*>(this)->size_internal();
+        }
 
         /// <summary>Convert to std::vector.</summary>
         [[nodiscard]] std::vector<T> to_vector() const {

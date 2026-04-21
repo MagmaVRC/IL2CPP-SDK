@@ -45,21 +45,27 @@ namespace IL2CPP::Module::System {
         using ManagedObject::ManagedObject;
 
         /// <summary>Get the number of active entries.</summary>
-        [[nodiscard]] int count() const { return raw_count() - free_count(); }
+        [[nodiscard]] int count() const {
+            if (!valid()) return 0;
+            return read<int>(kCountOffset) - read<int>(kFreeCountOff);
+        }
 
         [[nodiscard]] bool empty() const { return count() == 0; }
 
         /// <summary>Try to get a value by key. Returns nullptr if not found.</summary>
         [[nodiscard]] TValue* try_get_value(TKey key) {
-            auto b = buckets();
-            auto e = entries();
-            if (!b || !e || b.empty()) return nullptr;
+            if (!valid()) return nullptr;
+            void* bArr = read<void*>(kBucketsOffset);
+            void* eArr = read<void*>(kEntriesOffset);
+            if (!bArr || !eArr) return nullptr;
 
-            int bucketIdx = (std::hash<TKey>{}(key) & 0x7FFFFFFF) % static_cast<int>(b.size());
-            Entry* ent = e.data();
-            int* buck = b.data();
-            if (!ent || !buck) return nullptr;
+            auto bSize = *reinterpret_cast<uintptr_t*>(static_cast<char*>(bArr) + Array<int>::kMaxLengthOffset);
+            if (bSize == 0) return nullptr;
 
+            int* buck = reinterpret_cast<int*>(static_cast<char*>(bArr) + Array<int>::kValuesOffset);
+            Entry* ent = reinterpret_cast<Entry*>(static_cast<char*>(eArr) + Array<Entry>::kValuesOffset);
+
+            int bucketIdx = (std::hash<TKey>{}(key) & 0x7FFFFFFF) % static_cast<int>(bSize);
             for (int i = buck[bucketIdx] - 1; i >= 0; i = ent[i].next) {
                 if (ent[i].hashCode >= 0 && ent[i].key == key)
                     return &ent[i].value;
@@ -81,13 +87,15 @@ namespace IL2CPP::Module::System {
         /// <summary>Iterate all active entries.</summary>
         template<typename Func>
         void for_each(Func f) {
-            auto e = entries();
-            if (!e) return;
-            int cnt = raw_count();
-            int cap = static_cast<int>(e.size());
+            if (!valid()) return;
+            void* eArr = read<void*>(kEntriesOffset);
+            if (!eArr) return;
+            int cnt = read<int>(kCountOffset);
+            int cap = static_cast<int>(*reinterpret_cast<uintptr_t*>(
+                static_cast<char*>(eArr) + Array<Entry>::kMaxLengthOffset));
             int limit = (cnt < cap) ? cnt : cap;
-            Entry* ent = e.data();
-            if (!ent) return;
+            Entry* ent = reinterpret_cast<Entry*>(
+                static_cast<char*>(eArr) + Array<Entry>::kValuesOffset);
             for (int i = 0; i < limit; ++i) {
                 if (ent[i].hashCode >= 0)
                     f(ent[i].key, ent[i].value);
@@ -97,13 +105,15 @@ namespace IL2CPP::Module::System {
         /// <summary>Iterate all active entries (const).</summary>
         template<typename Func>
         void for_each(Func f) const {
-            auto e = entries();
-            if (!e) return;
-            int cnt = raw_count();
-            int cap = static_cast<int>(e.size());
+            if (!valid()) return;
+            void* eArr = read<void*>(kEntriesOffset);
+            if (!eArr) return;
+            int cnt = read<int>(kCountOffset);
+            int cap = static_cast<int>(*reinterpret_cast<uintptr_t*>(
+                static_cast<char*>(eArr) + Array<Entry>::kMaxLengthOffset));
             int limit = (cnt < cap) ? cnt : cap;
-            const Entry* ent = e.data();
-            if (!ent) return;
+            const Entry* ent = reinterpret_cast<const Entry*>(
+                static_cast<char*>(eArr) + Array<Entry>::kValuesOffset);
             for (int i = 0; i < limit; ++i) {
                 if (ent[i].hashCode >= 0)
                     f(ent[i].key, ent[i].value);

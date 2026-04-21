@@ -12,7 +12,7 @@ namespace IL2CPP::VRChat {
     namespace {
         std::vector<std::string> collect_string_list(IL2CPP::Module::ManagedObject obj, const IL2CPP::Module::Method& method) {
             std::vector<std::string> result;
-            if (!obj.valid()) return result;
+            if (!obj) return result;
             auto* listPtr = MethodHandler::invoke<void*>(method, obj.raw());
             if (!listPtr) return result;
             IL2CPP::Module::System::List<void*> list(listPtr);

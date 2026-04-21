@@ -8,36 +8,42 @@
 namespace IL2CPP::Module::System {
 
     class String : public ManagedObject {
+        static constexpr int kLengthOffset = 0x10;
+        static constexpr int kCharsOffset  = 0x14;
+
     public:
         using ManagedObject::ManagedObject;
 
         /// <summary>Get the string length (char count).</summary>
         [[nodiscard]] int length() const {
             if (!valid()) return 0;
-            return read<int>(0x10);
+            return read<int>(kLengthOffset);
         }
 
         /// <summary>Get a pointer to the internal wide character buffer.</summary>
         [[nodiscard]] const wchar_t* chars() const {
             if (!valid()) return nullptr;
-            return ptr_at<const wchar_t>(0x14);
+            return ptr_at<const wchar_t>(kCharsOffset);
         }
 
         /// <summary>Convert to std::wstring.</summary>
         [[nodiscard]] std::wstring to_wstring() const {
-            int len = length();
-            if (len <= 0 || !chars()) return L"";
-            return std::wstring(chars(), len);
+            if (!valid()) return L"";
+            int len = read<int>(kLengthOffset);
+            if (len <= 0) return L"";
+            return std::wstring(ptr_at<const wchar_t>(kCharsOffset), len);
         }
 
         /// <summary>Convert to std::string (UTF-8).</summary>
         [[nodiscard]] std::string to_string() const {
-            auto ws = to_wstring();
-            if (ws.empty()) return {};
-            int utf8Len = WideCharToMultiByte(CP_UTF8, 0, ws.c_str(), static_cast<int>(ws.size()), nullptr, 0, nullptr, nullptr);
+            if (!valid()) return {};
+            int len = read<int>(kLengthOffset);
+            if (len <= 0) return {};
+            const wchar_t* wc = ptr_at<const wchar_t>(kCharsOffset);
+            int utf8Len = WideCharToMultiByte(CP_UTF8, 0, wc, len, nullptr, 0, nullptr, nullptr);
             if (utf8Len <= 0) return {};
             std::string out(static_cast<size_t>(utf8Len), '\0');
-            WideCharToMultiByte(CP_UTF8, 0, ws.c_str(), static_cast<int>(ws.size()), out.data(), utf8Len, nullptr, nullptr);
+            WideCharToMultiByte(CP_UTF8, 0, wc, len, out.data(), utf8Len, nullptr, nullptr);
             return out;
         }
 
