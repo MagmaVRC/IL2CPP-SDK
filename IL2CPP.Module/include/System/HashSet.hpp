@@ -28,7 +28,7 @@ namespace IL2CPP::Module::System {
 
         [[nodiscard]] SlotsView get_slots_view() const {
             void* sArr = read<void*>(kSlotsOffset);
-            if (!sArr) return { nullptr, 0 };
+            if (!IsValidPointer(sArr)) return { nullptr, 0 };
             int limit = read<int>(kLastIndexOffset);
             int cap = static_cast<int>(*reinterpret_cast<uintptr_t*>(
                 static_cast<char*>(sArr) + Array<Slot>::kMaxLengthOffset));

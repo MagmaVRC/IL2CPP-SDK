@@ -215,6 +215,9 @@ namespace Bootstrap {
     using fn_np_set_plate_position = void(__cdecl*)(uint32_t module_id, void* player,
         char const* plate_id, uint32_t plate_id_len,
         float x, float y, float z);
+    using fn_np_set_plate_background_enabled = void(__cdecl*)(uint32_t module_id, void* player,
+        char const* plate_id, uint32_t plate_id_len,
+        bool enabled);
 
     using fn_cu_register_client = void(__cdecl*)(uint32_t module_id,
         char const* client_name, uint32_t client_name_len,
@@ -562,6 +565,8 @@ namespace Bootstrap {
         /// Menu lifecycle events — appended for ABI compatibility.
         fn_register_menu_event   register_menu_event;
         fn_unregister_menu_event unregister_menu_event;
+
+        fn_np_set_plate_background_enabled np_set_plate_background_enabled;
 
         uint32_t version;
         uint32_t _reserved = 0;

@@ -57,7 +57,7 @@ namespace IL2CPP::Module::System {
             if (!valid()) return nullptr;
             void* bArr = read<void*>(kBucketsOffset);
             void* eArr = read<void*>(kEntriesOffset);
-            if (!bArr || !eArr) return nullptr;
+            if (!IsValidPointer(bArr) || !IsValidPointer(eArr)) return nullptr;
 
             auto bSize = *reinterpret_cast<uintptr_t*>(static_cast<char*>(bArr) + Array<int>::kMaxLengthOffset);
             if (bSize == 0) return nullptr;
@@ -89,7 +89,7 @@ namespace IL2CPP::Module::System {
         void for_each(Func f) {
             if (!valid()) return;
             void* eArr = read<void*>(kEntriesOffset);
-            if (!eArr) return;
+            if (!IsValidPointer(eArr)) return;
             int cnt = read<int>(kCountOffset);
             int cap = static_cast<int>(*reinterpret_cast<uintptr_t*>(
                 static_cast<char*>(eArr) + Array<Entry>::kMaxLengthOffset));
@@ -107,7 +107,7 @@ namespace IL2CPP::Module::System {
         void for_each(Func f) const {
             if (!valid()) return;
             void* eArr = read<void*>(kEntriesOffset);
-            if (!eArr) return;
+            if (!IsValidPointer(eArr)) return;
             int cnt = read<int>(kCountOffset);
             int cap = static_cast<int>(*reinterpret_cast<uintptr_t*>(
                 static_cast<char*>(eArr) + Array<Entry>::kMaxLengthOffset));

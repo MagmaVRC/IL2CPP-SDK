@@ -11,7 +11,7 @@ namespace IL2CPP::Module::System {
 
         [[nodiscard]] T* items_data() const {
             void* arr = *reinterpret_cast<void**>(static_cast<char*>(m_native) + kItemsOffset);
-            if (!arr) return nullptr;
+            if (!IsValidPointer(arr)) return nullptr;
             return reinterpret_cast<T*>(static_cast<char*>(arr) + Array<T>::kValuesOffset);
         }
 
@@ -41,7 +41,8 @@ namespace IL2CPP::Module::System {
             if (!valid()) return nullptr;
             int cnt = read<int>(kSizeOffset);
             if (i >= static_cast<uintptr_t>(cnt)) return nullptr;
-            return &items_data()[i];
+            T* d = items_data();
+            return d ? &d[i] : nullptr;
         }
 
         /// <summary>Get as std::span over the logical count.</summary>

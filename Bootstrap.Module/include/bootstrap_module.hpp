@@ -313,6 +313,8 @@ namespace Bootstrap::Module {
                                   float r, float g, float b, float a);
         void set_plate_position(uint32_t module_id, void* player, std::string_view plate_id,
                                 float x, float y, float z);
+        void set_plate_background_enabled(uint32_t module_id, void* player, std::string_view plate_id,
+                                          bool enabled);
 
     private:
         NameplateService() = default;

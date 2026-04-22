@@ -1166,6 +1166,13 @@ namespace Bootstrap::Module {
             plate_id.data(), static_cast<uint32_t>(plate_id.size()), x, y, z);
     }
 
+    void NameplateService::set_plate_background_enabled(uint32_t module_id, void* player,
+        std::string_view plate_id, bool enabled) {
+        if (!is_connected() || !player) return;
+        g_conn.vtable->np_set_plate_background_enabled(module_id, player,
+            plate_id.data(), static_cast<uint32_t>(plate_id.size()), enabled);
+    }
+
     // ClientUsage
 
     ClientUsage& ClientUsage::Get() {
