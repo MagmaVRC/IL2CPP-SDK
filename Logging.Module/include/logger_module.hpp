@@ -33,9 +33,9 @@ namespace Logger::Module {
         void log(Level lvl, std::string_view message, std::source_location loc = std::source_location::current()) const;
 
         template<typename... Args>
-        void log(Level lvl, std::format_string<Args...> fmt, Args&&... args) const {
+        void log(Level lvl, std::string_view _fmt, Args&&... args) const {
             if (!is_enabled(lvl)) return;
-            log(lvl, std::format(fmt, std::forward<Args>(args)...));
+            log(lvl, std::vformat(_fmt, std::make_format_args(args...)));
         }
 
         void trace(std::string_view msg, std::source_location loc = std::source_location::current()) const;
@@ -46,39 +46,39 @@ namespace Logger::Module {
         void fatal(std::string_view msg, std::source_location loc = std::source_location::current()) const;
 
         template<typename... Args>
-        void trace(std::format_string<Args...> fmt, Args&&... args) const {
+        void trace(std::string_view _fmt, Args&&... args) const {
             if (!is_enabled(Level::trace)) return;
-            log(Level::trace, std::format(fmt, std::forward<Args>(args)...));
+            log(Level::trace, std::vformat(_fmt, std::make_format_args(args...)));
         }
 
         template<typename... Args>
-        void debug(std::format_string<Args...> fmt, Args&&... args) const {
+        void debug(std::string_view _fmt, Args&&... args) const {
             if (!is_enabled(Level::debug)) return;
-            log(Level::debug, std::format(fmt, std::forward<Args>(args)...));
+            log(Level::debug, std::vformat(_fmt, std::make_format_args(args...)));
         }
 
         template<typename... Args>
-        void info(std::format_string<Args...> fmt, Args&&... args) const {
+        void info(std::string_view _fmt, Args&&... args) const {
             if (!is_enabled(Level::info)) return;
-            log(Level::info, std::format(fmt, std::forward<Args>(args)...));
+            log(Level::info, std::vformat(_fmt, std::make_format_args(args...)));
         }
 
         template<typename... Args>
-        void warn(std::format_string<Args...> fmt, Args&&... args) const {
+        void warn(std::string_view _fmt, Args&&... args) const {
             if (!is_enabled(Level::warn)) return;
-            log(Level::warn, std::format(fmt, std::forward<Args>(args)...));
+            log(Level::warn, std::vformat(_fmt, std::make_format_args(args...)));
         }
 
         template<typename... Args>
-        void error(std::format_string<Args...> fmt, Args&&... args) const {
+        void error(std::string_view _fmt, Args&&... args) const {
             if (!is_enabled(Level::error)) return;
-            log(Level::error, std::format(fmt, std::forward<Args>(args)...));
+            log(Level::error, std::vformat(_fmt, std::make_format_args(args...)));
         }
 
         template<typename... Args>
-        void fatal(std::format_string<Args...> fmt, Args&&... args) const {
+        void fatal(std::string_view _fmt, Args&&... args) const {
             if (!is_enabled(Level::fatal)) return;
-            log(Level::fatal, std::format(fmt, std::forward<Args>(args)...));
+            log(Level::fatal, std::vformat(_fmt, std::make_format_args(args...)));
         }
 
     private:
@@ -111,9 +111,9 @@ namespace Logger::Module {
         void log(Level lvl, std::string_view message, std::source_location loc = std::source_location::current()) const;
 
         template<typename... Args>
-        void log(Level lvl, std::format_string<Args...> fmt, Args&&... args) const {
+        void log(Level lvl, std::string_view _fmt, Args&&... args) const {
             if (!is_enabled(lvl)) return;
-            log(lvl, std::format(fmt, std::forward<Args>(args)...));
+            log(lvl, std::vformat(_fmt, std::make_format_args(args...)));
         }
 
         void trace(std::string_view msg, std::source_location loc = std::source_location::current()) const;
@@ -124,39 +124,39 @@ namespace Logger::Module {
         void fatal(std::string_view msg, std::source_location loc = std::source_location::current()) const;
 
         template<typename... Args>
-        void trace(std::format_string<Args...> fmt, Args&&... args) const {
+        void trace(std::string_view _fmt, Args&&... args) const {
             if (!is_enabled(Level::trace)) return;
-            log(Level::trace, std::format(fmt, std::forward<Args>(args)...));
+            log(Level::trace, std::vformat(_fmt, std::make_format_args(args...)));
         }
 
         template<typename... Args>
-        void debug(std::format_string<Args...> fmt, Args&&... args) const {
+        void debug(std::string_view _fmt, Args&&... args) const {
             if (!is_enabled(Level::debug)) return;
-            log(Level::debug, std::format(fmt, std::forward<Args>(args)...));
+            log(Level::debug, std::vformat(_fmt, std::make_format_args(args...)));
         }
 
         template<typename... Args>
-        void info(std::format_string<Args...> fmt, Args&&... args) const {
+        void info(std::string_view _fmt, Args&&... args) const {
             if (!is_enabled(Level::info)) return;
-            log(Level::info, std::format(fmt, std::forward<Args>(args)...));
+            log(Level::info, std::vformat(_fmt, std::make_format_args(args...)));
         }
 
         template<typename... Args>
-        void warn(std::format_string<Args...> fmt, Args&&... args) const {
+        void warn(std::string_view _fmt, Args&&... args) const {
             if (!is_enabled(Level::warn)) return;
-            log(Level::warn, std::format(fmt, std::forward<Args>(args)...));
+            log(Level::warn, std::vformat(_fmt, std::make_format_args(args...)));
         }
 
         template<typename... Args>
-        void error(std::format_string<Args...> fmt, Args&&... args) const {
+        void error(std::string_view _fmt, Args&&... args) const {
             if (!is_enabled(Level::error)) return;
-            log(Level::error, std::format(fmt, std::forward<Args>(args)...));
+            log(Level::error, std::vformat(_fmt, std::make_format_args(args...)));
         }
 
         template<typename... Args>
-        void fatal(std::format_string<Args...> fmt, Args&&... args) const {
+        void fatal(std::string_view _fmt, Args&&... args) const {
             if (!is_enabled(Level::fatal)) return;
-            log(Level::fatal, std::format(fmt, std::forward<Args>(args)...));
+            log(Level::fatal, std::vformat(_fmt, std::make_format_args(args...)));
         }
 
     private:

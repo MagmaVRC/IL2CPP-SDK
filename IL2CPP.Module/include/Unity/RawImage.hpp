@@ -10,21 +10,21 @@ namespace IL2CPP::Module::Unity {
         using MaskableGraphic::MaskableGraphic;
 
         [[nodiscard]] void* GetTexture() const {
-            static auto m = MethodHandler::resolve("UnityEngine.UI.RawImage", "get_texture", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.RawImage"), IL2CPP_STR("get_texture"), 0);
             return MethodHandler::invoke<void*>(m, raw());
         }
         void SetTexture(void* texture) {
-            static auto m = MethodHandler::resolve("UnityEngine.UI.RawImage", "set_texture", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.RawImage"), IL2CPP_STR("set_texture"), 1);
             void* params[] = { texture };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] Rect GetUvRect() const {
-            static auto m = MethodHandler::resolve("UnityEngine.UI.RawImage", "get_uvRect", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.RawImage"), IL2CPP_STR("get_uvRect"), 0);
             return MethodHandler::invoke<Rect>(m, raw());
         }
         void SetUvRect(const Rect& value) {
-            static auto m = MethodHandler::resolve("UnityEngine.UI.RawImage", "set_uvRect", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.RawImage"), IL2CPP_STR("set_uvRect"), 1);
             Rect r = value;
             void* params[] = { &r };
             MethodHandler::invoke(m, raw(), params);

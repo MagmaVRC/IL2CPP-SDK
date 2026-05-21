@@ -15,14 +15,14 @@ namespace IL2CPP::Module::Unity {
         using Object::Object;
 
         [[nodiscard]] std::string GetText() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.DownloadHandler", "get_text", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.DownloadHandler"), IL2CPP_STR("get_text"), 0);
             void* str = MethodHandler::invoke<void*>(m, raw());
             if (!str) return "";
             return System::String{ str }.to_string();
         }
 
         [[nodiscard]] void* GetData() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.DownloadHandler", "get_data", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.DownloadHandler"), IL2CPP_STR("get_data"), 0);
             return MethodHandler::invoke<void*>(m, raw());
         }
     };
@@ -32,13 +32,13 @@ namespace IL2CPP::Module::Unity {
         using Object::Object;
 
         [[nodiscard]] std::string GetContentType() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UploadHandler", "get_contentType", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UploadHandler"), IL2CPP_STR("get_contentType"), 0);
             void* str = MethodHandler::invoke<void*>(m, raw());
             if (!str) return "";
             return System::String{ str }.to_string();
         }
         void SetContentType(std::string_view type) {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UploadHandler", "set_contentType", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UploadHandler"), IL2CPP_STR("set_contentType"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(type).c_str());
@@ -52,7 +52,7 @@ namespace IL2CPP::Module::Unity {
         using Object::Object;
 
         [[nodiscard]] static UnityWebRequest Get(std::string_view url) {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "Get", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("Get"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return UnityWebRequest{};
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(url).c_str());
@@ -61,7 +61,7 @@ namespace IL2CPP::Module::Unity {
         }
 
         [[nodiscard]] static UnityWebRequest Post(std::string_view url, std::string_view postData) {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "Post", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("Post"), 2);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return UnityWebRequest{};
             void* urlStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(url).c_str());
@@ -71,7 +71,7 @@ namespace IL2CPP::Module::Unity {
         }
 
         [[nodiscard]] static UnityWebRequest Put(std::string_view url, std::string_view bodyData) {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "Put", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("Put"), 2);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return UnityWebRequest{};
             void* urlStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(url).c_str());
@@ -81,7 +81,7 @@ namespace IL2CPP::Module::Unity {
         }
 
         [[nodiscard]] static UnityWebRequest Delete(std::string_view url) {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "Delete", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("Delete"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return UnityWebRequest{};
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(url).c_str());
@@ -90,7 +90,7 @@ namespace IL2CPP::Module::Unity {
         }
 
         [[nodiscard]] static UnityWebRequest Head(std::string_view url) {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "Head", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("Head"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return UnityWebRequest{};
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(url).c_str());
@@ -101,78 +101,78 @@ namespace IL2CPP::Module::Unity {
         [[nodiscard]] UnityWebRequestAsyncOperation SendWebRequest();
 
         [[nodiscard]] std::string GetUrl() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "get_url", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("get_url"), 0);
             void* str = MethodHandler::invoke<void*>(m, raw());
             if (!str) return "";
             return System::String{ str }.to_string();
         }
 
         [[nodiscard]] std::string GetMethod() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "get_method", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("get_method"), 0);
             void* str = MethodHandler::invoke<void*>(m, raw());
             if (!str) return "";
             return System::String{ str }.to_string();
         }
 
         [[nodiscard]] std::string GetError() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "get_error", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("get_error"), 0);
             void* str = MethodHandler::invoke<void*>(m, raw());
             if (!str) return "";
             return System::String{ str }.to_string();
         }
 
         [[nodiscard]] long long GetResponseCode() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "get_responseCode", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("get_responseCode"), 0);
             return MethodHandler::invoke<long long>(m, raw());
         }
 
         [[nodiscard]] bool GetIsDone() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "get_isDone", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("get_isDone"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
         [[nodiscard]] bool GetIsNetworkError() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "get_isNetworkError", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("get_isNetworkError"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
         [[nodiscard]] bool GetIsHttpError() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "get_isHttpError", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("get_isHttpError"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
         [[nodiscard]] float GetDownloadProgress() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "get_downloadProgress", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("get_downloadProgress"), 0);
             return MethodHandler::invoke<float>(m, raw());
         }
         [[nodiscard]] float GetUploadProgress() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "get_uploadProgress", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("get_uploadProgress"), 0);
             return MethodHandler::invoke<float>(m, raw());
         }
 
         [[nodiscard]] DownloadHandler GetDownloadHandler() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "get_downloadHandler", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("get_downloadHandler"), 0);
             return DownloadHandler{ MethodHandler::invoke<void*>(m, raw()) };
         }
         void SetDownloadHandler(DownloadHandler handler) {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "set_downloadHandler", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("set_downloadHandler"), 1);
             void* r = handler.raw();
             void* params[] = { r };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] UploadHandler GetUploadHandler() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "get_uploadHandler", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("get_uploadHandler"), 0);
             return UploadHandler{ MethodHandler::invoke<void*>(m, raw()) };
         }
         void SetUploadHandler(UploadHandler handler) {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "set_uploadHandler", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("set_uploadHandler"), 1);
             void* r = handler.raw();
             void* params[] = { r };
             MethodHandler::invoke(m, raw(), params);
         }
 
         void SetRequestHeader(std::string_view name, std::string_view value) {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "SetRequestHeader", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("SetRequestHeader"), 2);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;
             void* nameStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(name).c_str());
@@ -182,7 +182,7 @@ namespace IL2CPP::Module::Unity {
         }
 
         [[nodiscard]] std::string GetResponseHeader(std::string_view name) const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "GetResponseHeader", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("GetResponseHeader"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return "";
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(name).c_str());
@@ -193,21 +193,21 @@ namespace IL2CPP::Module::Unity {
         }
 
         void Abort() {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "Abort", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("Abort"), 0);
             MethodHandler::invoke(m, raw());
         }
 
         void Dispose() {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "Dispose", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("Dispose"), 0);
             MethodHandler::invoke(m, raw());
         }
 
         [[nodiscard]] int GetTimeout() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "get_timeout", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("get_timeout"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
         void SetTimeout(int value) {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "set_timeout", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("set_timeout"), 1);
             void* params[] = { &value };
             MethodHandler::invoke(m, raw(), params);
         }
@@ -218,23 +218,23 @@ namespace IL2CPP::Module::Unity {
         using Object::Object;
 
         [[nodiscard]] bool GetIsDone() const {
-            static auto m = MethodHandler::resolve("UnityEngine.AsyncOperation", "get_isDone", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AsyncOperation"), IL2CPP_STR("get_isDone"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
         [[nodiscard]] float GetProgress() const {
-            static auto m = MethodHandler::resolve("UnityEngine.AsyncOperation", "get_progress", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AsyncOperation"), IL2CPP_STR("get_progress"), 0);
             return MethodHandler::invoke<float>(m, raw());
         }
 
         [[nodiscard]] UnityWebRequest GetWebRequest() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequestAsyncOperation", "get_webRequest", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequestAsyncOperation"), IL2CPP_STR("get_webRequest"), 0);
             return UnityWebRequest{ MethodHandler::invoke<void*>(m, raw()) };
         }
     };
 
     inline UnityWebRequestAsyncOperation UnityWebRequest::SendWebRequest() {
-        static auto m = MethodHandler::resolve("UnityEngine.Networking.UnityWebRequest", "SendWebRequest", 0);
+        static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequest"), IL2CPP_STR("SendWebRequest"), 0);
         return UnityWebRequestAsyncOperation{ MethodHandler::invoke<void*>(m, raw()) };
     }
 

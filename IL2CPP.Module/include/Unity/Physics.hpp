@@ -11,7 +11,7 @@ namespace IL2CPP::Module::Unity {
         /// <summary>Cast a ray and check for collisions.</summary>
         [[nodiscard]] static bool Raycast(const Vector3& origin, const Vector3& direction, RaycastHit& hit,
                                           float maxDistance = 1e10f, LayerMask layerMask = LayerMask(-1)) {
-            static auto m = MethodHandler::resolve("UnityEngine.Physics", "Raycast", 5);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Physics"), IL2CPP_STR("Raycast"), 5);
             Vector3 o = origin, d = direction;
             float md = maxDistance;
             int mask = layerMask.value();
@@ -41,7 +41,7 @@ namespace IL2CPP::Module::Unity {
         /// <summary>Cast a sphere along a ray and check for collisions.</summary>
         [[nodiscard]] static bool SphereCast(const Vector3& origin, float radius, const Vector3& direction,
                                              RaycastHit& hit, float maxDistance = 1e10f, LayerMask layerMask = LayerMask(-1)) {
-            static auto m = MethodHandler::resolve("UnityEngine.Physics", "SphereCast", 6);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Physics"), IL2CPP_STR("SphereCast"), 6);
             Vector3 o = origin, d = direction;
             float r = radius, md = maxDistance;
             int mask = layerMask.value();

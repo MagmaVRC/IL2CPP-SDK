@@ -11,23 +11,23 @@ namespace IL2CPP::Module::Unity {
         using Component::Component;
 
         [[nodiscard]] bool GetEnabled() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Collider", "get_enabled", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Collider"), IL2CPP_STR("get_enabled"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
         void SetEnabled(bool value) {
-            static auto m = MethodHandler::resolve("UnityEngine.Collider", "set_enabled", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Collider"), IL2CPP_STR("set_enabled"), 1);
             void* params[] = { &value };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] bool GetIsTrigger() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Collider", "get_isTrigger", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Collider"), IL2CPP_STR("get_isTrigger"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
         void SetIsTrigger(bool value) {
-            static auto m = MethodHandler::resolve("UnityEngine.Collider", "set_isTrigger", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Collider"), IL2CPP_STR("set_isTrigger"), 1);
             void* params[] = { &value };
             MethodHandler::invoke(m, raw(), params);
         }

@@ -27,7 +27,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Destroy this object.</summary>
         void Destroy(float delay = 0.f) {
-            static auto m = MethodHandler::resolve("UnityEngine.Object", "Destroy", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Object"), IL2CPP_STR("Destroy"), 2);
             void* self = raw();
             void* params[] = { self, &delay };
             MethodHandler::invoke(m, nullptr, params);
@@ -35,7 +35,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Destroy this object immediately (use with caution).</summary>
         void DestroyImmediate() {
-            static auto m = MethodHandler::resolve("UnityEngine.Object", "DestroyImmediate", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Object"), IL2CPP_STR("DestroyImmediate"), 1);
             void* self = raw();
             void* params[] = { self };
             MethodHandler::invoke(m, nullptr, params);
@@ -43,7 +43,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Get the object name.</summary>
         [[nodiscard]] std::string GetName() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Object", "get_name", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Object"), IL2CPP_STR("get_name"), 0);
             void* str = MethodHandler::invoke<void*>(m, raw());
             if (!str) return "";
             return System::String{ str }.to_string();
@@ -51,7 +51,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Set the object name.</summary>
         void SetName(std::string_view name) {
-            static auto m = MethodHandler::resolve("UnityEngine.Object", "set_name", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Object"), IL2CPP_STR("set_name"), 1);
             auto* exports = GetExports();
             if (!exports || !exports->m_stringNew) return;
             void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(exports->m_stringNew)(
@@ -62,7 +62,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Instantiate (clone) this object.</summary>
         [[nodiscard]] Object Instantiate() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Object", "Internal_CloneSingle", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Object"), IL2CPP_STR("Internal_CloneSingle"), 1);
             void* self = raw();
             void* params[] = { self };
             return Object{ MethodHandler::invoke<void*>(m, nullptr, params) };
@@ -70,7 +70,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Mark this object as DontDestroyOnLoad.</summary>
         void DontDestroyOnLoad() {
-            static auto m = MethodHandler::resolve("UnityEngine.Object", "DontDestroyOnLoad", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Object"), IL2CPP_STR("DontDestroyOnLoad"), 1);
             void* self = raw();
             void* params[] = { self };
             MethodHandler::invoke(m, nullptr, params);
@@ -78,7 +78,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Static: Destroy an object by handle.</summary>
         static void Destroy(Object obj, float delay = 0.f) {
-            static auto m = MethodHandler::resolve("UnityEngine.Object", "Destroy", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Object"), IL2CPP_STR("Destroy"), 2);
             void* o = obj.raw();
             void* params[] = { o, &delay };
             MethodHandler::invoke(m, nullptr, params);
@@ -89,7 +89,7 @@ namespace IL2CPP::Module::Unity {
         /// @param systemType The System.Type object pointer (Il2CppSystemType*)
         /// @return The found object, or invalid Object if none found.
         [[nodiscard]] static Object FindObjectOfType(Il2CppSystemType* systemType) {
-            static auto m = MethodHandler::resolve("UnityEngine.Object", "FindObjectOfType", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Object"), IL2CPP_STR("FindObjectOfType"), 2);
             if (!systemType) return Object{};
             bool inactive = false;
             void* params[] = { systemType, &inactive };
@@ -139,7 +139,7 @@ namespace IL2CPP::Module::Unity {
         /// @param systemType The System.Type object pointer (Il2CppSystemType*)
         /// @return A vector of Object containing all found objects.
         [[nodiscard]] static std::vector<Object> FindObjectsOfType(Il2CppSystemType* systemType) {
-            static auto m = MethodHandler::resolve("UnityEngine.Object", "FindObjectsOfType", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Object"), IL2CPP_STR("FindObjectsOfType"), 2);
             if (!systemType) return {};
             bool inactive = false;
             void* params[] = { systemType, &inactive };
@@ -173,7 +173,7 @@ namespace IL2CPP::Module::Unity {
         /// @return A vector of T containing all found objects.
         template<typename T> requires std::is_base_of_v<ManagedObject, T>
         [[nodiscard]] static std::vector<T> FindObjectsOfTypeAs(Il2CppSystemType* systemType) {
-            static auto m = MethodHandler::resolve("UnityEngine.Object", "FindObjectsOfType", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Object"), IL2CPP_STR("FindObjectsOfType"), 2);
             if (!systemType) return {};
             bool inactive = false;
             void* params[] = { systemType, &inactive };

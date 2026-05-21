@@ -13,7 +13,7 @@ namespace IL2CPP::Module::Unity {
         Resources() = delete;
 
         [[nodiscard]] static void* Load(std::string_view path) {
-            static auto m = MethodHandler::resolve("UnityEngine.Resources", "Load", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Resources"), IL2CPP_STR("Load"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return nullptr;
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());
@@ -22,14 +22,14 @@ namespace IL2CPP::Module::Unity {
         }
 
         [[nodiscard]] static void* FindObjectsOfTypeAll(void* systemType) {
-            static auto m = MethodHandler::resolve("UnityEngine.Resources", "FindObjectsOfTypeAll", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Resources"), IL2CPP_STR("FindObjectsOfTypeAll"), 1);
             if (!systemType) return nullptr;
             void* params[] = { systemType };
             return MethodHandler::invoke<void*>(m, nullptr, params);
         }
 
         [[nodiscard]] static void* UnloadUnusedAssets() {
-            static auto m = MethodHandler::resolve("UnityEngine.Resources", "UnloadUnusedAssets", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Resources"), IL2CPP_STR("UnloadUnusedAssets"), 0);
             return MethodHandler::invoke<void*>(m, nullptr);
         }
     };

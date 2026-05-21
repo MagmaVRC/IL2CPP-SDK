@@ -13,7 +13,7 @@ namespace IL2CPP::Module::Unity {
 
 
         void SetText(std::string_view value) {
-            static auto m = MethodHandler::resolve("TMPro.TextMeshProUGUI", "set_text", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TextMeshProUGUI"), IL2CPP_STR("set_text"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;
             void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(
@@ -24,7 +24,7 @@ namespace IL2CPP::Module::Unity {
 
 
         void SetTextDirect(std::string_view text) {
-            static auto m = MethodHandler::resolve("TMPro.TextMeshProUGUI", "SetText", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TextMeshProUGUI"), IL2CPP_STR("SetText"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;
             void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(

@@ -17,7 +17,7 @@ namespace IL2CPP::Module::System {
         File() = delete;
 
         [[nodiscard]] static bool Exists(std::string_view path) {
-            static auto m = MethodHandler::resolve("System.IO.File", "Exists", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.File"), IL2CPP_STR("Exists"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return false;
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());
@@ -26,7 +26,7 @@ namespace IL2CPP::Module::System {
         }
 
         [[nodiscard]] static std::string ReadAllText(std::string_view path) {
-            static auto m = MethodHandler::resolve("System.IO.File", "ReadAllText", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.File"), IL2CPP_STR("ReadAllText"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return "";
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());
@@ -37,7 +37,7 @@ namespace IL2CPP::Module::System {
         }
 
         static void WriteAllText(std::string_view path, std::string_view contents) {
-            static auto m = MethodHandler::resolve("System.IO.File", "WriteAllText", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.File"), IL2CPP_STR("WriteAllText"), 2);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;
             void* pathStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());
@@ -48,7 +48,7 @@ namespace IL2CPP::Module::System {
 
         /// <summary>Read all bytes — returns raw IL2CPP byte array. Use Array&lt;uint8_t&gt; to access.</summary>
         [[nodiscard]] static void* ReadAllBytes(std::string_view path) {
-            static auto m = MethodHandler::resolve("System.IO.File", "ReadAllBytes", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.File"), IL2CPP_STR("ReadAllBytes"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return nullptr;
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());
@@ -65,7 +65,7 @@ namespace IL2CPP::Module::System {
         }
 
         static void WriteAllBytes(std::string_view path, const void* data, size_t size) {
-            static auto m = MethodHandler::resolve("System.IO.File", "WriteAllBytes", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.File"), IL2CPP_STR("WriteAllBytes"), 2);
             auto* e = GetExports();
             if (!e || !e->m_stringNew || !data || size == 0) return;
             void* pathStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());
@@ -79,7 +79,7 @@ namespace IL2CPP::Module::System {
         }
 
         static void Delete(std::string_view path) {
-            static auto m = MethodHandler::resolve("System.IO.File", "Delete", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.File"), IL2CPP_STR("Delete"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());
@@ -88,7 +88,7 @@ namespace IL2CPP::Module::System {
         }
 
         static void Copy(std::string_view sourceFileName, std::string_view destFileName, bool overwrite = false) {
-            static auto m = MethodHandler::resolve("System.IO.File", "Copy", 3);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.File"), IL2CPP_STR("Copy"), 3);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;
             void* srcStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(sourceFileName).c_str());
@@ -98,7 +98,7 @@ namespace IL2CPP::Module::System {
         }
 
         static void Move(std::string_view sourceFileName, std::string_view destFileName) {
-            static auto m = MethodHandler::resolve("System.IO.File", "Move", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.File"), IL2CPP_STR("Move"), 2);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;
             void* srcStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(sourceFileName).c_str());
@@ -113,7 +113,7 @@ namespace IL2CPP::Module::System {
         Path() = delete;
 
         [[nodiscard]] static std::string Combine(std::string_view path1, std::string_view path2) {
-            static auto m = MethodHandler::resolve("System.IO.Path", "Combine", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.Path"), IL2CPP_STR("Combine"), 2);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return "";
             void* s1 = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path1).c_str());
@@ -125,7 +125,7 @@ namespace IL2CPP::Module::System {
         }
 
         [[nodiscard]] static std::string GetFileName(std::string_view path) {
-            static auto m = MethodHandler::resolve("System.IO.Path", "GetFileName", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.Path"), IL2CPP_STR("GetFileName"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return "";
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());
@@ -136,7 +136,7 @@ namespace IL2CPP::Module::System {
         }
 
         [[nodiscard]] static std::string GetDirectoryName(std::string_view path) {
-            static auto m = MethodHandler::resolve("System.IO.Path", "GetDirectoryName", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.Path"), IL2CPP_STR("GetDirectoryName"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return "";
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());
@@ -147,7 +147,7 @@ namespace IL2CPP::Module::System {
         }
 
         [[nodiscard]] static std::string GetExtension(std::string_view path) {
-            static auto m = MethodHandler::resolve("System.IO.Path", "GetExtension", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.Path"), IL2CPP_STR("GetExtension"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return "";
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());
@@ -158,7 +158,7 @@ namespace IL2CPP::Module::System {
         }
 
         [[nodiscard]] static std::string GetFileNameWithoutExtension(std::string_view path) {
-            static auto m = MethodHandler::resolve("System.IO.Path", "GetFileNameWithoutExtension", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.Path"), IL2CPP_STR("GetFileNameWithoutExtension"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return "";
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());
@@ -169,7 +169,7 @@ namespace IL2CPP::Module::System {
         }
 
         [[nodiscard]] static std::string GetTempPath() {
-            static auto m = MethodHandler::resolve("System.IO.Path", "GetTempPath", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.Path"), IL2CPP_STR("GetTempPath"), 0);
             void* result = MethodHandler::invoke<void*>(m, nullptr);
             if (!result) return "";
             return String{ result }.to_string();
@@ -181,7 +181,7 @@ namespace IL2CPP::Module::System {
         Directory() = delete;
 
         [[nodiscard]] static bool Exists(std::string_view path) {
-            static auto m = MethodHandler::resolve("System.IO.Directory", "Exists", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.Directory"), IL2CPP_STR("Exists"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return false;
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());
@@ -190,7 +190,7 @@ namespace IL2CPP::Module::System {
         }
 
         static void CreateDirectory(std::string_view path) {
-            static auto m = MethodHandler::resolve("System.IO.Directory", "CreateDirectory", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.Directory"), IL2CPP_STR("CreateDirectory"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());
@@ -199,7 +199,7 @@ namespace IL2CPP::Module::System {
         }
 
         static void Delete(std::string_view path, bool recursive = false) {
-            static auto m = MethodHandler::resolve("System.IO.Directory", "Delete", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.IO.Directory"), IL2CPP_STR("Delete"), 2);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());

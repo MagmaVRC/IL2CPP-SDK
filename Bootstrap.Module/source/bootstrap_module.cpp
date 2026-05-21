@@ -1274,48 +1274,6 @@ namespace Bootstrap::Module {
         return result;
     }
 
-    // WebSocket
-
-    WebSocket& WebSocket::Get() {
-        static WebSocket instance;
-        return instance;
-    }
-
-    uint32_t WebSocket::connect(uint32_t module_id, std::string_view url, std::string_view protocols) {
-        if (!Bootstrap::Module::is_connected()) return Bootstrap::invalid_id;
-        return g_conn.vtable->ws_connect(module_id,
-            url.data(), static_cast<uint32_t>(url.size()),
-            protocols.data(), static_cast<uint32_t>(protocols.size()));
-    }
-
-    bool WebSocket::send(uint32_t module_id, uint32_t handle, const void* data, uint32_t len, bool binary) {
-        if (!Bootstrap::Module::is_connected()) return false;
-        return g_conn.vtable->ws_send(module_id, handle,
-            static_cast<uint8_t const*>(data), len, binary);
-    }
-
-    bool WebSocket::send(uint32_t module_id, uint32_t handle, std::string_view text) {
-        return send(module_id, handle, text.data(), static_cast<uint32_t>(text.size()), false);
-    }
-
-    void WebSocket::close(uint32_t module_id, uint32_t handle, uint16_t code, std::string_view reason) {
-        if (!Bootstrap::Module::is_connected()) return;
-        g_conn.vtable->ws_close(module_id, handle, code,
-            reason.data(), static_cast<uint32_t>(reason.size()));
-    }
-
-    bool WebSocket::is_connected(uint32_t handle) {
-        if (!Bootstrap::Module::is_connected()) return false;
-        return g_conn.vtable->ws_is_connected(handle);
-    }
-
-    void WebSocket::set_callbacks(uint32_t module_id, uint32_t handle,
-        fn_ws_open_callback on_open, fn_ws_message_callback on_message,
-        fn_ws_close_callback on_close, fn_ws_error_callback on_error) {
-        if (!Bootstrap::Module::is_connected()) return;
-        g_conn.vtable->ws_set_callbacks(module_id, handle, on_open, on_message, on_close, on_error);
-    }
-
     // FileSystem
 
     FileSystem& FileSystem::Get() {

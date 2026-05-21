@@ -14,23 +14,23 @@ namespace IL2CPP::Module::Unity {
         Cursor() = delete;
 
         [[nodiscard]] static bool GetVisible() {
-            static auto m = MethodHandler::resolve("UnityEngine.Cursor", "get_visible", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Cursor"), IL2CPP_STR("get_visible"), 0);
             return MethodHandler::invoke<bool>(m, nullptr);
         }
 
         static void SetVisible(bool visible) {
-            static auto m = MethodHandler::resolve("UnityEngine.Cursor", "set_visible", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Cursor"), IL2CPP_STR("set_visible"), 1);
             void* params[] = { &visible };
             MethodHandler::invoke(m, nullptr, params);
         }
 
         [[nodiscard]] static CursorLockMode GetLockState() {
-            static auto m = MethodHandler::resolve("UnityEngine.Cursor", "get_lockState", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Cursor"), IL2CPP_STR("get_lockState"), 0);
             return static_cast<CursorLockMode>(MethodHandler::invoke<int>(m, nullptr));
         }
 
         static void SetLockState(CursorLockMode lockMode) {
-            static auto m = MethodHandler::resolve("UnityEngine.Cursor", "set_lockState", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Cursor"), IL2CPP_STR("set_lockState"), 1);
             int val = static_cast<int>(lockMode);
             void* params[] = { &val };
             MethodHandler::invoke(m, nullptr, params);

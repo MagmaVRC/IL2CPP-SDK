@@ -12,22 +12,22 @@ namespace IL2CPP::Module::Unity {
 
 
         [[nodiscard]] Vector3 GetPosition() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "get_position", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_position"), 0);
             return MethodHandler::invoke<Vector3>(m, raw());
         }
         void SetPosition(const Vector3& pos) {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "set_position", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_position"), 1);
             Vector3 p = pos;
             void* params[] = { &p };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] Vector3 GetLocalPosition() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "get_localPosition", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_localPosition"), 0);
             return MethodHandler::invoke<Vector3>(m, raw());
         }
         void SetLocalPosition(const Vector3& pos) {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "set_localPosition", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_localPosition"), 1);
             Vector3 p = pos;
             void* params[] = { &p };
             MethodHandler::invoke(m, raw(), params);
@@ -35,22 +35,22 @@ namespace IL2CPP::Module::Unity {
 
 
         [[nodiscard]] Quaternion GetRotation() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "get_rotation", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_rotation"), 0);
             return MethodHandler::invoke<Quaternion>(m, raw());
         }
         void SetRotation(const Quaternion& rot) {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "set_rotation", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_rotation"), 1);
             Quaternion r = rot;
             void* params[] = { &r };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] Quaternion GetLocalRotation() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "get_localRotation", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_localRotation"), 0);
             return MethodHandler::invoke<Quaternion>(m, raw());
         }
         void SetLocalRotation(const Quaternion& rot) {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "set_localRotation", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_localRotation"), 1);
             Quaternion r = rot;
             void* params[] = { &r };
             MethodHandler::invoke(m, raw(), params);
@@ -58,50 +58,50 @@ namespace IL2CPP::Module::Unity {
 
 
         [[nodiscard]] Vector3 GetLocalScale() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "get_localScale", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_localScale"), 0);
             return MethodHandler::invoke<Vector3>(m, raw());
         }
         void SetLocalScale(const Vector3& scale) {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "set_localScale", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_localScale"), 1);
             Vector3 s = scale;
             void* params[] = { &s };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] Vector3 GetLossyScale() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "get_lossyScale", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_lossyScale"), 0);
             return MethodHandler::invoke<Vector3>(m, raw());
         }
 
 
         [[nodiscard]] Vector3 GetForward() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "get_forward", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_forward"), 0);
             return MethodHandler::invoke<Vector3>(m, raw());
         }
         void SetForward(const Vector3& fwd) {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "set_forward", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_forward"), 1);
             Vector3 f = fwd;
             void* params[] = { &f };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] Vector3 GetRight() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "get_right", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_right"), 0);
             return MethodHandler::invoke<Vector3>(m, raw());
         }
         void SetRight(const Vector3& r) {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "set_right", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_right"), 1);
             Vector3 rv = r;
             void* params[] = { &rv };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] Vector3 GetUp() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "get_up", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_up"), 0);
             return MethodHandler::invoke<Vector3>(m, raw());
         }
         void SetUp(const Vector3& u) {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "set_up", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_up"), 1);
             Vector3 uv = u;
             void* params[] = { &uv };
             MethodHandler::invoke(m, raw(), params);
@@ -109,51 +109,51 @@ namespace IL2CPP::Module::Unity {
 
 
         [[nodiscard]] Transform GetParent() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "get_parent", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_parent"), 0);
             return Transform{ MethodHandler::invoke<void*>(m, raw()) };
         }
         void SetParent(Transform parent, bool worldPositionStays = true) {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "SetParent", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("SetParent"), 2);
             void* p = parent.raw();
             void* params[] = { p, &worldPositionStays };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] Transform GetRoot() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "get_root", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_root"), 0);
             return Transform{ MethodHandler::invoke<void*>(m, raw()) };
         }
 
         [[nodiscard]] int GetChildCount() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "get_childCount", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_childCount"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
 
         [[nodiscard]] Transform GetChild(int index) const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "GetChild", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("GetChild"), 1);
             void* params[] = { &index };
             return Transform{ MethodHandler::invoke<void*>(m, raw(), params) };
         }
 
         [[nodiscard]] int GetHierarchyCount() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "get_hierarchyCount", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_hierarchyCount"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
 
         [[nodiscard]] bool IsChildOf(Transform parent) const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "IsChildOf", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("IsChildOf"), 1);
             void* p = parent.raw();
             void* params[] = { p };
             return MethodHandler::invoke<bool>(m, raw(), params);
         }
 
         void DetachChildren() {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "DetachChildren", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("DetachChildren"), 0);
             MethodHandler::invoke(m, raw());
         }
 
         [[nodiscard]] Transform Find(std::string_view name) const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "Find", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("Find"), 1);
             auto* exports = GetExports();
             if (!exports || !exports->m_stringNew) return Transform{};
             void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(exports->m_stringNew)(
@@ -164,7 +164,7 @@ namespace IL2CPP::Module::Unity {
 
 
         void SetPositionAndRotation(const Vector3& pos, const Quaternion& rot) {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "SetPositionAndRotation", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("SetPositionAndRotation"), 2);
             Vector3 p = pos;
             Quaternion r = rot;
             void* params[] = { &p, &r };
@@ -172,7 +172,7 @@ namespace IL2CPP::Module::Unity {
         }
 
         void SetLocalPositionAndRotation(const Vector3& pos, const Quaternion& rot) {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "SetLocalPositionAndRotation", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("SetLocalPositionAndRotation"), 2);
             Vector3 p = pos;
             Quaternion r = rot;
             void* params[] = { &p, &r };
@@ -180,21 +180,21 @@ namespace IL2CPP::Module::Unity {
         }
 
         [[nodiscard]] Vector3 TransformDirection(const Vector3& dir) const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "TransformDirection", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("TransformDirection"), 1);
             Vector3 d = dir;
             void* params[] = { &d };
             return MethodHandler::invoke<Vector3>(m, raw(), params);
         }
 
         [[nodiscard]] Vector3 InverseTransformDirection(const Vector3& dir) const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "InverseTransformDirection", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("InverseTransformDirection"), 1);
             Vector3 d = dir;
             void* params[] = { &d };
             return MethodHandler::invoke<Vector3>(m, raw(), params);
         }
 
         [[nodiscard]] Vector3 TransformPoint(const Vector3& point) const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "TransformPoint", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("TransformPoint"), 1);
             Vector3 p = point;
             void* params[] = { &p };
             return MethodHandler::invoke<Vector3>(m, raw(), params);
@@ -203,7 +203,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Rotate around a point in world space.</summary>
         void RotateAround(const Vector3& point, const Vector3& axis, float angle) {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "RotateAround", 3);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("RotateAround"), 3);
             Vector3 p = point;
             Vector3 a = axis;
             void* params[] = { &p, &a, &angle };
@@ -212,7 +212,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Rotate around a point in local space.</summary>
         void RotateAroundLocal(const Vector3& point, const Vector3& axis, float angle) {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "RotateAroundLocal", 3);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("RotateAroundLocal"), 3);
             Vector3 p = point;
             Vector3 a = axis;
             void* params[] = { &p, &a, &angle };
@@ -285,35 +285,35 @@ namespace IL2CPP::Module::Unity {
 
 
         [[nodiscard]] Matrix4x4 GetWorldToLocalMatrix() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "get_worldToLocalMatrix", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_worldToLocalMatrix"), 0);
             return MethodHandler::invoke<Matrix4x4>(m, raw());
         }
 
         [[nodiscard]] Matrix4x4 GetLocalToWorldMatrix() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Transform", "get_localToWorldMatrix", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_localToWorldMatrix"), 0);
             return MethodHandler::invoke<Matrix4x4>(m, raw());
         }
     };
 
 
     inline Transform Component::GetTransform() const {
-        static auto m = MethodHandler::resolve("UnityEngine.Component", "get_transform", 0);
+        static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Component"), IL2CPP_STR("get_transform"), 0);
         return Transform{ MethodHandler::invoke<void*>(m, raw()) };
     }
 
     inline GameObject Component::GetGameObject() const {
-        static auto m = MethodHandler::resolve("UnityEngine.Component", "get_gameObject", 0);
+        static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Component"), IL2CPP_STR("get_gameObject"), 0);
         return GameObject{ MethodHandler::invoke<void*>(m, raw()) };
     }
 
     inline Transform GameObject::GetTransform() const {
-        static auto m = MethodHandler::resolve("UnityEngine.GameObject", "get_transform", 0);
+        static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("get_transform"), 0);
         return Transform{ MethodHandler::invoke<void*>(m, raw()) };
     }
 
 
     inline Object Object::InstantiateWithParent(Transform parent, bool WorldPositionStays) const {
-        static auto m = MethodHandler::resolve("UnityEngine.Object", "Internal_CloneSingleWithParent", 3);
+        static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Object"), IL2CPP_STR("Internal_CloneSingleWithParent"), 3);
         void* self = raw();
         void* p = parent.raw();
 		bool wps = WorldPositionStays;

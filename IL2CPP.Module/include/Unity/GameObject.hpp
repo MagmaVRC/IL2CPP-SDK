@@ -17,7 +17,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Static: Find a GameObject by name.</summary>
         [[nodiscard]] static GameObject Find(std::string_view name) {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "Find", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("Find"), 1);
             auto* exports = GetExports();
             if (!exports || !exports->m_stringNew) return GameObject{};
             void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(exports->m_stringNew)(
@@ -28,7 +28,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Static: Find a GameObject by tag.</summary>
         [[nodiscard]] static GameObject FindWithTag(std::string_view tag) {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "FindWithTag", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("FindWithTag"), 1);
             auto* exports = GetExports();
             if (!exports || !exports->m_stringNew) return GameObject{};
             void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(exports->m_stringNew)(
@@ -39,7 +39,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Static: Find all GameObjects with the specified tag.</summary>
         [[nodiscard]] static std::vector<GameObject> FindGameObjectsWithTag(std::string_view tag) {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "FindGameObjectsWithTag", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("FindGameObjectsWithTag"), 1);
             auto* exports = GetExports();
             if (!exports || !exports->m_stringNew) return {};
             void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(exports->m_stringNew)(
@@ -51,7 +51,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Static: Create a primitive GameObject (Sphere, Cube, etc.).</summary>
         [[nodiscard]] static GameObject CreatePrimitive(PrimitiveType type) {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "CreatePrimitive", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("CreatePrimitive"), 1);
             int val = static_cast<int>(type);
             void* params[] = { &val };
             return GameObject{ MethodHandler::invoke<void*>(m, nullptr, params) };
@@ -63,7 +63,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Get a component by System.Type.</summary>
         [[nodiscard]] Component GetComponent(Il2CppSystemType* systemType) const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponent", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("GetComponent"), 1);
             if (!systemType) return Component{};
             void* params[] = { systemType };
             return Component{ MethodHandler::invoke<void*>(m, raw(), params) };
@@ -86,7 +86,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Get a component in children.</summary>
         [[nodiscard]] Component GetComponentInChildren(Il2CppSystemType* systemType, bool includeInactive = false) const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponentInChildren", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("GetComponentInChildren"), 2);
             if (!systemType) return Component{};
             void* params[] = { systemType, &includeInactive };
             return Component{ MethodHandler::invoke<void*>(m, raw(), params) };
@@ -102,7 +102,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Get a component in parent.</summary>
         [[nodiscard]] Component GetComponentInParent(Il2CppSystemType* systemType, bool includeInactive = false) const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponentInParent", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("GetComponentInParent"), 2);
             if (!systemType) return Component{};
             void* params[] = { systemType, &includeInactive };
             return Component{ MethodHandler::invoke<void*>(m, raw(), params) };
@@ -118,7 +118,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Add a component.</summary>
         [[nodiscard]] Component AddComponent(Il2CppSystemType* systemType) {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "AddComponent", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("AddComponent"), 1);
             if (!systemType) return Component{};
             void* params[] = { systemType };
             return Component{ MethodHandler::invoke<void*>(m, raw(), params) };
@@ -135,7 +135,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Get all components of the specified type.</summary>
         [[nodiscard]] std::vector<Component> GetComponents(Il2CppSystemType* systemType) const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponents", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("GetComponents"), 1);
             if (!systemType) return {};
             void* params[] = { systemType };
             void* array = MethodHandler::invoke<void*>(m, raw(), params);
@@ -160,7 +160,7 @@ namespace IL2CPP::Module::Unity {
         /// <summary>Get all components and return as std::vector&lt;T&gt;.</summary>
         template<typename T> requires std::is_base_of_v<ManagedObject, T>
         [[nodiscard]] std::vector<T> GetComponentsAs(Il2CppSystemType* systemType) const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponents", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("GetComponents"), 1);
             if (!systemType) return {};
             void* params[] = { systemType };
             void* array = MethodHandler::invoke<void*>(m, raw(), params);
@@ -177,7 +177,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Get all components of the specified type in children.</summary>
         [[nodiscard]] std::vector<Component> GetComponentsInChildren(Il2CppSystemType* systemType, bool includeInactive = false) const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponentsInChildren", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("GetComponentsInChildren"), 2);
             if (!systemType) return {};
             void* params[] = { systemType, &includeInactive };
             void* array = MethodHandler::invoke<void*>(m, raw(), params);
@@ -195,7 +195,7 @@ namespace IL2CPP::Module::Unity {
         /// <summary>Get all components in children and return as std::vector&lt;T&gt;.</summary>
         template<typename T> requires std::is_base_of_v<ManagedObject, T>
         [[nodiscard]] std::vector<T> GetComponentsInChildrenAs(Il2CppSystemType* systemType, bool includeInactive = false) const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponentsInChildren", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("GetComponentsInChildren"), 2);
             if (!systemType) return {};
             void* params[] = { systemType, &includeInactive };
             void* array = MethodHandler::invoke<void*>(m, raw(), params);
@@ -204,7 +204,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Get all components of the specified type in parent.</summary>
         [[nodiscard]] std::vector<Component> GetComponentsInParent(Il2CppSystemType* systemType, bool includeInactive = false) const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponentsInParent", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("GetComponentsInParent"), 2);
             if (!systemType) return {};
             void* params[] = { systemType, &includeInactive };
             void* array = MethodHandler::invoke<void*>(m, raw(), params);
@@ -222,7 +222,7 @@ namespace IL2CPP::Module::Unity {
         /// <summary>Get all components in parent and return as std::vector&lt;T&gt;.</summary>
         template<typename T> requires std::is_base_of_v<ManagedObject, T>
         [[nodiscard]] std::vector<T> GetComponentsInParentAs(Il2CppSystemType* systemType, bool includeInactive = false) const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "GetComponentsInParent", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("GetComponentsInParent"), 2);
             if (!systemType) return {};
             void* params[] = { systemType, &includeInactive };
             void* array = MethodHandler::invoke<void*>(m, raw(), params);
@@ -231,7 +231,7 @@ namespace IL2CPP::Module::Unity {
 
         /// <summary>Try to get a component of the specified type.</summary>
         [[nodiscard]] bool TryGetComponent(Il2CppSystemType* systemType, Component& out) const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "TryGetComponent", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("TryGetComponent"), 2);
             if (!systemType) return false;
             void* outComp = nullptr;
             void* params[] = { systemType, &outComp };
@@ -253,34 +253,34 @@ namespace IL2CPP::Module::Unity {
 
 
         [[nodiscard]] bool GetActive() const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "get_active", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("get_active"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
         [[nodiscard]] bool GetActiveSelf() const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "get_activeSelf", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("get_activeSelf"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
         [[nodiscard]] bool GetActiveInHierarchy() const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "get_activeInHierarchy", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("get_activeInHierarchy"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
         void SetActive(bool active) {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "SetActive", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("SetActive"), 1);
             void* params[] = { &active };
             MethodHandler::invoke(m, raw(), params);
         }
 
 
         [[nodiscard]] unsigned int GetLayer() const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "get_layer", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("get_layer"), 0);
             return static_cast<unsigned int>(MethodHandler::invoke<int>(m, raw()));
         }
 
         void SetLayer(unsigned int layer) {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "set_layer", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("set_layer"), 1);
             int val = static_cast<int>(layer);
             void* params[] = { &val };
             MethodHandler::invoke(m, raw(), params);
@@ -288,20 +288,20 @@ namespace IL2CPP::Module::Unity {
 
 
         [[nodiscard]] Scene GetScene() const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "get_scene", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("get_scene"), 0);
             return MethodHandler::invoke<Scene>(m, raw());
         }
 
 
         [[nodiscard]] std::string GetTag() const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "get_tag", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("get_tag"), 0);
             void* str = MethodHandler::invoke<void*>(m, raw());
             if (!str) return "";
             return System::String{ str }.to_string();
         }
 
         void SetTag(std::string_view tag) {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "set_tag", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("set_tag"), 1);
             auto* exports = GetExports();
             if (!exports || !exports->m_stringNew) return;
             void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(exports->m_stringNew)(
@@ -311,7 +311,7 @@ namespace IL2CPP::Module::Unity {
         }
 
         [[nodiscard]] bool CompareTag(std::string_view tag) const {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "CompareTag", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("CompareTag"), 1);
             auto* exports = GetExports();
             if (!exports || !exports->m_stringNew) return false;
             void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(exports->m_stringNew)(
@@ -322,7 +322,7 @@ namespace IL2CPP::Module::Unity {
 
 
         void SendMessage(std::string_view methodName, SendMessageOptions options = SendMessageOptions::RequireReceiver) {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "SendMessage", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("SendMessage"), 2);
             auto* exports = GetExports();
             if (!exports || !exports->m_stringNew) return;
             void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(exports->m_stringNew)(
@@ -333,7 +333,7 @@ namespace IL2CPP::Module::Unity {
         }
 
         void SendMessageUpwards(std::string_view methodName, SendMessageOptions options = SendMessageOptions::RequireReceiver) {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "SendMessageUpwards", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("SendMessageUpwards"), 2);
             auto* exports = GetExports();
             if (!exports || !exports->m_stringNew) return;
             void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(exports->m_stringNew)(
@@ -344,7 +344,7 @@ namespace IL2CPP::Module::Unity {
         }
 
         void BroadcastMessage(std::string_view methodName, SendMessageOptions options = SendMessageOptions::RequireReceiver) {
-            static auto m = MethodHandler::resolve("UnityEngine.GameObject", "BroadcastMessage", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("BroadcastMessage"), 2);
             auto* exports = GetExports();
             if (!exports || !exports->m_stringNew) return;
             void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(exports->m_stringNew)(

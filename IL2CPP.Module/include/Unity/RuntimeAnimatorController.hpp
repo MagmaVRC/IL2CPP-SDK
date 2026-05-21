@@ -10,7 +10,7 @@ namespace IL2CPP::Module::Unity {
         using Object::Object;
 
         [[nodiscard]] std::vector<AnimationClip> GetAnimationClips() const {
-            static auto m = MethodHandler::resolve("UnityEngine.RuntimeAnimatorController", "get_animationClips", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.RuntimeAnimatorController"), IL2CPP_STR("get_animationClips"), 0);
             void* arr = MethodHandler::invoke<void*>(m, raw());
             return Object::FromArray<AnimationClip>(arr);
         }

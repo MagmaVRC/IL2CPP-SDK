@@ -14,7 +14,7 @@ namespace IL2CPP::Module::Unity {
         PlayerPrefs() = delete;
 
         static void SetInt(std::string_view key, int value) {
-            static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "SetInt", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.PlayerPrefs"), IL2CPP_STR("SetInt"), 2);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(key).c_str());
@@ -22,7 +22,7 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, nullptr, params);
         }
         [[nodiscard]] static int GetInt(std::string_view key, int defaultValue = 0) {
-            static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "GetInt", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.PlayerPrefs"), IL2CPP_STR("GetInt"), 2);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return defaultValue;
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(key).c_str());
@@ -31,7 +31,7 @@ namespace IL2CPP::Module::Unity {
         }
 
         static void SetFloat(std::string_view key, float value) {
-            static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "SetFloat", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.PlayerPrefs"), IL2CPP_STR("SetFloat"), 2);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(key).c_str());
@@ -39,7 +39,7 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, nullptr, params);
         }
         [[nodiscard]] static float GetFloat(std::string_view key, float defaultValue = 0.f) {
-            static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "GetFloat", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.PlayerPrefs"), IL2CPP_STR("GetFloat"), 2);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return defaultValue;
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(key).c_str());
@@ -48,7 +48,7 @@ namespace IL2CPP::Module::Unity {
         }
 
         static void SetString(std::string_view key, std::string_view value) {
-            static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "SetString", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.PlayerPrefs"), IL2CPP_STR("SetString"), 2);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;
             void* keyStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(key).c_str());
@@ -57,7 +57,7 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, nullptr, params);
         }
         [[nodiscard]] static std::string GetString(std::string_view key, std::string_view defaultValue = "") {
-            static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "GetString", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.PlayerPrefs"), IL2CPP_STR("GetString"), 2);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return std::string(defaultValue);
             void* keyStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(key).c_str());
@@ -69,7 +69,7 @@ namespace IL2CPP::Module::Unity {
         }
 
         [[nodiscard]] static bool HasKey(std::string_view key) {
-            static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "HasKey", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.PlayerPrefs"), IL2CPP_STR("HasKey"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return false;
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(key).c_str());
@@ -78,7 +78,7 @@ namespace IL2CPP::Module::Unity {
         }
 
         static void DeleteKey(std::string_view key) {
-            static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "DeleteKey", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.PlayerPrefs"), IL2CPP_STR("DeleteKey"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(key).c_str());
@@ -87,12 +87,12 @@ namespace IL2CPP::Module::Unity {
         }
 
         static void DeleteAll() {
-            static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "DeleteAll", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.PlayerPrefs"), IL2CPP_STR("DeleteAll"), 0);
             MethodHandler::invoke(m, nullptr);
         }
 
         static void Save() {
-            static auto m = MethodHandler::resolve("UnityEngine.PlayerPrefs", "Save", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.PlayerPrefs"), IL2CPP_STR("Save"), 0);
             MethodHandler::invoke(m, nullptr);
         }
     };

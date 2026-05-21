@@ -13,46 +13,46 @@ namespace IL2CPP::Module::Unity {
         using Object::Object;
 
         [[nodiscard]] float GetLength() const {
-            static auto m = MethodHandler::resolve("UnityEngine.AudioClip", "get_length", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AudioClip"), IL2CPP_STR("get_length"), 0);
             return MethodHandler::invoke<float>(m, raw());
         }
 
         [[nodiscard]] int GetSamples() const {
-            static auto m = MethodHandler::resolve("UnityEngine.AudioClip", "get_samples", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AudioClip"), IL2CPP_STR("get_samples"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
 
         [[nodiscard]] int GetChannels() const {
-            static auto m = MethodHandler::resolve("UnityEngine.AudioClip", "get_channels", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AudioClip"), IL2CPP_STR("get_channels"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
 
         [[nodiscard]] int GetFrequency() const {
-            static auto m = MethodHandler::resolve("UnityEngine.AudioClip", "get_frequency", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AudioClip"), IL2CPP_STR("get_frequency"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
 
         [[nodiscard]] int GetLoadState() const {
-            static auto m = MethodHandler::resolve("UnityEngine.AudioClip", "get_loadState", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AudioClip"), IL2CPP_STR("get_loadState"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
 
         [[nodiscard]] int GetLoadType() const {
-            static auto m = MethodHandler::resolve("UnityEngine.AudioClip", "get_loadType", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AudioClip"), IL2CPP_STR("get_loadType"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
 
         [[nodiscard]] bool LoadAudioData() {
-            static auto m = MethodHandler::resolve("UnityEngine.AudioClip", "LoadAudioData", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AudioClip"), IL2CPP_STR("LoadAudioData"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
         bool UnloadAudioData() {
-            static auto m = MethodHandler::resolve("UnityEngine.AudioClip", "UnloadAudioData", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AudioClip"), IL2CPP_STR("UnloadAudioData"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
         bool SetData(const float* data, size_t sampleCount, int offsetSamples = 0) {
-            static auto m = MethodHandler::resolve("UnityEngine.AudioClip", "SetData", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AudioClip"), IL2CPP_STR("SetData"), 2);
             auto* e = GetExports();
             if (!e || !data || sampleCount == 0) return false;
             void* floatClass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_helperFindClass)("System.Single");
@@ -65,7 +65,7 @@ namespace IL2CPP::Module::Unity {
         }
 
         bool GetData(float* outData, size_t sampleCount, int offsetSamples = 0) const {
-            static auto m = MethodHandler::resolve("UnityEngine.AudioClip", "GetData", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AudioClip"), IL2CPP_STR("GetData"), 2);
             auto* e = GetExports();
             if (!e || !outData || sampleCount == 0) return false;
             void* floatClass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_helperFindClass)("System.Single");
@@ -79,7 +79,7 @@ namespace IL2CPP::Module::Unity {
         }
 
         [[nodiscard]] static AudioClip Create(std::string_view name, int lengthSamples, int channels, int frequency, bool stream) {
-            static auto m = MethodHandler::resolve("UnityEngine.AudioClip", "Create", 5);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AudioClip"), IL2CPP_STR("Create"), 5);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return AudioClip{};
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(name).c_str());

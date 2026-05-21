@@ -364,23 +364,6 @@ namespace Bootstrap::Module {
         KeyAuth() = default;
     };
 
-    class WebSocket {
-    public:
-        static WebSocket& Get();
-
-        uint32_t connect(uint32_t module_id, std::string_view url, std::string_view protocols = "");
-        bool send(uint32_t module_id, uint32_t handle, const void* data, uint32_t len, bool binary = false);
-        bool send(uint32_t module_id, uint32_t handle, std::string_view text);
-        void close(uint32_t module_id, uint32_t handle, uint16_t code = 1000, std::string_view reason = "");
-        bool is_connected(uint32_t handle);
-        void set_callbacks(uint32_t module_id, uint32_t handle,
-            fn_ws_open_callback on_open, fn_ws_message_callback on_message,
-            fn_ws_close_callback on_close, fn_ws_error_callback on_error);
-
-    private:
-        WebSocket() = default;
-    };
-
     class FileSystem {
     public:
         static FileSystem& Get();

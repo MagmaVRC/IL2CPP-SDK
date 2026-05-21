@@ -419,16 +419,22 @@ namespace IL2CPP {
 	}
 
 	inline const char* il2cppFieldInfo::name() const noexcept {
+		if (g_structOffsets && g_structOffsets->m_fnFieldGetName)
+			return reinterpret_cast<const char*(__fastcall*)(const void*)>(g_structOffsets->m_fnFieldGetName)(this);
 		if (!g_structOffsets || g_structOffsets->m_offFieldName < 0) return nullptr;
 		return SafeReadAt<const char*>(this, g_structOffsets->m_offFieldName);
 	}
 
 	inline il2cppClass* il2cppFieldInfo::parent() const noexcept {
+		if (g_structOffsets && g_structOffsets->m_fnFieldGetParent)
+			return reinterpret_cast<il2cppClass*(__fastcall*)(const void*)>(g_structOffsets->m_fnFieldGetParent)(this);
 		if (!g_structOffsets || g_structOffsets->m_offFieldParent < 0) return nullptr;
 		return SafeReadAt<il2cppClass*>(this, g_structOffsets->m_offFieldParent);
 	}
 
 	inline il2cppType* il2cppFieldInfo::type() const noexcept {
+		if (g_structOffsets && g_structOffsets->m_fnFieldGetType)
+			return reinterpret_cast<il2cppType*(__fastcall*)(const void*)>(g_structOffsets->m_fnFieldGetType)(this);
 		if (!g_structOffsets) return nullptr;
 		int32_t off = g_structOffsets->m_offFieldType >= 0
 			? g_structOffsets->m_offFieldType : 0x00;
@@ -436,6 +442,8 @@ namespace IL2CPP {
 	}
 
 	inline int il2cppFieldInfo::offset() const noexcept {
+		if (g_structOffsets && g_structOffsets->m_fnFieldGetOffset)
+			return reinterpret_cast<int(__fastcall*)(const void*)>(g_structOffsets->m_fnFieldGetOffset)(this);
 		if (!g_structOffsets || g_structOffsets->m_offFieldOffset < 0) return -1;
 		int32_t val = SafeReadI32At(this, g_structOffsets->m_offFieldOffset);
 		if (val < 0 || val > 0x10000) return -1;
@@ -462,6 +470,8 @@ namespace IL2CPP {
 	}
 
 	inline const char* il2cppMethodInfo::name() const noexcept {
+		if (g_structOffsets && g_structOffsets->m_fnMethodGetName)
+			return reinterpret_cast<const char*(__fastcall*)(const void*)>(g_structOffsets->m_fnMethodGetName)(this);
 		if (!g_structOffsets || g_structOffsets->m_offMethodName < 0) return nullptr;
 		return SafeReadAt<const char*>(this, g_structOffsets->m_offMethodName);
 	}

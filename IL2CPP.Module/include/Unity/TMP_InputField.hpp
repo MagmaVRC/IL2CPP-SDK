@@ -13,7 +13,7 @@ namespace IL2CPP::Module::Unity {
         using Selectable::Selectable;
 
         [[nodiscard]] std::string GetText() const {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "get_text", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("get_text"), 0);
             void* str = MethodHandler::invoke<void*>(m, raw());
             if (!str) return "";
             int len = *reinterpret_cast<int*>(static_cast<char*>(str) + 0x10);
@@ -26,7 +26,7 @@ namespace IL2CPP::Module::Unity {
             return out;
         }
         void SetText(std::string_view value) {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "set_text", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("set_text"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return;
             void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(
@@ -36,140 +36,140 @@ namespace IL2CPP::Module::Unity {
         }
 
         [[nodiscard]] void* GetPlaceholder() const {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "get_placeholder", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("get_placeholder"), 0);
             return MethodHandler::invoke<void*>(m, raw());
         }
         void SetPlaceholder(void* graphic) {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "set_placeholder", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("set_placeholder"), 1);
             void* params[] = { graphic };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] int GetCaretPosition() const {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "get_caretPosition", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("get_caretPosition"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
         void SetCaretPosition(int value) {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "set_caretPosition", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("set_caretPosition"), 1);
             void* params[] = { &value };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] int GetSelectionAnchorPosition() const {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "get_selectionAnchorPosition", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("get_selectionAnchorPosition"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
         void SetSelectionAnchorPosition(int value) {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "set_selectionAnchorPosition", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("set_selectionAnchorPosition"), 1);
             void* params[] = { &value };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] int GetSelectionFocusPosition() const {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "get_selectionFocusPosition", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("get_selectionFocusPosition"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
         void SetSelectionFocusPosition(int value) {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "set_selectionFocusPosition", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("set_selectionFocusPosition"), 1);
             void* params[] = { &value };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] int GetCharacterLimit() const {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "get_characterLimit", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("get_characterLimit"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
         void SetCharacterLimit(int value) {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "set_characterLimit", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("set_characterLimit"), 1);
             void* params[] = { &value };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] int GetContentType() const {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "get_contentType", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("get_contentType"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
         void SetContentType(int value) {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "set_contentType", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("set_contentType"), 1);
             void* params[] = { &value };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] int GetLineType() const {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "get_lineType", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("get_lineType"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
         void SetLineType(int value) {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "set_lineType", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("set_lineType"), 1);
             void* params[] = { &value };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] int GetInputType() const {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "get_inputType", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("get_inputType"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
         void SetInputType(int value) {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "set_inputType", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("set_inputType"), 1);
             void* params[] = { &value };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] bool GetReadOnly() const {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "get_readOnly", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("get_readOnly"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
         void SetReadOnly(bool value) {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "set_readOnly", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("set_readOnly"), 1);
             void* params[] = { &value };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] bool GetMultiLine() const {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "get_multiLine", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("get_multiLine"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
         [[nodiscard]] bool GetIsFocused() const {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "get_isFocused", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("get_isFocused"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
         [[nodiscard]] float GetPointSize() const {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "get_pointSize", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("get_pointSize"), 0);
             return MethodHandler::invoke<float>(m, raw());
         }
         void SetPointSize(float value) {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "set_pointSize", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("set_pointSize"), 1);
             void* params[] = { &value };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] bool GetRichText() const {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "get_richText", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("get_richText"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
         void SetRichText(bool value) {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "set_richText", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("set_richText"), 1);
             void* params[] = { &value };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] void* GetTextComponent() const {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "get_textComponent", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("get_textComponent"), 0);
             return MethodHandler::invoke<void*>(m, raw());
         }
 
         void ActivateInputField() {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "ActivateInputField", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("ActivateInputField"), 0);
             MethodHandler::invoke(m, raw());
         }
         void DeactivateInputField() {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "DeactivateInputField", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("DeactivateInputField"), 0);
             MethodHandler::invoke(m, raw());
         }
         void ForceLabelUpdate() {
-            static auto m = MethodHandler::resolve("TMPro.TMP_InputField", "ForceLabelUpdate", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_InputField"), IL2CPP_STR("ForceLabelUpdate"), 0);
             MethodHandler::invoke(m, raw());
         }
     };

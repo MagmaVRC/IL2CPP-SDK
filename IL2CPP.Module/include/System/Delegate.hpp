@@ -19,7 +19,7 @@ namespace IL2CPP::Module::System {
 
 
         [[nodiscard]] void* GetTarget() const {
-            static auto m = MethodHandler::resolve("System.Delegate", "get_Target", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.Delegate"), IL2CPP_STR("get_Target"), 0);
             return MethodHandler::invoke<void*>(m, raw());
         }
 
@@ -35,7 +35,7 @@ namespace IL2CPP::Module::System {
 
 
         static Delegate Combine(Delegate a, Delegate b) {
-            static auto m = MethodHandler::resolve("System.Delegate", "Combine", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.Delegate"), IL2CPP_STR("Combine"), 2);
             void* ra = a.raw();
             void* rb = b.raw();
             void* params[] = { ra, rb };
@@ -43,7 +43,7 @@ namespace IL2CPP::Module::System {
         }
 
         static Delegate Remove(Delegate source, Delegate value) {
-            static auto m = MethodHandler::resolve("System.Delegate", "Remove", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.Delegate"), IL2CPP_STR("Remove"), 2);
             void* rs = source.raw();
             void* rv = value.raw();
             void* params[] = { rs, rv };
@@ -51,7 +51,7 @@ namespace IL2CPP::Module::System {
         }
 
         void* DynamicInvoke(void** args = nullptr) {
-            static auto m = MethodHandler::resolve("System.Delegate", "DynamicInvoke", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.Delegate"), IL2CPP_STR("DynamicInvoke"), 1);
             void* params[] = { args };
             return MethodHandler::invoke<void*>(m, raw(), params);
         }
@@ -160,7 +160,7 @@ namespace IL2CPP::Module::System {
         using Delegate::Delegate;
 
         void Invoke() {
-            static auto m = MethodHandler::resolve("System.Action", "Invoke", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.Action"), IL2CPP_STR("Invoke"), 0);
             MethodHandler::invoke(m, raw());
         }
 

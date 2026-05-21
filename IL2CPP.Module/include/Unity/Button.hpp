@@ -10,7 +10,7 @@ namespace IL2CPP::Module::Unity {
 
 
         [[nodiscard]] void* GetOnClickRaw() const {
-            static auto m = MethodHandler::resolve("UnityEngine.UI.Button", "get_onClick", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.Button"), IL2CPP_STR("get_onClick"), 0);
             return MethodHandler::invoke<void*>(m, raw());
         }
     };

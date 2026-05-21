@@ -10,7 +10,7 @@ namespace IL2CPP::Module::Unity {
         using Behaviour::Behaviour;
 
         void Invoke(std::string_view methodName, float time) {
-            static auto m = MethodHandler::resolve("UnityEngine.MonoBehaviour", "Invoke", 2);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.MonoBehaviour"), IL2CPP_STR("Invoke"), 2);
             auto* exports = GetExports();
             if (!exports || !exports->m_stringNew) return;
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(exports->m_stringNew)(
@@ -20,18 +20,18 @@ namespace IL2CPP::Module::Unity {
         }
 
         void CancelInvoke() {
-            static auto m = MethodHandler::resolve("UnityEngine.MonoBehaviour", "CancelInvoke", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.MonoBehaviour"), IL2CPP_STR("CancelInvoke"), 0);
             MethodHandler::invoke(m, raw());
         }
 
         [[nodiscard]] bool IsInvoking() const {
-            static auto m = MethodHandler::resolve("UnityEngine.MonoBehaviour", "IsInvoking", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.MonoBehaviour"), IL2CPP_STR("IsInvoking"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
         /// <summary>Start a coroutine by method name.</summary>
         [[nodiscard]] ManagedObject StartCoroutine(std::string_view method) {
-            static auto m = MethodHandler::resolve("UnityEngine.MonoBehaviour", "StartCoroutine", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.MonoBehaviour"), IL2CPP_STR("StartCoroutine"), 1);
             auto* exports = GetExports();
             if (!exports || !exports->m_stringNew) return ManagedObject{};
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(exports->m_stringNew)(

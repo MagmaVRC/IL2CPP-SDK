@@ -10,160 +10,160 @@ namespace IL2CPP::Module::Unity {
         using Behaviour::Behaviour;
 
         [[nodiscard]] static Camera GetMain() {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_main", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("get_main"), 0);
             return Camera{ MethodHandler::invoke<void*>(m, nullptr) };
         }
 
         [[nodiscard]] static Camera GetCurrent() {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_current", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("get_current"), 0);
             return Camera{ MethodHandler::invoke<void*>(m, nullptr) };
         }
 
         [[nodiscard]] Vector3 WorldToScreenPoint(const Vector3& worldPos) const {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "WorldToScreenPoint", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("WorldToScreenPoint"), 1);
             Vector3 v = worldPos;
             void* params[] = { &v };
             return MethodHandler::invoke<Vector3>(m, raw(), params);
         }
 
         [[nodiscard]] Matrix4x4 GetWorldToCameraMatrix() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_worldToCameraMatrix", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("get_worldToCameraMatrix"), 0);
             return MethodHandler::invoke<Matrix4x4>(m, raw());
         }
 
         [[nodiscard]] Matrix4x4 GetProjectionMatrix() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_projectionMatrix", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("get_projectionMatrix"), 0);
             return MethodHandler::invoke<Matrix4x4>(m, raw());
         }
         void SetProjectionMatrix(const Matrix4x4& matrix) {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "set_projectionMatrix", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("set_projectionMatrix"), 1);
             Matrix4x4 mat = matrix;
             void* params[] = { &mat };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] float GetFieldOfView() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_fieldOfView", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("get_fieldOfView"), 0);
             return MethodHandler::invoke<float>(m, raw());
         }
         void SetFieldOfView(float fov) {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "set_fieldOfView", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("set_fieldOfView"), 1);
             void* params[] = { &fov };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] float GetNearClipPlane() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_nearClipPlane", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("get_nearClipPlane"), 0);
             return MethodHandler::invoke<float>(m, raw());
         }
         void SetNearClipPlane(float nearClip) {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "set_nearClipPlane", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("set_nearClipPlane"), 1);
             void* params[] = { &nearClip };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] float GetFarClipPlane() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_farClipPlane", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("get_farClipPlane"), 0);
             return MethodHandler::invoke<float>(m, raw());
         }
         void SetFarClipPlane(float farClip) {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "set_farClipPlane", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("set_farClipPlane"), 1);
             void* params[] = { &farClip };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] bool GetOrthographic() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_orthographic", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("get_orthographic"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
         void SetOrthographic(bool ortho) {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "set_orthographic", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("set_orthographic"), 1);
             void* params[] = { &ortho };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] float GetOrthographicSize() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_orthographicSize", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("get_orthographicSize"), 0);
             return MethodHandler::invoke<float>(m, raw());
         }
         void SetOrthographicSize(float size) {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "set_orthographicSize", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("set_orthographicSize"), 1);
             void* params[] = { &size };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] float GetDepth() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_depth", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("get_depth"), 0);
             return MethodHandler::invoke<float>(m, raw());
         }
         void SetDepth(float depth) {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "set_depth", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("set_depth"), 1);
             void* params[] = { &depth };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] int GetCullingMask() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_cullingMask", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("get_cullingMask"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
         void SetCullingMask(int mask) {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "set_cullingMask", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("set_cullingMask"), 1);
             void* params[] = { &mask };
             MethodHandler::invoke(m, raw(), params);
         }
         void SetCullingMask(LayerMask mask) { SetCullingMask(mask.value()); }
 
         [[nodiscard]] Rect GetPixelRect() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_pixelRect", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("get_pixelRect"), 0);
             return MethodHandler::invoke<Rect>(m, raw());
         }
 
         [[nodiscard]] Rect GetRect() const {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_rect", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("get_rect"), 0);
             return MethodHandler::invoke<Rect>(m, raw());
         }
         void SetRect(const Rect& rect) {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "set_rect", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("set_rect"), 1);
             Rect r = rect;
             void* params[] = { &r };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] Vector3 ScreenToWorldPoint(const Vector3& screenPos) const {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "ScreenToWorldPoint", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("ScreenToWorldPoint"), 1);
             Vector3 v = screenPos;
             void* params[] = { &v };
             return MethodHandler::invoke<Vector3>(m, raw(), params);
         }
 
         [[nodiscard]] Ray ScreenPointToRay(const Vector3& screenPos) const {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "ScreenPointToRay", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("ScreenPointToRay"), 1);
             Vector3 v = screenPos;
             void* params[] = { &v };
             return MethodHandler::invoke<Ray>(m, raw(), params);
         }
 
         [[nodiscard]] Vector3 ViewportToWorldPoint(const Vector3& viewportPos) const {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "ViewportToWorldPoint", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("ViewportToWorldPoint"), 1);
             Vector3 v = viewportPos;
             void* params[] = { &v };
             return MethodHandler::invoke<Vector3>(m, raw(), params);
         }
 
         [[nodiscard]] Vector3 WorldToViewportPoint(const Vector3& worldPos) const {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "WorldToViewportPoint", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("WorldToViewportPoint"), 1);
             Vector3 v = worldPos;
             void* params[] = { &v };
             return MethodHandler::invoke<Vector3>(m, raw(), params);
         }
 
         [[nodiscard]] static int GetAllCamerasCount() {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "get_allCamerasCount", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("get_allCamerasCount"), 0);
             return MethodHandler::invoke<int>(m, nullptr);
         }
 
         void ResetProjectionMatrix() {
-            static auto m = MethodHandler::resolve("UnityEngine.Camera", "ResetProjectionMatrix", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("ResetProjectionMatrix"), 0);
             MethodHandler::invoke(m, raw());
         }
 

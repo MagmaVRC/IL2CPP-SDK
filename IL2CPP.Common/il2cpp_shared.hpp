@@ -1,6 +1,14 @@
 #pragma once
 #include <cstdint>
 
+#ifndef IL2CPP_STR
+#   define IL2CPP_STR(x) x
+#endif
+
+#ifndef IL2CPP_PREDEFINE
+#   define IL2CPP_PREDEFINE
+#endif
+
 namespace IL2CPP {
 
     struct Il2CppSystemType;
@@ -193,6 +201,12 @@ namespace IL2CPP {
         int32_t     m_offPropName       = -1;   // property → const char* name
         int32_t     m_offPropGetter     = -1;   // property → il2cppMethodInfo* get
         int32_t     m_offPropSetter     = -1;   // property → il2cppMethodInfo* set
+
+        void*       m_fnFieldGetName    = nullptr;
+        void*       m_fnFieldGetType    = nullptr;
+        void*       m_fnFieldGetOffset  = nullptr;
+        void*       m_fnFieldGetParent  = nullptr;
+        void*       m_fnMethodGetName   = nullptr;
     };
 
     constexpr uint32_t exports_version = 17;  // dropped has_attribute trio + 7 stale FP entries

@@ -19,28 +19,28 @@ namespace IL2CPP::Module::System {
 
 
         [[nodiscard]] static Encoding GetUTF8() {
-            static auto m = MethodHandler::resolve("System.Text.Encoding", "get_UTF8", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.Text.Encoding"), IL2CPP_STR("get_UTF8"), 0);
             return Encoding{ MethodHandler::invoke<void*>(m, nullptr) };
         }
 
         [[nodiscard]] static Encoding GetASCII() {
-            static auto m = MethodHandler::resolve("System.Text.Encoding", "get_ASCII", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.Text.Encoding"), IL2CPP_STR("get_ASCII"), 0);
             return Encoding{ MethodHandler::invoke<void*>(m, nullptr) };
         }
 
         [[nodiscard]] static Encoding GetUnicode() {
-            static auto m = MethodHandler::resolve("System.Text.Encoding", "get_Unicode", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.Text.Encoding"), IL2CPP_STR("get_Unicode"), 0);
             return Encoding{ MethodHandler::invoke<void*>(m, nullptr) };
         }
 
         [[nodiscard]] static Encoding GetDefault() {
-            static auto m = MethodHandler::resolve("System.Text.Encoding", "get_Default", 0);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.Text.Encoding"), IL2CPP_STR("get_Default"), 0);
             return Encoding{ MethodHandler::invoke<void*>(m, nullptr) };
         }
 
 
         [[nodiscard]] void* GetBytes(std::string_view str) const {
-            static auto m = MethodHandler::resolve("System.Text.Encoding", "GetBytes", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.Text.Encoding"), IL2CPP_STR("GetBytes"), 1);
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return nullptr;
             void* s = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(str).c_str());
@@ -58,7 +58,7 @@ namespace IL2CPP::Module::System {
 
 
         [[nodiscard]] std::string GetString(void* byteArray) const {
-            static auto m = MethodHandler::resolve("System.Text.Encoding", "GetString", 1);
+            static auto m = MethodHandler::resolve(IL2CPP_STR("System.Text.Encoding"), IL2CPP_STR("GetString"), 1);
             if (!byteArray) return "";
             void* params[] = { byteArray };
             void* result = MethodHandler::invoke<void*>(m, raw(), params);

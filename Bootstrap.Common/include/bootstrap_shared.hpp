@@ -278,20 +278,7 @@ namespace Bootstrap {
     using fn_perf_force_gc = void(__cdecl*)(int32_t generation);
     using fn_perf_full_cleanup = void(__cdecl*)();
 
-    using fn_ws_open_callback    = void(__cdecl*)(uint32_t handle);
-    using fn_ws_message_callback = void(__cdecl*)(uint32_t handle, uint8_t const* data, uint32_t len, bool binary);
-    using fn_ws_close_callback   = void(__cdecl*)(uint32_t handle, uint16_t code, char const* reason, uint32_t reason_len);
-    using fn_ws_error_callback   = void(__cdecl*)(uint32_t handle, char const* msg, uint32_t msg_len);
-    using fn_ws_connect       = uint32_t(__cdecl*)(uint32_t module_id, char const* url, uint32_t url_len,
-                                    char const* protocols, uint32_t protocols_len);
-    using fn_ws_send          = bool(__cdecl*)(uint32_t module_id, uint32_t handle,
-                                    uint8_t const* data, uint32_t data_len, bool binary);
-    using fn_ws_close         = void(__cdecl*)(uint32_t module_id, uint32_t handle,
-                                    uint16_t code, char const* reason, uint32_t reason_len);
-    using fn_ws_is_connected  = bool(__cdecl*)(uint32_t handle);
-    using fn_ws_set_callbacks = void(__cdecl*)(uint32_t module_id, uint32_t handle,
-                                    fn_ws_open_callback on_open, fn_ws_message_callback on_message,
-                                    fn_ws_close_callback on_close, fn_ws_error_callback on_error);
+    // WebSocket typedefs removed — slots kept as reserved for ABI
 
     using fn_fs_write_file  = bool(__cdecl*)(uint32_t module_id, char const* path, uint32_t path_len, uint8_t const* data, uint32_t data_len);
     using fn_fs_read_file   = uint32_t(__cdecl*)(uint32_t module_id, char const* path, uint32_t path_len, char* out_buf, uint32_t buf_size);
@@ -527,11 +514,7 @@ namespace Bootstrap {
         fn_ka_redeem_license ka_redeem_license;
         fn_ka_get_licenses   ka_get_licenses;
 
-        fn_ws_connect       ws_connect;
-        fn_ws_send          ws_send;
-        fn_ws_close         ws_close;
-        fn_ws_is_connected  ws_is_connected;
-        fn_ws_set_callbacks ws_set_callbacks;
+        void* _reserved_ws[5];
 
         fn_config_set_vec2  config_set_vec2;
         fn_config_get_vec2  config_get_vec2;

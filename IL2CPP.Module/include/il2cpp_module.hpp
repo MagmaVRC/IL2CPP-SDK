@@ -1,6 +1,8 @@
 #pragma once
 
 #include <IL2CPP.Common/il2cpp_shared.hpp>
+
+IL2CPP_PREDEFINE
 #include <IL2CPP.Common/il2cpp_structs.hpp>
 #include <IL2CPP.Common/il2cpp_unity_shared.hpp>
 #include <IL2CPP.Common/il2cpp_types.hpp>
