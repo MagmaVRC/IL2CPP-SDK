@@ -3,8 +3,10 @@
 #include "../Reflection.hpp"
 #include "../System/Array.hpp"
 #include "../System/String.hpp"
+#include "../il2cpp_module.hpp"
 #include "Object.hpp"
 #include <IL2CPP.Common/il2cpp_shared.hpp>
+#include <Logging.Module/include/logger_module.hpp>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -29,7 +31,6 @@ namespace IL2CPP::Module::Unity {
             return result;
         }
 
-        /// <summary>Write raw bytes to a temp file and return the path.</summary>
         static std::string WriteTempFile(const void* data, size_t size) {
             char tempDir[MAX_PATH];
             char tempPath[MAX_PATH];
@@ -51,18 +52,28 @@ namespace IL2CPP::Module::Unity {
     public:
         using Object::Object;
 
-
-        [[nodiscard]] static AssetBundle LoadFromFile(std::string_view path) {
-            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AssetBundle"), IL2CPP_STR("LoadFromFile"), 1);
+        [[nodiscard]] static AssetBundle LoadFromFile(std::string_view path, uint32_t crc = 0, uint64_t offset = 0) {
             auto* e = GetExports();
             if (!e || !e->m_stringNew) return AssetBundle{};
-            void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());
-            void* params[] = { str };
-            return AssetBundle{ MethodHandler::invoke<void*>(m, nullptr, params) };
+            System::String str = System::String::create(std::string(path).c_str());
+
+            // Use runtime_invoke on the managed LoadFromFile_Internal — works on
+            // both 2022.3 and Unity 6 regardless of internal marshaling changes.
+            static auto m = MethodHandler::resolve(
+                IL2CPP_STR("UnityEngine.AssetBundle"), IL2CPP_STR("LoadFromFile_Internal"), 3);
+            if (m) {
+                uint64_t offsetVal = offset;
+                void* params[] = { str.raw(), &crc, &offsetVal };
+                return AssetBundle{ MethodHandler::invoke<void*>(m, nullptr, params) };
+            }
+
+            // Direct fallback
+            static auto fn = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, uint32_t, uint64_t)>(
+                Module::ResolveCall("UnityEngine.AssetBundle::LoadFromFile_Internal", true));
+            if (!fn) return AssetBundle{};
+            return AssetBundle{ fn(str.raw(), crc, offset) };
         }
 
-        /// Load from raw bytes in memory.
-        /// LoadFromMemory is stripped in VRChat — writes to a temp file, loads, deletes.
         [[nodiscard]] static AssetBundle LoadFromMemory(const void* data, size_t size) {
             if (!data || size == 0) return AssetBundle{};
             std::string tempPath = WriteTempFile(data, size);

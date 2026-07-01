@@ -517,14 +517,28 @@ namespace IL2CPP::Module {
         return reinterpret_cast<il2cppPropertyInfo*>(m_native)->get_name();
     }
 
+    // PropertyInfo's parent-klass offset is not discovered (and is not at offset 0
+    // on obfuscated/reshuffled builds), so derive it from the getter/setter's
+    // declaring type, which uses the verified m_offMethodDeclType offset.
+    static void* PropertyParentClass(void* propNative) noexcept {
+        if (!propNative) return nullptr;
+        auto* prop = reinterpret_cast<il2cppPropertyInfo*>(propNative);
+        void* method = prop->get_getter();
+        if (!IsValid(method)) method = prop->get_setter();
+        if (!IsValid(method)) return nullptr;
+        int32_t declOff = (E() && E()->m_offMethodDeclType >= 0) ? E()->m_offMethodDeclType : 0x18;
+        return SafeReadFieldQword(method, declOff);
+    }
+
     const char* Property::name() const {
         const char* raw = raw_name();
         if (!raw || !*raw) return raw;
 
-        void* parentClass = *reinterpret_cast<void**>(m_native);
+        void* parentClass = PropertyParentClass(m_native);
         if (IsValid(parentClass)) {
-            const char* rawClassName = *reinterpret_cast<const char**>(
-                static_cast<char*>(parentClass) + ((E() && E()->m_offClassName >= 0) ? E()->m_offClassName : 0x10));
+            int32_t classNameOff = (E() && E()->m_offClassName >= 0) ? E()->m_offClassName : 0x10;
+            const char* rawClassName = reinterpret_cast<const char*>(
+                SafeReadFieldQword(parentClass, classNameOff));
             if (IsValid(rawClassName)) {
                 const char* resolved = resolve_member_name(rawClassName, raw);
                 if (resolved) return resolved;
@@ -571,8 +585,7 @@ namespace IL2CPP::Module {
     }
 
     void* Property::parent_class_raw() const {
-        if (!m_native) return nullptr;
-        return *reinterpret_cast<void**>(m_native);
+        return PropertyParentClass(m_native);
     }
 
     bool Property::is_public() const {
@@ -885,23 +898,10 @@ namespace IL2CPP::Module {
         if (!m_native || !E() || !E()->m_classGetFields) return result;
 
         EnsureClassInitializedForFields(m_native);
-        il2cppFieldInfo* fieldsBase = nullptr;
-        uint16_t directFieldCount = 0;
-        int32_t fieldStride = -1;
-        if (TryGetDirectFieldArray(m_native, fieldsBase, directFieldCount, fieldStride) && fieldsBase) {
-            result.reserve(directFieldCount);
-            for (uint16_t i = 0; i < directFieldCount; ++i) {
-                auto* f = DirectFieldAt(fieldsBase, fieldStride, i);
-                if (!f) continue;
-                result.emplace_back(f);
-            }
-            return result;
-        }
 
         void* iter = nullptr;
-        while (true) {
-            auto* f = SafeIterStep(E()->m_classGetFields, m_native, &iter);
-            if (!f) break;
+        auto fn = reinterpret_cast<il2cppFieldInfo*(IL2CPP_CALLTYPE)(void*, void**)>(E()->m_classGetFields);
+        while (auto* f = fn(m_native, &iter)) {
             result.emplace_back(f);
         }
         return result;

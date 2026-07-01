@@ -152,6 +152,9 @@ namespace IL2CPP {
 
         void*       m_helperGetStableNameByShort;
 
+        void*       m_helperSymbolPublish;   // (kind,human,member,p0,p1) -> void
+        void*       m_helperSymbolLookup;    // (kind,human,member) -> void*
+
         uint32_t    m_uVersion;
         uint32_t    _reserved = 0;
 
@@ -207,8 +210,12 @@ namespace IL2CPP {
         void*       m_fnFieldGetOffset  = nullptr;
         void*       m_fnFieldGetParent  = nullptr;
         void*       m_fnMethodGetName   = nullptr;
+
+        void*       m_formatException   = nullptr;
+        void*       m_objectGetClass    = nullptr;
+        void*       m_classGetName      = nullptr;
     };
 
-    constexpr uint32_t exports_version = 17;  // dropped has_attribute trio + 7 stale FP entries
+    constexpr uint32_t exports_version = 18;  // + symbol store publish/lookup helpers
 
 } // namespace IL2CPP

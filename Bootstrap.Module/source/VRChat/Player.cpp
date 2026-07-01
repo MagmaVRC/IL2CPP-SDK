@@ -38,7 +38,7 @@ namespace IL2CPP::VRChat {
     PlayerRank Player::GetPlayerRank() {
         if (!valid() || !Bootstrap::Module::is_connected()) return PlayerRank::Visitor;
         return static_cast<PlayerRank>(
-            Bootstrap::Module::get_vtable()->get_player_rank(raw()));
+            Bootstrap::Module::get_vtable()->get_player_rank(GetAPIUser().raw()));
     }
 
     Bootstrap::Color Player::GetRankColor(PlayerRank rank) {

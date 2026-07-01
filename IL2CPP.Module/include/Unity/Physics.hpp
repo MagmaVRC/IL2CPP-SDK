@@ -1,6 +1,8 @@
 #pragma once
 #include "../MethodHandler.hpp"
+#include "../System/Array.hpp"
 #include <IL2CPP.Common/il2cpp_types.hpp>
+#include <vector>
 
 namespace IL2CPP::Module::Unity {
 
@@ -36,6 +38,29 @@ namespace IL2CPP::Module::Unity {
         [[nodiscard]] static bool Raycast(const Ray& ray, float maxDistance = 1e10f, LayerMask layerMask = LayerMask(-1)) {
             RaycastHit hit;
             return Raycast(ray.origin, ray.direction, hit, maxDistance, layerMask);
+        }
+
+        /// <summary>Cast a ray and return ALL colliders hit along it, nearest first not guaranteed.</summary>
+        /// Resolves the 5-arg (Vector3, Vector3, float, int, QueryTriggerInteraction) overload, which is
+        /// the only RaycastAll with 5 params — avoids the Ray-overload ambiguity in count-based resolution.
+        /// queryTrigger: 0 = UseGlobal, 1 = Collide (hit triggers), 2 = Ignore.
+        [[nodiscard]] static std::vector<RaycastHit> RaycastAll(const Vector3& origin, const Vector3& direction,
+                                                                float maxDistance = 1e10f, LayerMask layerMask = LayerMask(-1),
+                                                                int queryTrigger = 1) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Physics"), IL2CPP_STR("RaycastAll"), 5);
+            Vector3 o = origin, d = direction;
+            float md = maxDistance;
+            int mask = layerMask.value();
+            int qti = queryTrigger;
+            void* params[] = { &o, &d, &md, &mask, &qti };
+            void* arr = MethodHandler::invoke<void*>(m, nullptr, params);
+            return System::Array<RaycastHit>(arr).to_vector();
+        }
+
+        /// <summary>Cast a ray (Ray struct) and return ALL colliders hit along it.</summary>
+        [[nodiscard]] static std::vector<RaycastHit> RaycastAll(const Ray& ray, float maxDistance = 1e10f,
+                                                                LayerMask layerMask = LayerMask(-1), int queryTrigger = 1) {
+            return RaycastAll(ray.origin, ray.direction, maxDistance, layerMask, queryTrigger);
         }
 
         /// <summary>Cast a sphere along a ray and check for collisions.</summary>

@@ -160,6 +160,7 @@
     <ClInclude Include="include\ManagedObject.hpp" />
     <ClInclude Include="include\MethodHandler.hpp" />
     <ClInclude Include="include\Reflection.hpp" />
+    <ClInclude Include="include\Symbols.hpp" />
     <ClInclude Include="include\System\Array.hpp" />
     <ClInclude Include="include\System\Delegate.hpp" />
     <ClInclude Include="include\System\Dictionary.hpp" />
