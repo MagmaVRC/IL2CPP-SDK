@@ -34,6 +34,16 @@ namespace Bootstrap {
         /// populated — icons now land directly. Use this to finalize UI once
         /// the QuickMenu layer is fully live.
         QuickMenuPostSetup = 3,
+
+        /// Fired just before UNIxMenu builds its own pages, once the QuickMenu
+        /// layer is fully live (sprites cached). Use this to add content that
+        /// should appear before UNIx's menu. Fires ahead of Ready.
+        PreReady = 4,
+
+        /// Fired immediately after Ready, guaranteeing all Ready handlers have
+        /// run. Use this for late initialization that must come after every
+        /// other mod's Ready work.
+        LateReady = 5,
     };
 
     enum class UnityLogType : int { Error = 0, Assert, Warning, Log, Exception };
