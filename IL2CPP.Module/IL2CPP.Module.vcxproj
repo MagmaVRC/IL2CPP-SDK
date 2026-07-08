@@ -209,6 +209,7 @@
     <ClInclude Include="include\Unity\RawImage.hpp" />
     <ClInclude Include="include\Unity\RectMask2D.hpp" />
     <ClInclude Include="include\Unity\Renderer.hpp" />
+    <ClInclude Include="include\Unity\RenderTexture.hpp" />
     <ClInclude Include="include\Unity\Resources.hpp" />
     <ClInclude Include="include\Unity\Rigidbody.hpp" />
     <ClInclude Include="include\Unity\RuntimeAnimatorController.hpp" />
@@ -219,6 +220,7 @@
     <ClInclude Include="include\Unity\SkinnedMeshRenderer.hpp" />
     <ClInclude Include="include\Unity\SphereCollider.hpp" />
     <ClInclude Include="include\Unity\Sprite.hpp" />
+    <ClInclude Include="include\Unity\TextMeshProUGUI.hpp" />
     <ClInclude Include="include\Unity\Texture2D.hpp" />
     <ClInclude Include="include\Unity\Time.hpp" />
     <ClInclude Include="include\Unity\TMP_InputField.hpp" />

@@ -18,6 +18,22 @@ namespace Bootstrap {
         /// calls can use icons directly without falling through the pending
         /// icon path.
         Ready = 0,
+
+        /// Fired the moment the game's QuickMenu is located, BEFORE UNIx wires
+        /// up any of its own UI. Nothing has been built yet — use this to
+        /// prepare state that must exist before pages/buttons are created.
+        QuickMenuPreSetup = 1,
+
+        /// Fired when UNIx's QuickMenu core is set up: pages, templates and
+        /// input hooks are cached and the qm_* API is usable. Sprites may not
+        /// be cached yet, so icon calls still route through the pending path.
+        /// This is the main hook for adding your own pages and buttons.
+        QuickMenuSetup = 2,
+
+        /// Fired after QuickMenu setup finishes AND the sprite cache is
+        /// populated — icons now land directly. Use this to finalize UI once
+        /// the QuickMenu layer is fully live.
+        QuickMenuPostSetup = 3,
     };
 
     enum class UnityLogType : int { Error = 0, Assert, Warning, Log, Exception };

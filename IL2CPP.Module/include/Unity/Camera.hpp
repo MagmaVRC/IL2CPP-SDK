@@ -113,6 +113,17 @@ namespace IL2CPP::Module::Unity {
         }
         void SetCullingMask(LayerMask mask) { SetCullingMask(mask.value()); }
 
+        // UnityEngine.CameraClearFlags: 1=Skybox 2=SolidColor 3=Depth 4=Nothing
+        [[nodiscard]] int GetClearFlags() const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("get_clearFlags"), 0);
+            return MethodHandler::invoke<int>(m, raw());
+        }
+        void SetClearFlags(int flags) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("set_clearFlags"), 1);
+            void* params[] = { &flags };
+            MethodHandler::invoke(m, raw(), params);
+        }
+
         [[nodiscard]] Rect GetPixelRect() const {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Camera"), IL2CPP_STR("get_pixelRect"), 0);
             return MethodHandler::invoke<Rect>(m, raw());

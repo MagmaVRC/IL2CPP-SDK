@@ -44,6 +44,11 @@ namespace IL2CPP::Module::Unity {
             return MethodHandler::invoke<Bounds>(m, raw());
         }
 
+        [[nodiscard]] bool GetIsPartOfStaticBatch() const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Renderer"), IL2CPP_STR("get_isPartOfStaticBatch"), 0);
+            return MethodHandler::invoke<bool>(m, raw());
+        }
+
         [[nodiscard]] int GetSortingOrder() const {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Renderer"), IL2CPP_STR("get_sortingOrder"), 0);
             return MethodHandler::invoke<int>(m, raw());

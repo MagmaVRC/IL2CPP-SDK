@@ -60,7 +60,7 @@ namespace IL2CPP::VRChat {
     }
 
     LocalizableString LocalizableString::Localize(std::string_view text) {
-        static auto m = MethodHandler::resolve("VRC.Localization.LocalizableStringExtensions", "Localize", 1);
+        static auto m = MethodHandler::resolve("VRC.Localization.LocalizableStringExtensions", "Localize", 4);
         auto str = IL2CPP::Module::System::String::create(text);
         void* params[1] = { str.raw() };
         void* result = MethodHandler::invoke<void*>(m, nullptr, params);
@@ -68,7 +68,7 @@ namespace IL2CPP::VRChat {
     }
 
     LocalizableString LocalizableString::LocalizeWithFallback(std::string_view key, std::string_view fallback) {
-        static auto m = MethodHandler::resolve("VRC.Localization.LocalizableStringExtensions", "Localize", 2);
+        static auto m = MethodHandler::resolve("VRC.Localization.LocalizableStringExtensions", "LocalizeWithFallback", 5);
         auto keyStr = IL2CPP::Module::System::String::create(key);
         auto fallbackStr = IL2CPP::Module::System::String::create(fallback);
         void* params[2] = { keyStr.raw(), fallbackStr.raw() };
@@ -77,9 +77,9 @@ namespace IL2CPP::VRChat {
     }
 
     LocalizableString LocalizableString::NoTranslation(std::string_view text) {
-        static auto m = MethodHandler::resolve("VRC.Localization.LocalizableStringExtensions", "NoTranslation", 1);
+        static auto m = MethodHandler::resolve("VRC.Localization.LocalizableStringExtensions", "NoTranslation", 4);
         auto str = IL2CPP::Module::System::String::create(text);
-        void* params[1] = { str.raw() };
+        void* params[4] = { str.raw(), nullptr, nullptr, nullptr };
         void* result = MethodHandler::invoke<void*>(m, nullptr, params);
         return LocalizableString{ result };
     }

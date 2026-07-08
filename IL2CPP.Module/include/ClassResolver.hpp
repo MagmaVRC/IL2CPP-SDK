@@ -42,50 +42,57 @@ namespace IL2CPP::Module {
             return ShortTypeName(lhs) == ShortTypeName(rhs);
         }
 
+        // Field-side candidate names derived from a field's declared type.
+        // Every full_name()/raw_full_name() heap-allocates, so building this
+        // set once per field and reusing it across all expected-name
+        // comparisons avoids the churn of rebuilding it per comparison.
+        inline std::vector<std::string> CollectFieldTypeNames(Field field, Class fieldClass) {
+            std::vector<std::string> names;
+            names.reserve(10);
+            if (fieldClass) {
+                names.emplace_back(fieldClass.name());
+                names.emplace_back(fieldClass.raw_name());
+                names.push_back(fieldClass.full_name());
+                names.push_back(fieldClass.raw_full_name());
+            }
+            names.emplace_back(field.type_name());
+            names.emplace_back(field.raw_type_name());
+            if (Type fieldType = field.type()) {
+                names.emplace_back(fieldType.name());
+                names.emplace_back(fieldType.raw_name());
+                names.push_back(fieldType.full_name());
+                names.push_back(fieldType.raw_full_name());
+            }
+            return names;
+        }
+
+        inline bool FieldTypeNamesContain(const std::vector<std::string>& names,
+                                          std::string_view expected) {
+            if (expected.empty()) return true;
+            for (const std::string& n : names)
+                if (TypeNameEquals(n, expected)) return true;
+            return false;
+        }
+
         inline bool FieldTypeNameMatches(Field field, Class fieldClass, std::string_view expected) {
             if (expected.empty()) return true;
-
-            if (fieldClass) {
-                if (TypeNameEquals(fieldClass.name(), expected)) return true;
-                if (TypeNameEquals(fieldClass.raw_name(), expected)) return true;
-
-                std::string fullName = fieldClass.full_name();
-                if (TypeNameEquals(fullName, expected)) return true;
-
-                std::string rawFullName = fieldClass.raw_full_name();
-                if (TypeNameEquals(rawFullName, expected)) return true;
-            }
-
-            if (TypeNameEquals(field.type_name(), expected)) return true;
-            if (TypeNameEquals(field.raw_type_name(), expected)) return true;
-
-            Type fieldType = field.type();
-            if (fieldType) {
-                if (TypeNameEquals(fieldType.name(), expected)) return true;
-                if (TypeNameEquals(fieldType.raw_name(), expected)) return true;
-
-                std::string fullName = fieldType.full_name();
-                if (TypeNameEquals(fullName, expected)) return true;
-
-                std::string rawFullName = fieldType.raw_full_name();
-                if (TypeNameEquals(rawFullName, expected)) return true;
-            }
-
-            return false;
+            return FieldTypeNamesContain(CollectFieldTypeNames(field, fieldClass), expected);
         }
 
         inline bool FieldMatchesTargetClass(Field field, Class fieldClass, Class targetClass) {
             if (!targetClass) return false;
             if (fieldClass && fieldClass.raw() == targetClass.raw()) return true;
 
-            if (FieldTypeNameMatches(field, fieldClass, targetClass.name())) return true;
-            if (FieldTypeNameMatches(field, fieldClass, targetClass.raw_name())) return true;
+            std::vector<std::string> names = CollectFieldTypeNames(field, fieldClass);
+
+            if (FieldTypeNamesContain(names, targetClass.name())) return true;
+            if (FieldTypeNamesContain(names, targetClass.raw_name())) return true;
 
             std::string fullName = targetClass.full_name();
-            if (!fullName.empty() && FieldTypeNameMatches(field, fieldClass, fullName)) return true;
+            if (!fullName.empty() && FieldTypeNamesContain(names, fullName)) return true;
 
             std::string rawFullName = targetClass.raw_full_name();
-            if (!rawFullName.empty() && FieldTypeNameMatches(field, fieldClass, rawFullName)) return true;
+            if (!rawFullName.empty() && FieldTypeNamesContain(names, rawFullName)) return true;
 
             return false;
         }
@@ -94,14 +101,16 @@ namespace IL2CPP::Module {
             if (!klass) return false;
             if (fieldClass && fieldClass.raw() == klass.raw()) return true;
 
-            if (FieldTypeNameMatches(field, fieldClass, klass.name())) return true;
-            if (FieldTypeNameMatches(field, fieldClass, klass.raw_name())) return true;
+            std::vector<std::string> names = CollectFieldTypeNames(field, fieldClass);
+
+            if (FieldTypeNamesContain(names, klass.name())) return true;
+            if (FieldTypeNamesContain(names, klass.raw_name())) return true;
 
             std::string fullName = klass.full_name();
-            if (!fullName.empty() && FieldTypeNameMatches(field, fieldClass, fullName)) return true;
+            if (!fullName.empty() && FieldTypeNamesContain(names, fullName)) return true;
 
             std::string rawFullName = klass.raw_full_name();
-            if (!rawFullName.empty() && FieldTypeNameMatches(field, fieldClass, rawFullName)) return true;
+            if (!rawFullName.empty() && FieldTypeNamesContain(names, rawFullName)) return true;
 
             return false;
         }

@@ -1,10 +1,14 @@
 #pragma once
 #include "../ManagedObject.hpp"
+#include <IL2CPP.Common/il2cpp_shared.hpp>
 #include <vector>
 #include <span>
 #include <algorithm>
 #include <ranges>
 #include <concepts>
+#include <cstring>
+
+namespace IL2CPP::Module { [[nodiscard]] IL2CPP::il2cpp_exports const* GetExports() noexcept; }
 
 namespace IL2CPP::Module::System {
 
@@ -119,6 +123,28 @@ namespace IL2CPP::Module::System {
 
         /// <summary>Check if contains a value.</summary>
         [[nodiscard]] bool contains(const T& value) const { return std::ranges::find(*this, value) != end(); }
+
+        static Array<T> Create(std::string_view elementTypeName, uintptr_t length) {
+            auto* e = GetExports();
+            if (!e) return {};
+            void* klass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(
+                e->m_helperFindClass)(std::string(elementTypeName).c_str());
+            if (!klass) return {};
+            void* arr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, uintptr_t)>(
+                e->m_arrayNew)(klass, length);
+            return Array<T>{arr};
+        }
+
+        static Array<uint8_t> FromBytes(const void* src, size_t len) requires std::same_as<T, uint8_t> {
+            if (!src || len == 0) return {};
+            auto arr = Create("System.Byte", len);
+            if (arr) std::memcpy(arr.data(), src, len);
+            return arr;
+        }
+
+        static Array<uint8_t> FromBytes(const std::vector<uint8_t>& v) requires std::same_as<T, uint8_t> {
+            return FromBytes(v.data(), v.size());
+        }
     };
 
 } // namespace IL2CPP::Module::System

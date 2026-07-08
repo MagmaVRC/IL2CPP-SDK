@@ -216,6 +216,91 @@ namespace IL2CPP::Module::Unity {
             void* params[] = { &markNoLongerReadable };
             MethodHandler::invoke(m, raw(), params);
         }
+
+        // ---- GPU buffer access (D3D11: returns ID3D11Buffer*) ----
+
+        [[nodiscard]] void* GetNativeVertexBufferPtr(int bufferIndex) const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Mesh"), IL2CPP_STR("GetNativeVertexBufferPtr"), 1);
+            void* params[] = { &bufferIndex };
+            return MethodHandler::invoke<void*>(m, raw(), params);
+        }
+
+        [[nodiscard]] void* GetNativeIndexBufferPtr() const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Mesh"), IL2CPP_STR("GetNativeIndexBufferPtr"), 0);
+            return MethodHandler::invoke<void*>(m, raw());
+        }
+
+        [[nodiscard]] int GetVertexBufferStride(int stream) const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Mesh"), IL2CPP_STR("GetVertexBufferStride"), 1);
+            void* params[] = { &stream };
+            return MethodHandler::invoke<int>(m, raw(), params);
+        }
+
+        // 0 = UInt16, 1 = UInt32 (UnityEngine.Rendering.IndexFormat)
+        [[nodiscard]] int GetIndexFormat() const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Mesh"), IL2CPP_STR("get_indexFormat"), 0);
+            return MethodHandler::invoke<int>(m, raw());
+        }
+
+        // ---- Submesh queries (attr/format args are the raw enum ints) ----
+
+        [[nodiscard]] uint32_t GetIndexStart(int submesh) const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Mesh"), IL2CPP_STR("GetIndexStart"), 1);
+            void* params[] = { &submesh };
+            return MethodHandler::invoke<uint32_t>(m, raw(), params);
+        }
+
+        [[nodiscard]] uint32_t GetIndexCount(int submesh) const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Mesh"), IL2CPP_STR("GetIndexCount"), 1);
+            void* params[] = { &submesh };
+            return MethodHandler::invoke<uint32_t>(m, raw(), params);
+        }
+
+        [[nodiscard]] uint32_t GetBaseVertex(int submesh) const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Mesh"), IL2CPP_STR("GetBaseVertex"), 1);
+            void* params[] = { &submesh };
+            return MethodHandler::invoke<uint32_t>(m, raw(), params);
+        }
+
+        // UnityEngine.MeshTopology: 0 = Triangles
+        [[nodiscard]] int GetTopology(int submesh) const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Mesh"), IL2CPP_STR("GetTopology"), 1);
+            void* params[] = { &submesh };
+            return MethodHandler::invoke<int>(m, raw(), params);
+        }
+
+        // ---- Vertex attribute layout (attr = UnityEngine.Rendering.VertexAttribute, 0 = Position) ----
+
+        [[nodiscard]] bool HasVertexAttribute(int attr) const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Mesh"), IL2CPP_STR("HasVertexAttribute"), 1);
+            void* params[] = { &attr };
+            return MethodHandler::invoke<bool>(m, raw(), params);
+        }
+
+        // UnityEngine.Rendering.VertexAttributeFormat: 0 = Float32
+        [[nodiscard]] int GetVertexAttributeFormat(int attr) const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Mesh"), IL2CPP_STR("GetVertexAttributeFormat"), 1);
+            void* params[] = { &attr };
+            return MethodHandler::invoke<int>(m, raw(), params);
+        }
+
+        [[nodiscard]] int GetVertexAttributeDimension(int attr) const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Mesh"), IL2CPP_STR("GetVertexAttributeDimension"), 1);
+            void* params[] = { &attr };
+            return MethodHandler::invoke<int>(m, raw(), params);
+        }
+
+        [[nodiscard]] int GetVertexAttributeStream(int attr) const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Mesh"), IL2CPP_STR("GetVertexAttributeStream"), 1);
+            void* params[] = { &attr };
+            return MethodHandler::invoke<int>(m, raw(), params);
+        }
+
+        [[nodiscard]] int GetVertexAttributeOffset(int attr) const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Mesh"), IL2CPP_STR("GetVertexAttributeOffset"), 1);
+            void* params[] = { &attr };
+            return MethodHandler::invoke<int>(m, raw(), params);
+        }
     };
 
 } // namespace IL2CPP::Module::Unity

@@ -462,7 +462,7 @@ namespace IL2CPP::VRChat {
         if (!valid()) return {};
         auto go = GetGameObject();
         if (!go) return {};
-        auto klass = IL2CPP::Module::Class::find("VRCPlayer");
+        static auto klass = IL2CPP::Module::Class::find("VRCPlayer");
         if (!klass) return {};
         return VRCPlayer(IL2CPP::Module::Unity::GameObject(go).GetComponent(klass).raw());
     }

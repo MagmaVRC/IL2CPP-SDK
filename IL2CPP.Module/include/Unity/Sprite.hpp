@@ -1,5 +1,6 @@
 #pragma once
 #include "Object.hpp"
+#include "Texture2D.hpp"
 #include "../MethodHandler.hpp"
 #include <IL2CPP.Common/il2cpp_types.hpp>
 
@@ -39,6 +40,14 @@ namespace IL2CPP::Module::Unity {
             Rect r = rect; Vector2 p = pivot;
             void* params[] = { texture, &r, &p, &pixelsPerUnit };
             return Sprite{ MethodHandler::invoke<void*>(m, nullptr, params) };
+        }
+
+        static Sprite LoadFromFile(std::string_view path, float pixelsPerUnit = 100.0f) {
+            auto tex = Texture2D::LoadFromFile(path);
+            if (!tex) return {};
+            Rect rect{0.f, 0.f, (float)tex.GetWidth(), (float)tex.GetHeight()};
+            Vector2 pivot{0.5f, 0.5f};
+            return Create(tex.raw(), rect, pivot, pixelsPerUnit);
         }
     };
 

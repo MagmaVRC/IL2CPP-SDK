@@ -7,6 +7,7 @@
 #include <optional>
 #include <tuple>
 #include <vector>
+#include <functional>
 
 #include "VRChat/VRChat.hpp"
 
@@ -233,6 +234,197 @@ namespace Bootstrap::Module {
 
     private:
         QuickMenu() = default;
+    };
+
+    /// <summary>Handle to a menu button. Value type carrying {module_id, id}.</summary>
+    /// <remarks>Contextually converts to false when the underlying add failed (id == invalid_id).</remarks>
+    class Button {
+    public:
+        uint32_t module_id = 0;
+        uint32_t id = invalid_id;
+        [[nodiscard]] explicit operator bool() const noexcept { return id != invalid_id; }
+
+        /// <summary>Set the button label.</summary>
+        Button& text(std::string_view text);
+        /// <summary>Set the icon from a built-in VRC sprite id.</summary>
+        Button& icon(int32_t sprite_id);
+        /// <summary>Set the icon from a raw UnityEngine.Sprite pointer.</summary>
+        Button& icon(void* sprite_ptr);
+        /// <summary>Tint the button (RGBA, 0..1).</summary>
+        Button& color(float r, float g, float b, float a);
+        /// <summary>Enable or disable interaction.</summary>
+        Button& enabled(bool enabled);
+        /// <summary>Show or hide the button.</summary>
+        Button& visible(bool visible);
+        /// <summary>Remove the button and release its callback.</summary>
+        void remove();
+    };
+
+    /// <summary>Handle to a toggle. Value type carrying {module_id, id}.</summary>
+    class Toggle {
+    public:
+        uint32_t module_id = 0;
+        uint32_t id = invalid_id;
+        [[nodiscard]] explicit operator bool() const noexcept { return id != invalid_id; }
+
+        /// <summary>Current on/off state.</summary>
+        [[nodiscard]] bool state() const;
+        /// <summary>Set the state.</summary>
+        /// <remarks>Drives the native control, so it re-fires this toggle's own callback.</remarks>
+        Toggle& set(bool state);
+    };
+
+    /// <summary>Handle to a slider. Value type carrying {module_id, id}.</summary>
+    class Slider {
+    public:
+        uint32_t module_id = 0;
+        uint32_t id = invalid_id;
+        [[nodiscard]] explicit operator bool() const noexcept { return id != invalid_id; }
+
+        /// <summary>Current value.</summary>
+        [[nodiscard]] float value() const;
+        /// <summary>Set the value.</summary>
+        /// <remarks>Drives the native control, so it re-fires this slider's own callback.</remarks>
+        Slider& set(float value);
+    };
+
+    /// <summary>Handle to an enum (left/right cycling) selector. Value type carrying {module_id, id}.</summary>
+    class EnumSelector {
+    public:
+        uint32_t module_id = 0;
+        uint32_t id = invalid_id;
+        [[nodiscard]] explicit operator bool() const noexcept { return id != invalid_id; }
+
+        /// <summary>Current selected option index.</summary>
+        [[nodiscard]] int32_t index() const;
+        /// <summary>Set the selected option index.</summary>
+        EnumSelector& set(int32_t index);
+    };
+
+    /// <summary>Handle to a foldout section. Container for settings toggles, sliders, enums, labels and separators.</summary>
+    class Foldout {
+    public:
+        uint32_t module_id = 0;
+        uint32_t id = invalid_id;
+        [[nodiscard]] explicit operator bool() const noexcept { return id != invalid_id; }
+
+        /// <summary>Add a native on/off settings toggle.</summary>
+        /// <param name="on_change">Called with the new state. May capture; empty for no callback.</param>
+        /// <param name="config_key">Non-empty persists the value under this key automatically.</param>
+        Toggle toggle(std::string_view text, bool default_state,
+                      std::function<void(bool)> on_change = {},
+                      std::string_view config_key = "", bool sub_indicator = false);
+        /// <summary>Add a slider.</summary>
+        /// <param name="on_change">Called with the new value. May capture; empty for no callback.</param>
+        /// <param name="format_str">std::format-style display format, e.g. "{:.1f}".</param>
+        /// <param name="power">Response curve exponent (1.0 = linear).</param>
+        Slider slider(std::string_view label, float min_val, float max_val, float default_val,
+                      std::function<void(float)> on_change = {},
+                      std::string_view config_key = "", std::string_view format_str = "",
+                      bool sub_indicator = false, float power = 1.0f);
+        /// <summary>Add a left/right enum selector.</summary>
+        /// <param name="options">Array of option labels.</param>
+        /// <param name="option_count">Number of options.</param>
+        /// <param name="on_change">Called with the new index. May capture; empty for no callback.</param>
+        EnumSelector enum_selector(std::string_view label,
+                                   const char* const* options, uint32_t option_count,
+                                   int32_t default_index,
+                                   std::function<void(int32_t)> on_change = {},
+                                   std::string_view config_key = "", bool sub_indicator = false);
+        /// <summary>Add a horizontal separator.</summary>
+        void separator();
+        /// <summary>Expand or collapse the foldout.</summary>
+        Foldout& set_expanded(bool expanded);
+        /// <summary>Whether the foldout is currently expanded.</summary>
+        [[nodiscard]] bool expanded() const;
+    };
+
+    /// <summary>Shared content surface for pages and sub-pages; both accept buttons, toggles and foldouts.</summary>
+    class PageRef {
+    public:
+        uint32_t module_id = 0;
+        uint32_t id = invalid_id;
+        [[nodiscard]] explicit operator bool() const noexcept { return id != invalid_id; }
+
+        /// <summary>Add a button.</summary>
+        /// <param name="on_click">Called on press. May capture; empty for a no-op button.</param>
+        Button button(std::string_view text, std::function<void()> on_click = {});
+        /// <summary>Add a page-level toggle.</summary>
+        /// <param name="on_change">Called with the new state. May capture; empty for no callback.</param>
+        /// <param name="config_key">Non-empty persists the value under this key automatically.</param>
+        Toggle toggle(std::string_view text, bool default_state,
+                      std::function<void(bool)> on_change = {}, std::string_view config_key = "");
+        /// <summary>Add a foldout section.</summary>
+        Foldout foldout(std::string_view title, bool default_expanded = true,
+                        bool show_background = true, bool auto_separators = false);
+    };
+
+    /// <summary>Handle to a sub-page: a nested page reached from a parent page's nav row.</summary>
+    class SubPage : public PageRef {
+    public:
+        /// <summary>Set the text on the parent's navigation row.</summary>
+        SubPage& nav_text(std::string_view text);
+        /// <summary>Set the icon on the parent's navigation row.</summary>
+        SubPage& nav_icon(int32_t sprite_id);
+        /// <summary>The button on the parent's navigation row that opens this sub-page.</summary>
+        [[nodiscard]] Button nav_button() const;
+    };
+
+    /// <summary>Handle to a top-level page (a tab).</summary>
+    class Page : public PageRef {
+    public:
+        /// <summary>Create a sub-page under this page.</summary>
+        SubPage sub_page(std::string_view name);
+        /// <summary>Set the tab icon from a built-in VRC sprite id.</summary>
+        Page& icon(int32_t sprite_id);
+        /// <summary>Set the tab icon from a raw UnityEngine.Sprite pointer.</summary>
+        Page& icon(void* sprite_ptr);
+        /// <summary>Set the page title text.</summary>
+        Page& title(std::string_view title);
+        /// <summary>Show or hide the tab badge, with optional text.</summary>
+        Page& badge(bool visible, std::string_view text = "");
+        /// <summary>Navigate to this page.</summary>
+        void navigate_to();
+        /// <summary>Remove this page and its contents.</summary>
+        void remove();
+    };
+
+    /// <summary>Module-bound QuickMenu facade. Binds module_id once, returns typed handles, takes std::function callbacks.</summary>
+    /// <remarks>
+    /// All calls must run on the Unity main thread. Prefer building inside on_ready.
+    /// <example>
+    /// <code>
+    /// Menu menu(mod.id());
+    /// menu.on_ready([&]{
+    ///     auto p = menu.page("Net").icon(sprite);
+    ///     p.button("Rejoin", []{ rejoin(); });
+    ///     auto f = p.foldout("Tuning");
+    ///     f.slider("Rate", 0, 100, 30, [](float v){ set_rate(v); }, "rate");
+    /// });
+    /// </code>
+    /// </example>
+    /// </remarks>
+    class Menu {
+    public:
+        /// <summary>Bind the facade to a module id (e.g. BootstrapModule::id()).</summary>
+        explicit Menu(uint32_t module_id) : m_module_id(module_id) {}
+
+        /// <summary>The bound module id.</summary>
+        [[nodiscard]] uint32_t module_id() const noexcept { return m_module_id; }
+        /// <summary>Whether the QuickMenu is fully live (sprites cached).</summary>
+        [[nodiscard]] bool is_ready() const;
+
+        /// <summary>Run build once the QuickMenu core is set up (MenuEvent::QuickMenuSetup), or immediately if it already was.</summary>
+        /// <param name="build">Menu-construction closure. No polling of is_ready() needed.</param>
+        void on_ready(std::function<void()> build);
+
+        /// <summary>Create a top-level page (tab).</summary>
+        Page page(std::string_view name, std::string_view tooltip = "");
+        /// <summary>Navigate back one page.</summary>
+        void navigate_back();
+
+    private:
+        uint32_t m_module_id;
     };
 
     class PlayerEvents {

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <atomic>
 #include <charconv>
+#include <unordered_map>
 #include <cwchar>
 #include <sstream>
 #include <string>
@@ -965,6 +966,158 @@ namespace Bootstrap::Module {
         if (!valid()) return;
         g_conn.vtable->qm_navigate_back();
     }
+
+    // Ergonomic QuickMenu layer
+
+    namespace {
+        std::unordered_map<uint32_t, std::function<void()>>        g_btnFns;
+        std::unordered_map<uint32_t, std::function<void(bool)>>    g_toggleFns;
+        std::unordered_map<uint32_t, std::function<void(float)>>   g_sliderFns;
+        std::unordered_map<uint32_t, std::function<void(int32_t)>> g_enumFns;
+
+        void __cdecl btn_tramp(uint32_t id) {
+            auto it = g_btnFns.find(id);
+            if (it != g_btnFns.end() && it->second) it->second();
+        }
+        void __cdecl toggle_tramp(uint32_t id, bool on) {
+            auto it = g_toggleFns.find(id);
+            if (it != g_toggleFns.end() && it->second) it->second(on);
+        }
+        void __cdecl slider_tramp(uint32_t id, float v) {
+            auto it = g_sliderFns.find(id);
+            if (it != g_sliderFns.end() && it->second) it->second(v);
+        }
+        void __cdecl enum_tramp(uint32_t id, int32_t i) {
+            auto it = g_enumFns.find(id);
+            if (it != g_enumFns.end() && it->second) it->second(i);
+        }
+
+        std::vector<std::function<void()>> g_onReady;
+        bool g_onReadyFired = false;
+        bool g_onReadyRegistered = false;
+
+        void __cdecl onready_tramp() {
+            g_onReadyFired = true;
+            auto copy = g_onReady;
+            for (auto& f : copy) if (f) f();
+        }
+    }
+
+    // Button
+
+    Button& Button::text(std::string_view t)         { QuickMenu::Get().set_button_text(module_id, id, t); return *this; }
+    Button& Button::icon(int32_t sprite_id)          { QuickMenu::Get().set_button_icon(module_id, id, sprite_id); return *this; }
+    Button& Button::icon(void* sprite_ptr)           { QuickMenu::Get().set_button_icon(module_id, id, sprite_ptr); return *this; }
+    Button& Button::color(float r, float g, float b, float a) { QuickMenu::Get().set_button_color(module_id, id, r, g, b, a); return *this; }
+    Button& Button::enabled(bool e)                  { QuickMenu::Get().set_button_enabled(module_id, id, e); return *this; }
+    Button& Button::visible(bool v)                  { QuickMenu::Get().set_button_visible(module_id, id, v); return *this; }
+    void    Button::remove()                         { QuickMenu::Get().remove_button(module_id, id); g_btnFns.erase(id); }
+
+    // Toggle
+
+    bool    Toggle::state() const                    { return QuickMenu::Get().get_toggle_state(module_id, id); }
+    Toggle& Toggle::set(bool state)                  { QuickMenu::Get().set_toggle_state(module_id, id, state); return *this; }
+
+    // Slider
+
+    float   Slider::value() const                    { return QuickMenu::Get().get_slider_value(module_id, id); }
+    Slider& Slider::set(float value)                 { QuickMenu::Get().set_slider_value(module_id, id, value); return *this; }
+
+    // EnumSelector
+
+    int32_t       EnumSelector::index() const        { return QuickMenu::Get().get_enum_index(module_id, id); }
+    EnumSelector& EnumSelector::set(int32_t index)   { QuickMenu::Get().set_enum_index(module_id, id, index); return *this; }
+
+    // Foldout
+
+    Toggle Foldout::toggle(std::string_view text, bool default_state,
+                           std::function<void(bool)> on_change, std::string_view config_key, bool sub_indicator) {
+        uint32_t tid = QuickMenu::Get().add_settings_toggle(module_id, id, text, default_state,
+                                                            &toggle_tramp, config_key, sub_indicator);
+        if (tid != invalid_id && on_change) g_toggleFns[tid] = std::move(on_change);
+        return Toggle{ module_id, tid };
+    }
+
+    Slider Foldout::slider(std::string_view label, float min_val, float max_val, float default_val,
+                           std::function<void(float)> on_change, std::string_view config_key,
+                           std::string_view format_str, bool sub_indicator, float power) {
+        uint32_t sid = QuickMenu::Get().add_slider(module_id, id, label, min_val, max_val, default_val,
+                                                   &slider_tramp, config_key, format_str, sub_indicator, power);
+        if (sid != invalid_id && on_change) g_sliderFns[sid] = std::move(on_change);
+        return Slider{ module_id, sid };
+    }
+
+    EnumSelector Foldout::enum_selector(std::string_view label, const char* const* options, uint32_t option_count,
+                                        int32_t default_index, std::function<void(int32_t)> on_change,
+                                        std::string_view config_key, bool sub_indicator) {
+        uint32_t eid = QuickMenu::Get().add_enum_selector(module_id, id, label, options, option_count,
+                                                          default_index, &enum_tramp, config_key, sub_indicator);
+        if (eid != invalid_id && on_change) g_enumFns[eid] = std::move(on_change);
+        return EnumSelector{ module_id, eid };
+    }
+
+    void     Foldout::separator()                    { QuickMenu::Get().add_separator(module_id, id); }
+    Foldout& Foldout::set_expanded(bool expanded)    { QuickMenu::Get().set_foldout_expanded(module_id, id, expanded); return *this; }
+    bool     Foldout::expanded() const               { return QuickMenu::Get().get_foldout_expanded(module_id, id); }
+
+    // PageRef
+
+    Button PageRef::button(std::string_view text, std::function<void()> on_click) {
+        uint32_t bid = QuickMenu::Get().add_button(module_id, id, text, &btn_tramp);
+        if (bid != invalid_id && on_click) g_btnFns[bid] = std::move(on_click);
+        return Button{ module_id, bid };
+    }
+
+    Toggle PageRef::toggle(std::string_view text, bool default_state,
+                           std::function<void(bool)> on_change, std::string_view config_key) {
+        uint32_t tid = QuickMenu::Get().add_toggle(module_id, id, text, default_state, &toggle_tramp, config_key);
+        if (tid != invalid_id && on_change) g_toggleFns[tid] = std::move(on_change);
+        return Toggle{ module_id, tid };
+    }
+
+    Foldout PageRef::foldout(std::string_view title, bool default_expanded,
+                             bool show_background, bool auto_separators) {
+        uint32_t fid = QuickMenu::Get().add_foldout(module_id, id, title, default_expanded, show_background, auto_separators);
+        return Foldout{ module_id, fid };
+    }
+
+    // SubPage
+
+    SubPage& SubPage::nav_text(std::string_view text) { QuickMenu::Get().set_subpage_nav_text(module_id, id, text); return *this; }
+    SubPage& SubPage::nav_icon(int32_t sprite_id)     { QuickMenu::Get().set_subpage_nav_icon(module_id, id, sprite_id); return *this; }
+    Button   SubPage::nav_button() const              { return Button{ module_id, QuickMenu::Get().get_subpage_nav_button(module_id, id) }; }
+
+    // Page
+
+    SubPage Page::sub_page(std::string_view name) {
+        return SubPage{ { module_id, QuickMenu::Get().create_sub_page(module_id, id, name) } };
+    }
+    Page&  Page::icon(int32_t sprite_id)             { QuickMenu::Get().set_page_icon(module_id, id, sprite_id); return *this; }
+    Page&  Page::icon(void* sprite_ptr)              { QuickMenu::Get().set_page_icon(module_id, id, sprite_ptr); return *this; }
+    Page&  Page::title(std::string_view title)       { QuickMenu::Get().set_page_title(module_id, id, title); return *this; }
+    Page&  Page::badge(bool visible, std::string_view text) { QuickMenu::Get().set_page_badge(module_id, id, visible, text); return *this; }
+    void   Page::navigate_to()                       { QuickMenu::Get().navigate_to(id); }
+    void   Page::remove()                            { QuickMenu::Get().remove_page(module_id, id); }
+
+    // Menu
+
+    bool Menu::is_ready() const { return QuickMenu::Get().is_ready(); }
+
+    void Menu::on_ready(std::function<void()> build) {
+        if (!build) return;
+        if (g_onReadyFired) { build(); return; }
+        g_onReady.push_back(std::move(build));
+        if (!g_onReadyRegistered && is_connected() && g_conn.vtable->register_menu_event) {
+            g_onReadyRegistered = true;
+            g_conn.vtable->register_menu_event(m_module_id, MenuEvent::QuickMenuSetup, &onready_tramp);
+        }
+    }
+
+    Page Menu::page(std::string_view name, std::string_view tooltip) {
+        return Page{ { m_module_id, QuickMenu::Get().create_page(m_module_id, name, tooltip) } };
+    }
+
+    void Menu::navigate_back() { QuickMenu::Get().navigate_back(); }
 
     // PlayerEvents
 
