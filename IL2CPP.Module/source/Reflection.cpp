@@ -187,6 +187,18 @@ namespace IL2CPP::Module {
         return reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*)>(E()->m_typeGetObject)(m_native);
     }
 
+    uint32_t Type::attributes() const {
+        return GetTypeAttributes(static_cast<il2cppType*>(m_native));
+    }
+
+    bool Type::equals(const Type& other) const {
+        return TypesEqual(static_cast<il2cppType*>(m_native), static_cast<il2cppType*>(other.m_native));
+    }
+
+    Class Type::get_class_or_element_class() const {
+        return Class{ GetClassOrElementClass(static_cast<il2cppType*>(m_native)) };
+    }
+
 
     const char* Field::raw_name() const {
         if (!m_native) return "";
@@ -264,12 +276,20 @@ namespace IL2CPP::Module {
     }
 
     uint32_t Field::attributes() const {
+        return raw_flags();
+    }
+
+    uint32_t Field::raw_flags() const {
         if (!m_native) return 0;
+        uint32_t flags = GetFieldFlags(static_cast<il2cppFieldInfo*>(m_native));
+        if (flags != 0) return flags;
         auto t = type();
         if (!t) return 0;
-        void* typePtr = t.raw();
-        if (!typePtr) return 0;
-        return *reinterpret_cast<const uint16_t*>(static_cast<const char*>(typePtr) + 0x8);
+        return t.attributes();
+    }
+
+    uint32_t Field::token() const {
+        return GetFieldToken(static_cast<il2cppFieldInfo*>(m_native));
     }
 
     bool Field::is_static() const {
@@ -396,6 +416,18 @@ namespace IL2CPP::Module {
         return reinterpret_cast<il2cppMethodInfo*>(m_native)->code_pointer();
     }
 
+    // SEH-wrapped call into il2cpp_method_get_param. A MethodInfo pointer can
+    // pass the null/range check yet point to non-method memory (observed: a
+    // MethodInfo whose `parameters` field is 0xC38C..., so the export's
+    // double-deref AVs). Kept object-free per the MSVC SEH rule.
+    static void* SafeMethodGetParam(void* fn, void* method, uint32_t index) noexcept {
+        __try {
+            return reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, uint32_t)>(fn)(method, index);
+        } __except(1) {
+            return nullptr;
+        }
+    }
+
     uint8_t Method::param_count() const {
         if (!m_native) return 0;
         if (E() && E()->m_offMethodArgCount >= 0) {
@@ -404,9 +436,8 @@ namespace IL2CPP::Module {
         }
         if (E() && E()->m_methodGetParam) {
             uint8_t count = 0;
-            auto fn = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, uint32_t)>(E()->m_methodGetParam);
             for (uint8_t i = 0; i < 32; ++i) {
-                if (!fn(m_native, i)) break;
+                if (!SafeMethodGetParam(E()->m_methodGetParam, m_native, i)) break;
                 ++count;
             }
             return count;
@@ -417,6 +448,30 @@ namespace IL2CPP::Module {
     uint32_t Method::flags(uint32_t* impl_flags) const {
         if (!m_native || !E() || !E()->m_methodGetFlags) return 0;
         return reinterpret_cast<uint32_t(IL2CPP_CALLTYPE)(void*, uint32_t*)>(E()->m_methodGetFlags)(m_native, impl_flags);
+    }
+
+    uint32_t Method::token() const {
+        return GetMethodToken(static_cast<il2cppMethodInfo*>(m_native));
+    }
+
+    uint16_t Method::slot() const {
+        return GetMethodSlot(static_cast<il2cppMethodInfo*>(m_native));
+    }
+
+    void* Method::reflection_object(void* reflected_class) const {
+        return GetMethodObject(
+            static_cast<il2cppMethodInfo*>(m_native),
+            static_cast<il2cppClass*>(reflected_class));
+    }
+
+    Method Method::virtual_for(void* object) const {
+        return Method{ GetVirtualMethod(
+            static_cast<il2cppObject*>(object),
+            static_cast<il2cppMethodInfo*>(m_native)) };
+    }
+
+    Method Method::from_reflection(void* reflection_method) {
+        return Method{ GetMethodFromReflection(static_cast<il2cppObject*>(reflection_method)) };
     }
 
     bool Method::is_static() const {
@@ -469,12 +524,12 @@ namespace IL2CPP::Module {
 
     Type Method::get_param_type(uint32_t index) const {
         if (!m_native || !E() || !E()->m_methodGetParam) return Type{};
-        return Type{ reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, uint32_t)>(E()->m_methodGetParam)(m_native, index) };
+        return Type{ SafeMethodGetParam(E()->m_methodGetParam, m_native, index) };
     }
 
     const char* Method::get_param_name(uint32_t index) const {
         if (!m_native || !E() || !E()->m_methodGetParamName) return "";
-        const char* name = reinterpret_cast<const char*(IL2CPP_CALLTYPE)(void*, uint32_t)>(E()->m_methodGetParamName)(m_native, index);
+        const char* name = reinterpret_cast<const char*>(SafeMethodGetParam(E()->m_methodGetParamName, m_native, index));
         if (name && *name) {
             for (const unsigned char* p = reinterpret_cast<const unsigned char*>(name); *p; ++p) {
                 if (*p > 0x7E || *p < 0x20) {
@@ -576,16 +631,20 @@ namespace IL2CPP::Module {
 
     Method Property::getter() const {
         if (!m_native) return Method{};
-        return Method{ reinterpret_cast<il2cppPropertyInfo*>(m_native)->get_getter() };
+        return Method{ GetPropertyGetter(static_cast<il2cppPropertyInfo*>(m_native)) };
     }
 
     Method Property::setter() const {
         if (!m_native) return Method{};
-        return Method{ reinterpret_cast<il2cppPropertyInfo*>(m_native)->get_setter() };
+        return Method{ GetPropertySetter(static_cast<il2cppPropertyInfo*>(m_native)) };
     }
 
     void* Property::parent_class_raw() const {
         return PropertyParentClass(m_native);
+    }
+
+    uint32_t Property::raw_flags() const {
+        return GetPropertyFlags(static_cast<il2cppPropertyInfo*>(m_native));
     }
 
     bool Property::is_public() const {
@@ -617,6 +676,31 @@ namespace IL2CPP::Module {
         if ((g && g.is_protected()) || (s && s.is_protected())) return "protected";
         if ((g && g.is_internal()) || (s && s.is_internal())) return "internal";
         return "private";
+    }
+
+    const char* Event::name() const {
+        const char* value = GetEventName(m_native);
+        return value ? value : "";
+    }
+
+    Method Event::add_method() const {
+        return Method{ GetEventAddMethod(m_native) };
+    }
+
+    Method Event::remove_method() const {
+        return Method{ GetEventRemoveMethod(m_native) };
+    }
+
+    Method Event::raise_method() const {
+        return Method{ GetEventRaiseMethod(m_native) };
+    }
+
+    Class Event::parent() const {
+        return Class{ GetEventParent(m_native) };
+    }
+
+    uint32_t Event::token() const {
+        return GetEventToken(m_native);
     }
 
 
@@ -749,6 +833,12 @@ namespace IL2CPP::Module {
         return reinterpret_cast<bool(IL2CPP_CALLTYPE)(void*, void*)>(E()->m_classIsSubclassOf)(m_native, other.m_native);
     }
 
+    bool Class::is_assignable_from(const Class& candidate) const {
+        return IsAssignableFrom(
+            static_cast<il2cppClass*>(m_native),
+            static_cast<il2cppClass*>(candidate.m_native));
+    }
+
     bool Class::is_enum() const {
         if (!m_native || !E() || !E()->m_classIsEnum) return false;
         return reinterpret_cast<bool(IL2CPP_CALLTYPE)(void*)>(E()->m_classIsEnum)(m_native);
@@ -762,8 +852,27 @@ namespace IL2CPP::Module {
 
     uint32_t Class::instance_size() const {
         if (!m_native) return 0;
-        constexpr size_t offset = 22 * sizeof(void*);
-        return *reinterpret_cast<uint32_t*>(static_cast<char*>(m_native) + offset);
+        auto* function = ResolveExport("il2cpp_class_instance_size");
+        return function
+            ? reinterpret_cast<uint32_t(IL2CPP_CALLTYPE)(void*)>(function)(m_native)
+            : 0;
+    }
+
+    int32_t Class::value_size(uint32_t* alignment) const {
+        return GetClassValueSize(static_cast<il2cppClass*>(m_native), alignment);
+    }
+
+    bool Class::has_references() const {
+        return ClassHasReferences(static_cast<il2cppClass*>(m_native));
+    }
+
+    std::vector<Class> Class::get_interfaces() const {
+        std::vector<Class> result;
+        if (!m_native) return result;
+        void* iter = nullptr;
+        while (auto* iface = GetInterfaces(static_cast<il2cppClass*>(m_native), &iter))
+            result.emplace_back(iface);
+        return result;
     }
 
     void* Class::static_field_data() const {
@@ -986,6 +1095,15 @@ namespace IL2CPP::Module {
         return result;
     }
 
+    std::vector<Event> Class::get_events() const {
+        std::vector<Event> result;
+        if (!m_native) return result;
+        void* iter = nullptr;
+        while (void* eventInfo = GetEvents(static_cast<il2cppClass*>(m_native), &iter))
+            result.emplace_back(eventInfo);
+        return result;
+    }
+
     Class Class::find(std::string_view full_name) {
         if (!E() || !E()->m_helperFindClass) return Class{};
 
@@ -1003,9 +1121,21 @@ namespace IL2CPP::Module {
         return Class{ result };
     }
 
+    Class Class::from_system_type(void* system_type) {
+        return Class{ ClassFromSystemType(static_cast<il2cppSystemType*>(system_type)) };
+    }
+
     ManagedObject Class::new_object() const {
         if (!m_native || !E() || !E()->m_objectNew) return ManagedObject{};
         return ManagedObject{ reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*)>(E()->m_objectNew)(m_native) };
+    }
+
+    ManagedObject Class::new_instance(void** ctor_params, int argc) const {
+        ManagedObject obj = new_object();
+        if (!obj) return obj;
+        Method ctor = get_method(".ctor", argc);
+        if (ctor) ctor.invoke(obj.raw(), ctor_params);
+        return obj;
     }
 
 

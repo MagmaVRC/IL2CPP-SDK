@@ -10,6 +10,7 @@ namespace IL2CPP::Module {
     class Field;
     class Method;
     class Property;
+    class Event;
     class Type;
     class ManagedObject;
     class Assembly;
@@ -36,6 +37,9 @@ namespace IL2CPP::Module {
         [[nodiscard]] bool is_byref() const;
         [[nodiscard]] const char* assembly_qualified_name() const;
         [[nodiscard]] void* get_system_type_object() const;
+        [[nodiscard]] uint32_t attributes() const;
+        [[nodiscard]] bool equals(const Type& other) const;
+        [[nodiscard]] Class get_class_or_element_class() const;
     };
 
     class Field {
@@ -53,6 +57,8 @@ namespace IL2CPP::Module {
         [[nodiscard]] Type type() const;
         [[nodiscard]] int offset() const;
         [[nodiscard]] uint32_t attributes() const;
+        [[nodiscard]] uint32_t raw_flags() const;
+        [[nodiscard]] uint32_t token() const;
 
         [[nodiscard]] bool is_static() const;
         [[nodiscard]] bool is_public() const;
@@ -84,6 +90,11 @@ namespace IL2CPP::Module {
         [[nodiscard]] void* pointer() const;
         [[nodiscard]] uint8_t param_count() const;
         [[nodiscard]] uint32_t flags(uint32_t* impl_flags = nullptr) const;
+        [[nodiscard]] uint32_t token() const;
+        [[nodiscard]] uint16_t slot() const;
+        [[nodiscard]] void* reflection_object(void* reflected_class = nullptr) const;
+        [[nodiscard]] Method virtual_for(void* object) const;
+        [[nodiscard]] static Method from_reflection(void* reflection_method);
 
         [[nodiscard]] bool is_static() const;
         [[nodiscard]] bool is_public() const;
@@ -117,12 +128,29 @@ namespace IL2CPP::Module {
         [[nodiscard]] Method getter() const;
         [[nodiscard]] Method setter() const;
         [[nodiscard]] void* parent_class_raw() const;
+        [[nodiscard]] uint32_t raw_flags() const;
 
         [[nodiscard]] bool is_public() const;
         [[nodiscard]] bool is_private() const;
         [[nodiscard]] bool is_readonly() const;
         [[nodiscard]] bool is_writeonly() const;
         [[nodiscard]] const char* access_modifier() const;
+    };
+
+    class Event {
+        void* m_native = nullptr;
+    public:
+        explicit Event(void* raw = nullptr) : m_native(raw) {}
+
+        [[nodiscard]] void* raw() const noexcept { return m_native; }
+        [[nodiscard]] operator bool() const noexcept { return m_native != nullptr; }
+
+        [[nodiscard]] const char* name() const;
+        [[nodiscard]] Method add_method() const;
+        [[nodiscard]] Method remove_method() const;
+        [[nodiscard]] Method raise_method() const;
+        [[nodiscard]] Class parent() const;
+        [[nodiscard]] uint32_t token() const;
     };
 
     class Class {
@@ -142,10 +170,14 @@ namespace IL2CPP::Module {
         [[nodiscard]] Class parent() const;
         [[nodiscard]] Type get_type() const;
         [[nodiscard]] bool is_subclass_of(const Class& parent) const;
+        [[nodiscard]] bool is_assignable_from(const Class& candidate) const;
         [[nodiscard]] bool is_enum() const;
         [[nodiscard]] bool is_generic() const;
         [[nodiscard]] uint32_t instance_size() const;
+        [[nodiscard]] int32_t value_size(uint32_t* alignment = nullptr) const;
+        [[nodiscard]] bool has_references() const;
         [[nodiscard]] void* static_field_data() const;
+        [[nodiscard]] std::vector<Class> get_interfaces() const;
 
         [[nodiscard]] Field get_field(std::string_view name) const;
         [[nodiscard]] std::vector<Field> get_fields() const;
@@ -157,8 +189,14 @@ namespace IL2CPP::Module {
         [[nodiscard]] Property get_property(std::string_view name) const;
         [[nodiscard]] std::vector<Property> get_properties() const;
 
+        [[nodiscard]] std::vector<Event> get_events() const;
+
         [[nodiscard]] static Class find(std::string_view full_name);
+        [[nodiscard]] static Class from_system_type(void* system_type);
         [[nodiscard]] ManagedObject new_object() const;
+
+        /// <summary>Allocate an instance and invoke a matching .ctor. The "new" primitive.</summary>
+        [[nodiscard]] ManagedObject new_instance(void** ctor_params = nullptr, int argc = 0) const;
     };
 
     class Image {

@@ -59,11 +59,11 @@ namespace IL2CPP::Module::System {
             void* eArr = read<void*>(kEntriesOffset);
             if (!IsValidPointer(bArr) || !IsValidPointer(eArr)) return nullptr;
 
-            auto bSize = *reinterpret_cast<uintptr_t*>(static_cast<char*>(bArr) + Array<int>::kMaxLengthOffset);
+            auto bSize = *reinterpret_cast<uintptr_t*>(static_cast<char*>(bArr) + Array<int>::MaxLengthOffset());
             if (bSize == 0) return nullptr;
 
-            int* buck = reinterpret_cast<int*>(static_cast<char*>(bArr) + Array<int>::kValuesOffset);
-            Entry* ent = reinterpret_cast<Entry*>(static_cast<char*>(eArr) + Array<Entry>::kValuesOffset);
+            int* buck = reinterpret_cast<int*>(static_cast<char*>(bArr) + Array<int>::ValuesOffset());
+            Entry* ent = reinterpret_cast<Entry*>(static_cast<char*>(eArr) + Array<Entry>::ValuesOffset());
 
             int bucketIdx = (std::hash<TKey>{}(key) & 0x7FFFFFFF) % static_cast<int>(bSize);
             for (int i = buck[bucketIdx] - 1; i >= 0; i = ent[i].next) {
@@ -92,10 +92,10 @@ namespace IL2CPP::Module::System {
             if (!IsValidPointer(eArr)) return;
             int cnt = read<int>(kCountOffset);
             int cap = static_cast<int>(*reinterpret_cast<uintptr_t*>(
-                static_cast<char*>(eArr) + Array<Entry>::kMaxLengthOffset));
+                static_cast<char*>(eArr) + Array<Entry>::MaxLengthOffset()));
             int limit = (cnt < cap) ? cnt : cap;
             Entry* ent = reinterpret_cast<Entry*>(
-                static_cast<char*>(eArr) + Array<Entry>::kValuesOffset);
+                static_cast<char*>(eArr) + Array<Entry>::ValuesOffset());
             for (int i = 0; i < limit; ++i) {
                 if (ent[i].hashCode >= 0)
                     f(ent[i].key, ent[i].value);
@@ -110,10 +110,10 @@ namespace IL2CPP::Module::System {
             if (!IsValidPointer(eArr)) return;
             int cnt = read<int>(kCountOffset);
             int cap = static_cast<int>(*reinterpret_cast<uintptr_t*>(
-                static_cast<char*>(eArr) + Array<Entry>::kMaxLengthOffset));
+                static_cast<char*>(eArr) + Array<Entry>::MaxLengthOffset()));
             int limit = (cnt < cap) ? cnt : cap;
             const Entry* ent = reinterpret_cast<const Entry*>(
-                static_cast<char*>(eArr) + Array<Entry>::kValuesOffset);
+                static_cast<char*>(eArr) + Array<Entry>::ValuesOffset());
             for (int i = 0; i < limit; ++i) {
                 if (ent[i].hashCode >= 0)
                     f(ent[i].key, ent[i].value);

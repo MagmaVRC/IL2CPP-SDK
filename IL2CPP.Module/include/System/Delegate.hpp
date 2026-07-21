@@ -5,15 +5,17 @@
 #include <IL2CPP.Common/il2cpp_shared.hpp>
 #include <IL2CPP.Common/il2cpp_structs.hpp>
 
+namespace IL2CPP::Module { [[nodiscard]] IL2CPP::il2cpp_exports const* GetExports() noexcept; }
+
 namespace IL2CPP::Module::System {
 
     class Delegate : public ManagedObject {
     public:
-        static constexpr int kMethodPtrOffset   = 0x10;
-        static constexpr int kInvokeImplOffset  = 0x18;
-        static constexpr int kTargetOffset      = 0x20;
-        static constexpr int kMethodInfoOffset  = 0x28;
-        static constexpr int kExtraArgOffset    = 0x38;
+        // Delegate struct offsets — cached in g_layoutOffsets (see ManagedObject.hpp).
+        [[nodiscard]] static int OffMethodPtr()  noexcept { return g_layoutOffsets.delegateMethodPtr; }
+        [[nodiscard]] static int OffInvokeImpl() noexcept { return g_layoutOffsets.delegateInvokeImpl; }
+        [[nodiscard]] static int OffTarget()     noexcept { return g_layoutOffsets.delegateTarget; }
+        [[nodiscard]] static int OffMethodInfo() noexcept { return g_layoutOffsets.delegateMethodInfo; }
 
         using ManagedObject::ManagedObject;
 
@@ -25,12 +27,12 @@ namespace IL2CPP::Module::System {
 
         [[nodiscard]] void* GetMethodPtr() const {
             if (!valid()) return nullptr;
-            return read<void*>(kMethodPtrOffset);
+            return read<void*>(OffMethodPtr());
         }
 
         [[nodiscard]] void* GetInvokeImpl() const {
             if (!valid()) return nullptr;
-            return read<void*>(kInvokeImplOffset);
+            return read<void*>(OffInvokeImpl());
         }
 
 
@@ -71,17 +73,17 @@ namespace IL2CPP::Module::System {
             auto* mi = static_cast<il2cppMethodInfo*>(targetMethodInfo);
             void* fnPtr = mi->m_pMethodPointer;
 
-            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + kMethodPtrOffset)  = fnPtr;
-            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + kInvokeImplOffset) = fnPtr;
-            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + kTargetOffset)     = nullptr;
-            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + kMethodInfoOffset) = targetMethodInfo;
+            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + OffMethodPtr())  = fnPtr;
+            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + OffInvokeImpl()) = fnPtr;
+            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + OffTarget())     = nullptr;
+            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + OffMethodInfo()) = targetMethodInfo;
 
             return Delegate{ delegateObj };
         }
 
         [[nodiscard]] static Delegate CreateForInstanceMethod(std::string_view delegateTypeName, void* target, void* targetMethodInfo) {
             auto* e = GetExports();
-            if (!e || !target || !targetMethodInfo) return Delegate{};
+            if (!e || !target || !targetMethodInfo || !e->m_gcWBarrierSetField) return Delegate{};
 
             void* delegateClass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_helperFindClass)(
                 std::string(delegateTypeName).c_str());
@@ -93,10 +95,12 @@ namespace IL2CPP::Module::System {
             auto* mi = static_cast<il2cppMethodInfo*>(targetMethodInfo);
             void* fnPtr = mi->m_pMethodPointer;
 
-            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + kMethodPtrOffset)  = fnPtr;
-            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + kInvokeImplOffset) = fnPtr;
-            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + kTargetOffset)     = target;
-            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + kMethodInfoOffset) = targetMethodInfo;
+            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + OffMethodPtr())  = fnPtr;
+            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + OffInvokeImpl()) = fnPtr;
+            void** targetField = reinterpret_cast<void**>(static_cast<char*>(delegateObj) + OffTarget());
+            reinterpret_cast<void(IL2CPP_CALLTYPE)(void*, void**, void*)>(
+                e->m_gcWBarrierSetField)(delegateObj, targetField, target);
+            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + OffMethodInfo()) = targetMethodInfo;
 
             return Delegate{ delegateObj };
         }
@@ -126,10 +130,10 @@ namespace IL2CPP::Module::System {
         ///
         /// @param delegateTypeName  Managed delegate type (e.g. "System.Action")
         /// @param nativeFn          Pointer to your C++ function
-        /// @param context           Optional context pointer passed as 'target' (default: nullptr)
+        /// @param context           Reserved; non-null native pointers are rejected because delegate targets are managed references.
         [[nodiscard]] static Delegate CreateNative(std::string_view delegateTypeName, void* nativeFn, void* context = nullptr) {
             auto* e = GetExports();
-            if (!e || !nativeFn) return Delegate{};
+            if (!e || !nativeFn || context) return Delegate{};
 
             void* delegateClass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_helperFindClass)(
                 std::string(delegateTypeName).c_str());
@@ -138,10 +142,32 @@ namespace IL2CPP::Module::System {
             void* delegateObj = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*)>(e->m_objectNew)(delegateClass);
             if (!delegateObj) return Delegate{};
 
-            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + kMethodPtrOffset)  = nativeFn;
-            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + kInvokeImplOffset) = nativeFn;
-            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + kTargetOffset)     = context;
-            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + kMethodInfoOffset) = nullptr;
+            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + OffMethodPtr())  = nativeFn;
+            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + OffInvokeImpl()) = nativeFn;
+            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + OffTarget())     = context;
+            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + OffMethodInfo()) = nullptr;
+
+            return Delegate{ delegateObj };
+        }
+
+        [[nodiscard]] static Delegate CreateNative(Class delegateClass, void* nativeFn, void* context = nullptr) {
+            auto* e = GetExports();
+            if (!e || !delegateClass || !nativeFn || !e->m_objectNew ||
+                (context && !e->m_gcWBarrierSetField)) return Delegate{};
+
+            void* delegateObj = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*)>(e->m_objectNew)(delegateClass.raw());
+            if (!delegateObj) return Delegate{};
+
+            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + OffMethodPtr()) = nativeFn;
+            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + OffInvokeImpl()) = nativeFn;
+            void** targetField = reinterpret_cast<void**>(static_cast<char*>(delegateObj) + OffTarget());
+            if (context) {
+                reinterpret_cast<void(IL2CPP_CALLTYPE)(void*, void**, void*)>(
+                    e->m_gcWBarrierSetField)(delegateObj, targetField, context);
+            } else {
+                *targetField = context;
+            }
+            *reinterpret_cast<void**>(static_cast<char*>(delegateObj) + OffMethodInfo()) = nullptr;
 
             return Delegate{ delegateObj };
         }
@@ -174,7 +200,7 @@ namespace IL2CPP::Module::System {
         /// Create an Action from a native C++ function.
         /// Signature: void(__fastcall*)(void* target, void* method)
         [[nodiscard]] static Action CreateNative(void* nativeFn, void* context = nullptr) {
-            Delegate d = Delegate::CreateNative("System.Action", nativeFn, context);
+            Delegate d = Delegate::CreateNative(IL2CPP_STR("System.Action"), nativeFn, context);
             return Action{ d.raw() };
         }
 

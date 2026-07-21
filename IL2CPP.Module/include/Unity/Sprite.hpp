@@ -42,6 +42,17 @@ namespace IL2CPP::Module::Unity {
             return Sprite{ MethodHandler::invoke<void*>(m, nullptr, params) };
         }
 
+        enum class MeshType : uint32_t { Tight = 0, FullRect = 1 };
+
+        [[nodiscard]] static Sprite Create(void* texture, const Rect& rect, const Vector2& pivot,
+                                           float pixelsPerUnit, uint32_t extrude, MeshType meshType) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Sprite"), IL2CPP_STR("Create"), 6);
+            Rect r = rect; Vector2 p = pivot;
+            uint32_t meshTypeVal = static_cast<uint32_t>(meshType);
+            void* params[] = { texture, &r, &p, &pixelsPerUnit, &extrude, &meshTypeVal };
+            return Sprite{ MethodHandler::invoke<void*>(m, nullptr, params) };
+        }
+
         static Sprite LoadFromFile(std::string_view path, float pixelsPerUnit = 100.0f) {
             auto tex = Texture2D::LoadFromFile(path);
             if (!tex) return {};

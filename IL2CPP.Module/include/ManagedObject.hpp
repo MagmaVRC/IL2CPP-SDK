@@ -16,6 +16,31 @@ namespace IL2CPP::Module {
         return reinterpret_cast<uintptr_t>(ptr) - lo <= range;
     }
 
+    // Runtime-layout offsets, cached once at Connect() from the Core exports table
+    // (see il2cpp_exports::m_offDelegate*/m_offArray*/m_offObjectCachedPtr). Defaults
+    // are the IL2CPP 2022.3/Unity 6 layout, so reads are correct even before Connect.
+    // Every access is a single inlined load — no cross-module call, no branch.
+    struct LayoutOffsets {
+        int delegateMethodPtr  = 0x10;
+        int delegateInvokeImpl = 0x18;
+        int delegateTarget     = 0x20;
+        int delegateMethodInfo = 0x28;
+        int arrayMaxLength     = 0x18;
+        int arrayData          = 0x20;
+        int objectCachedPtr    = 0x10;
+    };
+    inline LayoutOffsets g_layoutOffsets;
+
+    // The exports "vtable" is mapped once at Connect() and cached in IL2CPP::g_structOffsets
+    // (an inline global). GetExports() is inline, so every `GetExports()->m_x` in the header
+    // wrappers folds to a single load — no cross-TU call, no per-pointer caching hacks.
+    [[nodiscard]] inline IL2CPP::il2cpp_exports const* GetExports() noexcept {
+        return IL2CPP::g_structOffsets;
+    }
+
+    // Populated by Connect() once exports are validated.
+    void InitLayoutOffsets() noexcept;
+
     class ManagedObject {
     protected:
         void* m_native = nullptr;  // il2cppObject*

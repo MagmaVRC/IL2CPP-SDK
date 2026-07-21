@@ -63,6 +63,13 @@ namespace IL2CPP::Module::Unity {
             return System::String{ str }.to_string();
         }
 
+        [[nodiscard]] static std::string GetUnityVersion() {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Application"), IL2CPP_STR("get_unityVersion"), 0);
+            void* str = MethodHandler::invoke<void*>(m, nullptr);
+            if (!str) return "";
+            return System::String{ str }.to_string();
+        }
+
         [[nodiscard]] static std::string GetProductName() {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Application"), IL2CPP_STR("get_productName"), 0);
             void* str = MethodHandler::invoke<void*>(m, nullptr);

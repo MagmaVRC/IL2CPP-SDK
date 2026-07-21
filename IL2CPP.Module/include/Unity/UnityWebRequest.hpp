@@ -1,10 +1,14 @@
 #pragma once
+#include "AsyncOperation.hpp"
 #include "Object.hpp"
 #include "../MethodHandler.hpp"
 #include "../System/String.hpp"
 #include <IL2CPP.Common/il2cpp_shared.hpp>
 #include <string>
 #include <string_view>
+#include <exception>
+#include <memory>
+#include <stdexcept>
 
 namespace IL2CPP::Module::Unity {
 
@@ -213,23 +217,38 @@ namespace IL2CPP::Module::Unity {
         }
     };
 
-    class UnityWebRequestAsyncOperation : public Object {
+    class UnityWebRequestAsyncOperation : public AsyncOperation {
     public:
-        using Object::Object;
-
-        [[nodiscard]] bool GetIsDone() const {
-            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AsyncOperation"), IL2CPP_STR("get_isDone"), 0);
-            return MethodHandler::invoke<bool>(m, raw());
-        }
-
-        [[nodiscard]] float GetProgress() const {
-            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AsyncOperation"), IL2CPP_STR("get_progress"), 0);
-            return MethodHandler::invoke<float>(m, raw());
-        }
+        using AsyncOperation::AsyncOperation;
 
         [[nodiscard]] UnityWebRequest GetWebRequest() const {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Networking.UnityWebRequestAsyncOperation"), IL2CPP_STR("get_webRequest"), 0);
             return UnityWebRequest{ MethodHandler::invoke<void*>(m, raw()) };
+        }
+
+        [[nodiscard]] Task<UnityWebRequest> Await() const {
+            TaskSource<UnityWebRequest> source;
+            auto resultRoot = std::make_shared<ManagedRoot>();
+            source.KeepAlive(resultRoot);
+            Task<UnityWebRequest> task = source.GetTask();
+            if (!raw()) {
+                (void)source.SetValue(UnityWebRequest{});
+            } else if (!OnCompleted([source, resultRoot](AsyncOperation completed) {
+                try {
+                    if (!completed) throw std::runtime_error("UnityWebRequest completion failed");
+                    UnityWebRequest result = UnityWebRequestAsyncOperation{ completed.raw() }.GetWebRequest();
+                    if (result && !resultRoot->Reset(result.raw())) {
+                        throw std::runtime_error("failed to root completed UnityWebRequest");
+                    }
+                    (void)source.SetValue(result);
+                } catch (...) {
+                    (void)source.SetException(std::current_exception());
+                }
+            })) {
+                (void)source.SetException(std::make_exception_ptr(
+                    std::runtime_error("failed to subscribe to UnityWebRequest completion")));
+            }
+            return task;
         }
     };
 

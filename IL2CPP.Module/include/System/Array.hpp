@@ -14,9 +14,9 @@ namespace IL2CPP::Module::System {
 
     template<typename T>
     class Array : public ManagedObject {
-        static constexpr int kBoundsOffset    = 0x10;  // il2cppArrayBounds*
-        static constexpr int kMaxLengthOffset = 0x18;  // uintptr_t
-        static constexpr int kValuesOffset    = 0x20;  // T m_pValues (start of data inline)
+        // Il2CppArray header offsets — cached in g_layoutOffsets (see ManagedObject.hpp).
+        [[nodiscard]] static int MaxLengthOffset() noexcept { return g_layoutOffsets.arrayMaxLength; }
+        [[nodiscard]] static int ValuesOffset()    noexcept { return g_layoutOffsets.arrayData; }
 
         template<typename TKey, typename TValue> friend class Dictionary;
         template<typename U> friend class List;
@@ -24,11 +24,11 @@ namespace IL2CPP::Module::System {
 
     private:
         [[nodiscard]] T* data_internal() const {
-            return reinterpret_cast<T*>(static_cast<char*>(m_native) + kValuesOffset);
+            return reinterpret_cast<T*>(static_cast<char*>(m_native) + ValuesOffset());
         }
 
         [[nodiscard]] uintptr_t size_internal() const {
-            return *reinterpret_cast<uintptr_t*>(static_cast<char*>(m_native) + kMaxLengthOffset);
+            return *reinterpret_cast<uintptr_t*>(static_cast<char*>(m_native) + MaxLengthOffset());
         }
 
     public:
@@ -137,7 +137,7 @@ namespace IL2CPP::Module::System {
 
         static Array<uint8_t> FromBytes(const void* src, size_t len) requires std::same_as<T, uint8_t> {
             if (!src || len == 0) return {};
-            auto arr = Create("System.Byte", len);
+            auto arr = Create(IL2CPP_STR("System.Byte"), len);
             if (arr) std::memcpy(arr.data(), src, len);
             return arr;
         }

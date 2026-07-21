@@ -55,7 +55,7 @@ namespace IL2CPP::Module::Unity {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AudioClip"), IL2CPP_STR("SetData"), 2);
             auto* e = GetExports();
             if (!e || !data || sampleCount == 0) return false;
-            void* floatClass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_helperFindClass)("System.Single");
+            void* floatClass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_helperFindClass)(IL2CPP_STR("System.Single"));
             if (!floatClass) return false;
             void* arr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, uintptr_t)>(e->m_arrayNew)(floatClass, sampleCount);
             if (!arr) return false;
@@ -68,7 +68,7 @@ namespace IL2CPP::Module::Unity {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AudioClip"), IL2CPP_STR("GetData"), 2);
             auto* e = GetExports();
             if (!e || !outData || sampleCount == 0) return false;
-            void* floatClass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_helperFindClass)("System.Single");
+            void* floatClass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_helperFindClass)(IL2CPP_STR("System.Single"));
             if (!floatClass) return false;
             void* arr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, uintptr_t)>(e->m_arrayNew)(floatClass, sampleCount);
             if (!arr) return false;

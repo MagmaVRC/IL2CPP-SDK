@@ -70,7 +70,7 @@ namespace IL2CPP::Module::System {
         [[nodiscard]] std::string GetStringFromNative(const void* data, size_t size) const {
             auto* e = GetExports();
             if (!e || !data || size == 0) return "";
-            void* byteClass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_helperFindClass)("System.Byte");
+            void* byteClass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_helperFindClass)(IL2CPP_STR("System.Byte"));
             if (!byteClass) return "";
             void* arr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, uintptr_t)>(e->m_arrayNew)(byteClass, size);
             if (!arr) return "";

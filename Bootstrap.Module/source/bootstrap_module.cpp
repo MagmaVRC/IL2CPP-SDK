@@ -43,11 +43,16 @@ namespace Bootstrap::Module {
         return true;
     }
 
-    void Disconnect() {
+    bool Disconnect() {
         if (!g_conn.connected.exchange(false, std::memory_order_acq_rel))
-            return;
+            return true;
 
+        if (!IL2CPP::Module::Disconnect()) {
+            g_conn.connected.store(true, std::memory_order_release);
+            return false;
+        }
         g_conn.vtable = nullptr;
+        return true;
     }
 
     bool is_connected() noexcept {

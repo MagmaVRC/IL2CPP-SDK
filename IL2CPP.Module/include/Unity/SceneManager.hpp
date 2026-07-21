@@ -63,7 +63,7 @@ namespace IL2CPP::Module::Unity {
             static auto m2 = MethodHandler::resolve(IL2CPP_STR("UnityEngine.SceneManagement.Scene"), IL2CPP_STR("GetRootGameObjects"), 0);
             auto* e = GetExports();
             if (!e) return {};
-            void* sceneClass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_helperFindClass)("UnityEngine.SceneManagement.Scene");
+            void* sceneClass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_helperFindClass)(IL2CPP_STR("UnityEngine.SceneManagement.Scene"));
             if (!sceneClass) return {};
             Scene s = m_scene;
             void* boxed = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, void*)>(e->m_valueBox)(sceneClass, &s);

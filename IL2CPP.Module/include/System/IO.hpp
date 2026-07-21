@@ -69,7 +69,7 @@ namespace IL2CPP::Module::System {
             auto* e = GetExports();
             if (!e || !e->m_stringNew || !data || size == 0) return;
             void* pathStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(path).c_str());
-            void* byteClass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_helperFindClass)("System.Byte");
+            void* byteClass = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_helperFindClass)(IL2CPP_STR("System.Byte"));
             if (!byteClass) return;
             void* arr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, uintptr_t)>(e->m_arrayNew)(byteClass, size);
             if (!arr) return;

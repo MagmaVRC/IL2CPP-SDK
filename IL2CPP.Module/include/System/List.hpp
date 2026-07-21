@@ -12,7 +12,7 @@ namespace IL2CPP::Module::System {
         [[nodiscard]] T* items_data() const {
             void* arr = *reinterpret_cast<void**>(static_cast<char*>(m_native) + kItemsOffset);
             if (!IsValidPointer(arr)) return nullptr;
-            return reinterpret_cast<T*>(static_cast<char*>(arr) + Array<T>::kValuesOffset);
+            return reinterpret_cast<T*>(static_cast<char*>(arr) + Array<T>::ValuesOffset());
         }
 
     public:

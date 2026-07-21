@@ -20,13 +20,15 @@ namespace IL2CPP::Module {
     }
 
     void* MethodHandler::invoke_raw(const Method& method, void* obj, void** params) {
-        auto* e = GetExports();
-        if (!e || !e->m_helperMethodInvoke || !method.raw()) return nullptr;
-
-        auto fn = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, void*, void**)>(
-            e->m_helperMethodInvoke);
-
-        return fn(method.raw(), obj, params);
+        void* raw = method.raw();
+        if (!raw) return nullptr;
+        auto* e = GetExports();  // inline: a single load of the cached exports pointer
+        if (!e || !e->m_helperMethodInvoke) return nullptr;
+        // One hop to Core (native): it dispatches capability handles, runs runtime_invoke,
+        // and formats/handles exceptions — all natively. Doing that work here would run it
+        // under the VM (~2x) for no benefit. Keep the VM side to a single marshalled hop.
+        return reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, void*, void**)>(
+            e->m_helperMethodInvoke)(raw, obj, params);
     }
 
 } // namespace IL2CPP::Module

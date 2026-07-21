@@ -15,6 +15,21 @@ namespace IL2CPP::Module::Unity {
     public:
         using Object::Object;
 
+        /// <summary>Create an empty GameObject.</summary>
+        [[nodiscard]] static GameObject New() {
+            return Object::New<GameObject>(IL2CPP_STR("UnityEngine.GameObject"));
+        }
+
+        /// <summary>Create a named GameObject.</summary>
+        [[nodiscard]] static GameObject New(std::string_view name) {
+            auto* exports = GetExports();
+            if (!exports || !exports->m_stringNew) return New();
+            void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(exports->m_stringNew)(
+                std::string(name).c_str());
+            void* params[] = { il2cppStr };
+            return Object::New<GameObject>(IL2CPP_STR("UnityEngine.GameObject"), params, 1);
+        }
+
         /// <summary>Static: Find a GameObject by name.</summary>
         [[nodiscard]] static GameObject Find(std::string_view name) {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("Find"), 1);

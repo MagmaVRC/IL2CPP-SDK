@@ -12,6 +12,22 @@ namespace IL2CPP::Module::Unity {
     public:
         using Object::Object;
 
+        /// <summary>Create a Material from a shader.</summary>
+        [[nodiscard]] static Material New(void* shader) {
+            void* params[] = { shader };
+            return Object::New<Material>(IL2CPP_STR("UnityEngine.Material"), params, 1);
+        }
+
+        /// <summary>Create a Material by shader name (e.g. "Standard", "Sprites/Default").</summary>
+        [[nodiscard]] static Material New(std::string_view shaderName) {
+            static auto find = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Shader"), IL2CPP_STR("Find"), 1);
+            auto* e = GetExports();
+            if (!find || !e || !e->m_stringNew) return {};
+            void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(shaderName).c_str());
+            void* shader = MethodHandler::invoke<void*>(find, nullptr, &str);
+            return shader ? New(shader) : Material{};
+        }
+
         [[nodiscard]] Color GetColor() const {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Material"), IL2CPP_STR("get_color"), 0);
             return MethodHandler::invoke<Color>(m, raw());

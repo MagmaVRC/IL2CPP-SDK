@@ -64,6 +64,9 @@
     <ClInclude Include="include\Unity\GameObject.hpp">
       <Filter>Header Files\Unity</Filter>
     </ClInclude>
+    <ClInclude Include="include\Unity\GraphicsBuffer.hpp">
+      <Filter>Header Files\Unity</Filter>
+    </ClInclude>
     <ClInclude Include="include\Unity\Transform.hpp">
       <Filter>Header Files\Unity</Filter>
     </ClInclude>
@@ -93,6 +96,9 @@
     </ClInclude>
     <ClInclude Include="include\System\Dictionary.hpp">
       <Filter>Header Files\System</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Dispatcher.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\MethodHandler.hpp">
       <Filter>Header Files</Filter>
@@ -202,6 +208,9 @@
     <ClInclude Include="include\Unity\ScrollRect.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\Unity\Shader.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="include\Unity\Selectable.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -227,6 +236,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\Unity\AssetBundle.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Unity\AsyncOperation.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\Unity\AssetBundleCreateRequest.hpp">
@@ -275,6 +287,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\Unity\TrailRenderer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Unity\UnityEvent.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\Unity\UnityWebRequest.hpp">

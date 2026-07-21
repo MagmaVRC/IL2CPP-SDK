@@ -158,6 +158,7 @@
     <ClInclude Include="include\Deobfuscation.hpp" />
     <ClInclude Include="include\il2cpp_module.hpp" />
     <ClInclude Include="include\ManagedObject.hpp" />
+    <ClInclude Include="include\Dispatcher.hpp" />
     <ClInclude Include="include\MethodHandler.hpp" />
     <ClInclude Include="include\Reflection.hpp" />
     <ClInclude Include="include\Symbols.hpp" />
@@ -175,6 +176,7 @@
     <ClInclude Include="include\Unity\Animator.hpp" />
     <ClInclude Include="include\Unity\AnimatorOverrideController.hpp" />
     <ClInclude Include="include\Unity\Application.hpp" />
+    <ClInclude Include="include\Unity\AsyncOperation.hpp" />
     <ClInclude Include="include\Unity\AssetBundle.hpp" />
     <ClInclude Include="include\Unity\AssetBundleCreateRequest.hpp" />
     <ClInclude Include="include\Unity\AudioClip.hpp" />
@@ -188,6 +190,7 @@
     <ClInclude Include="include\Unity\ContentSizeFitter.hpp" />
     <ClInclude Include="include\Unity\Cursor.hpp" />
     <ClInclude Include="include\Unity\GameObject.hpp" />
+    <ClInclude Include="include\Unity\GraphicsBuffer.hpp" />
     <ClInclude Include="include\Unity\HorizontalLayoutGroup.hpp" />
     <ClInclude Include="include\Unity\Input.hpp" />
     <ClInclude Include="include\Unity\InputField.hpp" />
@@ -216,6 +219,7 @@
     <ClInclude Include="include\Unity\SceneManager.hpp" />
     <ClInclude Include="include\Unity\Screen.hpp" />
     <ClInclude Include="include\Unity\ScrollRect.hpp" />
+    <ClInclude Include="include\Unity\Shader.hpp" />
     <ClInclude Include="include\Unity\Selectable.hpp" />
     <ClInclude Include="include\Unity\SkinnedMeshRenderer.hpp" />
     <ClInclude Include="include\Unity\SphereCollider.hpp" />
@@ -237,6 +241,7 @@
     <ClInclude Include="include\Unity\Toggle.hpp" />
     <ClInclude Include="include\Unity\UIBehaviour.hpp" />
     <ClInclude Include="include\Unity\UnityCallbacks.hpp" />
+    <ClInclude Include="include\Unity\UnityEvent.hpp" />
     <ClInclude Include="include\Unity\UnityWebRequest.hpp" />
     <ClInclude Include="include\Unity\VerticalLayoutGroup.hpp" />
   </ItemGroup>

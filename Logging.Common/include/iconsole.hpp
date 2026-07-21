@@ -1,21 +1,12 @@
 #pragma once
 #include <string_view>
+#include <string>
+#include <cstddef>
 #include <cstdint>
 #include <atomic>
+#include "excon_protocol.hpp"
 
 namespace Logger {
-
-    struct ConsolePacket {
-        enum Op : uint8_t {
-            op_write    = 0,
-            op_title    = 1,
-            op_width    = 2,
-            op_shutdown = 0xFF
-        };
-
-        Op       opcode;
-        uint32_t length;
-    };
 
     class IConsole {
     public:
@@ -26,6 +17,10 @@ namespace Logger {
         virtual size_t GetWidth() = 0;
         virtual bool IsConnected() = 0;
         virtual void Shutdown() = 0;
+        virtual ExCon::Capabilities GetCapabilities() const { return ExCon::Capabilities::none; }
+        virtual void SetSessionMetadata(const ExCon::SessionMetadata&) {}
+        virtual void ConfigureTerminal(const ExCon::TerminalConfig&) {}
+        virtual bool ReadInput(std::string&) { return false; }
     };
 
     inline std::atomic<IConsole*> g_console{ nullptr };

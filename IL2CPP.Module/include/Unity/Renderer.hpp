@@ -44,6 +44,13 @@ namespace IL2CPP::Module::Unity {
             return MethodHandler::invoke<Bounds>(m, raw());
         }
 
+        // The matrix Unity actually renders this renderer with (for skinned
+        // renderers this is not always the Transform's localToWorld).
+        [[nodiscard]] Matrix4x4 GetLocalToWorldMatrix() const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Renderer"), IL2CPP_STR("get_localToWorldMatrix"), 0);
+            return MethodHandler::invoke<Matrix4x4>(m, raw());
+        }
+
         [[nodiscard]] bool GetIsPartOfStaticBatch() const {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Renderer"), IL2CPP_STR("get_isPartOfStaticBatch"), 0);
             return MethodHandler::invoke<bool>(m, raw());

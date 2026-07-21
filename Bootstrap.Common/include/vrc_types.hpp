@@ -76,6 +76,15 @@ namespace Bootstrap {
         void* Class;
         void* OnEvent;
         void* OpRaiseEvent;
+        int   photonPeerOffset;             // LoadBalancingClient.field_PhotonPeer_0
+
+        // Singleton holder: a class with a single static Photon.Realtime.LoadBalancingClient field.
+        void* SingletonHolderClass;
+        int   singletonHolderStaticOffset;  // offset of the static field within static-data
+
+        // PhotonPeer inherits PeerBase.roundTripTime (Single, ms).
+        void* PhotonPeerClass;
+        int   roundTripTimeOffset;
     };
 
     struct FlatBufferNetworkSerializerData {

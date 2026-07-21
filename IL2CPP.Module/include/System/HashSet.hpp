@@ -31,10 +31,10 @@ namespace IL2CPP::Module::System {
             if (!IsValidPointer(sArr)) return { nullptr, 0 };
             int limit = read<int>(kLastIndexOffset);
             int cap = static_cast<int>(*reinterpret_cast<uintptr_t*>(
-                static_cast<char*>(sArr) + Array<Slot>::kMaxLengthOffset));
+                static_cast<char*>(sArr) + Array<Slot>::MaxLengthOffset()));
             if (limit > cap) limit = cap;
             return {
-                reinterpret_cast<Slot*>(static_cast<char*>(sArr) + Array<Slot>::kValuesOffset),
+                reinterpret_cast<Slot*>(static_cast<char*>(sArr) + Array<Slot>::ValuesOffset()),
                 limit
             };
         }

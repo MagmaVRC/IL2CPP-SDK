@@ -3,6 +3,7 @@
 #include <SharedMemory.Common/shared_memory.hpp>
 #include <windows.h>
 #include <atomic>
+#include <climits>
 #include <cstring>
 
 namespace IL2CPP::Module {
@@ -116,18 +117,37 @@ namespace IL2CPP::Module {
 
     }
 
+    void InitLayoutOffsets() noexcept {
+        auto* e = g_conn.exports;
+        if (!e) return;
+        auto& o = g_layoutOffsets;
+        if (e->m_offDelegateMethodPtr  >= 0) o.delegateMethodPtr  = e->m_offDelegateMethodPtr;
+        if (e->m_offDelegateInvokeImpl >= 0) o.delegateInvokeImpl = e->m_offDelegateInvokeImpl;
+        if (e->m_offDelegateTarget     >= 0) o.delegateTarget     = e->m_offDelegateTarget;
+        if (e->m_offDelegateMethodInfo >= 0) o.delegateMethodInfo = e->m_offDelegateMethodInfo;
+        if (e->m_offArrayMaxLength     >= 0) o.arrayMaxLength     = e->m_offArrayMaxLength;
+        if (e->m_offArrayData          >= 0) o.arrayData          = e->m_offArrayData;
+        if (e->m_offObjectCachedPtr    >= 0) o.objectCachedPtr    = e->m_offObjectCachedPtr;
+    }
+
     bool Connect() {
         if (g_conn.connected.exchange(true, std::memory_order_acq_rel))
             return true;
 
         g_conn.exports = SharedMemory::Resolve<IL2CPP::il2cpp_exports>("IL2CPP.Exports");
-        if (!g_conn.exports || g_conn.exports->m_uVersion != exports_version) {
+        uint32_t version = 0;
+        if (g_conn.exports) {
+            auto& versionStorage = const_cast<uint32_t&>(g_conn.exports->m_uVersion);
+            version = std::atomic_ref<uint32_t>(versionStorage).load(std::memory_order_acquire);
+        }
+        if (!g_conn.exports || version != exports_version || g_conn.exports->m_uSize != exports_size) {
             g_conn.exports = nullptr;
             g_conn.connected.store(false, std::memory_order_release);
             return false;
         }
 
         IL2CPP::g_structOffsets = g_conn.exports;
+        InitLayoutOffsets();
 
         g_conn.unity = SharedMemory::Resolve<unity_functions>("IL2CPP.Unity");
         if (g_conn.unity && g_conn.unity->m_uVersion != unity_version) {
@@ -137,20 +157,24 @@ namespace IL2CPP::Module {
         return true;
     }
 
-    void Disconnect() {
+    bool Disconnect() {
         if (!g_conn.connected.exchange(false, std::memory_order_acq_rel))
-            return;
+            return true;
+        if (!Unity::AsyncOperation::CancelAllSubscriptions()) {
+            g_conn.connected.store(true, std::memory_order_release);
+            return false;
+        }
         g_conn.unity = nullptr;
         g_conn.exports = nullptr;
+        IL2CPP::g_structOffsets = nullptr;   // keep GetExports() (inline, reads this) consistent
+        return true;
     }
 
     [[nodiscard]] bool IsConnected() noexcept {
         return g_conn.connected.load(std::memory_order_acquire) && g_conn.exports;
     }
 
-    [[nodiscard]] IL2CPP::il2cpp_exports const* GetExports() noexcept {
-        return g_conn.exports;
-    }
+    // GetExports() is now defined inline in ManagedObject.hpp (returns IL2CPP::g_structOffsets).
 
     void* GetDomain() {
         if (!E() || !E()->m_domainGet) return nullptr;
@@ -171,6 +195,42 @@ namespace IL2CPP::Module {
     void ThreadDetach(void* thread) {
         if (!E() || !E()->m_threadDetach) return;
         reinterpret_cast<void(IL2CPP_CALLTYPE)(void*)>(E()->m_threadDetach)(thread);
+    }
+
+    void* ThreadCurrent() {
+        if (!E() || !E()->m_threadCurrent) return nullptr;
+        return reinterpret_cast<void*(IL2CPP_CALLTYPE)()>(E()->m_threadCurrent)();
+    }
+
+    ThreadAttachment EnsureThreadAttached() {
+        if (!E() || !E()->m_threadCurrent) return {};
+        if (void* current = ThreadCurrent()) return { current, 0 };
+        void* domain = GetDomain();
+        if (!domain) return {};
+        void* attached = ThreadAttach(domain);
+        return { attached, attached ? uint8_t{1} : uint8_t{0} };
+    }
+
+    void ReleaseThreadAttachment(ThreadAttachment attachment) {
+        if (attachment.owned != 0 && attachment.thread)
+            ThreadDetach(attachment.thread);
+    }
+
+    uint32_t GCHandleNew(il2cppObject* object, bool pinned) {
+        if (!E() || !E()->m_gcHandleNew || !object) return 0;
+        return reinterpret_cast<uint32_t(IL2CPP_CALLTYPE)(void*, uint8_t)>(
+            E()->m_gcHandleNew)(object, pinned ? uint8_t{1} : uint8_t{0});
+    }
+
+    il2cppObject* GCHandleGetTarget(uint32_t handle) {
+        if (!E() || !E()->m_gcHandleGetTarget || handle == 0) return nullptr;
+        return reinterpret_cast<il2cppObject*(IL2CPP_CALLTYPE)(uint32_t)>(
+            E()->m_gcHandleGetTarget)(handle);
+    }
+
+    void GCHandleFree(uint32_t handle) {
+        if (!E() || !E()->m_gcHandleFree || handle == 0) return;
+        reinterpret_cast<void(IL2CPP_CALLTYPE)(uint32_t)>(E()->m_gcHandleFree)(handle);
     }
 
     il2cppClass* FindClass(std::string_view fullName) {
@@ -198,6 +258,16 @@ namespace IL2CPP::Module {
         return reinterpret_cast<il2cppClass*(IL2CPP_CALLTYPE)(void*)>(E()->m_classFromIl2cppType)(type);
     }
 
+    il2cppClass* ClassFromSystemType(il2cppSystemType* type) {
+        if (!E() || !E()->m_classFromSystemType || !type) return nullptr;
+        __try {
+            return reinterpret_cast<il2cppClass*(IL2CPP_CALLTYPE)(void*)>(
+                E()->m_classFromSystemType)(type);
+        } __except(1) {
+            return nullptr;
+        }
+    }
+
     il2cppClass* GetParent(il2cppClass* klass) {
         if (!E() || !E()->m_classGetParent || !klass) return nullptr;
         return reinterpret_cast<il2cppClass*(IL2CPP_CALLTYPE)(void*)>(E()->m_classGetParent)(klass);
@@ -208,6 +278,53 @@ namespace IL2CPP::Module {
         auto* type = reinterpret_cast<il2cppType*(IL2CPP_CALLTYPE)(void*)>(E()->m_classGetType)(klass);
         if (!type) return nullptr;
         return reinterpret_cast<il2cppSystemType*(IL2CPP_CALLTYPE)(void*)>(E()->m_typeGetObject)(type);
+    }
+
+    bool IsAssignableFrom(il2cppClass* target, il2cppClass* candidate) {
+        if (!E() || !E()->m_classIsAssignableFrom || !target || !candidate) return false;
+        return reinterpret_cast<uint8_t(IL2CPP_CALLTYPE)(void*, void*)>(
+            E()->m_classIsAssignableFrom)(target, candidate) != 0;
+    }
+
+    il2cppClass* GetObjectClass(il2cppObject* object) {
+        if (!E() || !E()->m_objectGetClass || !object) return nullptr;
+        return reinterpret_cast<il2cppClass*(IL2CPP_CALLTYPE)(void*)>(
+            E()->m_objectGetClass)(object);
+    }
+
+    il2cppMethodInfo* GetVirtualMethod(il2cppObject* object, il2cppMethodInfo* method) {
+        if (!E() || !E()->m_objectGetVirtualMethod || !object || !method) return nullptr;
+        return reinterpret_cast<il2cppMethodInfo*(IL2CPP_CALLTYPE)(void*, void*)>(
+            E()->m_objectGetVirtualMethod)(object, method);
+    }
+
+    il2cppClass* GetClassOrElementClass(il2cppType* type) {
+        if (!E() || !E()->m_typeGetClassOrElementClass || !type) return nullptr;
+        return reinterpret_cast<il2cppClass*(IL2CPP_CALLTYPE)(void*)>(
+            E()->m_typeGetClassOrElementClass)(type);
+    }
+
+    il2cppClass* GetInterfaces(il2cppClass* klass, void** iter) {
+        if (!E() || !E()->m_classGetInterfaces || !klass || !iter) return nullptr;
+        __try {
+            return reinterpret_cast<il2cppClass*(IL2CPP_CALLTYPE)(void*, void**)>(
+                E()->m_classGetInterfaces)(klass, iter);
+        } __except(1) {
+            return nullptr;
+        }
+    }
+
+    int32_t GetClassValueSize(il2cppClass* klass, uint32_t* alignment) {
+        if (alignment) *alignment = 0;
+        if (!E() || !E()->m_classValueSize || !klass) return -1;
+        return reinterpret_cast<int32_t(IL2CPP_CALLTYPE)(void*, uint32_t*)>(
+            E()->m_classValueSize)(klass, alignment);
+    }
+
+    bool ClassHasReferences(il2cppClass* klass) {
+        if (!E() || !E()->m_classHasReferences || !klass) return true;
+        return reinterpret_cast<uint8_t(IL2CPP_CALLTYPE)(void*)>(
+            E()->m_classHasReferences)(klass) != 0;
     }
 
     il2cppFieldInfo* GetFields(il2cppClass* klass, void** iter) {
@@ -254,6 +371,16 @@ namespace IL2CPP::Module {
         reinterpret_cast<void(IL2CPP_CALLTYPE)(void*, void*, void*)>(E()->m_fieldSetValue)(obj, field, value);
     }
 
+    uint32_t GetFieldFlags(il2cppFieldInfo* field) {
+        if (!E() || !E()->m_fieldGetFlags || !field) return 0;
+        return reinterpret_cast<uint32_t(IL2CPP_CALLTYPE)(void*)>(E()->m_fieldGetFlags)(field);
+    }
+
+    uint32_t GetFieldToken(il2cppFieldInfo* field) {
+        if (!E() || !E()->m_fieldGetToken || !field) return 0;
+        return reinterpret_cast<uint32_t(IL2CPP_CALLTYPE)(void*)>(E()->m_fieldGetToken)(field);
+    }
+
     il2cppMethodInfo* GetMethods(il2cppClass* klass, void** iter) {
         if (!E() || !E()->m_classGetMethods || !klass) return nullptr;
         return reinterpret_cast<il2cppMethodInfo*(IL2CPP_CALLTYPE)(void*, void**)>(
@@ -294,6 +421,28 @@ namespace IL2CPP::Module {
         return name;
     }
 
+    uint32_t GetMethodToken(il2cppMethodInfo* method) {
+        if (!E() || !E()->m_methodGetToken || !method) return 0;
+        return reinterpret_cast<uint32_t(IL2CPP_CALLTYPE)(void*)>(E()->m_methodGetToken)(method);
+    }
+
+    uint16_t GetMethodSlot(il2cppMethodInfo* method) {
+        if (!E() || !E()->m_methodGetSlot || !method) return UINT16_MAX;
+        return reinterpret_cast<uint16_t(IL2CPP_CALLTYPE)(void*)>(E()->m_methodGetSlot)(method);
+    }
+
+    il2cppObject* GetMethodObject(il2cppMethodInfo* method, il2cppClass* reflectedClass) {
+        if (!E() || !E()->m_methodGetObject || !method) return nullptr;
+        return reinterpret_cast<il2cppObject*(IL2CPP_CALLTYPE)(void*, void*)>(
+            E()->m_methodGetObject)(method, reflectedClass);
+    }
+
+    il2cppMethodInfo* GetMethodFromReflection(il2cppObject* reflectionMethod) {
+        if (!E() || !E()->m_methodGetFromReflection || !reflectionMethod) return nullptr;
+        return reinterpret_cast<il2cppMethodInfo*(IL2CPP_CALLTYPE)(void*)>(
+            E()->m_methodGetFromReflection)(reflectionMethod);
+    }
+
     il2cppPropertyInfo* GetProperties(il2cppClass* klass, void** iter) {
         if (!E() || !E()->m_classGetProperties || !klass) return nullptr;
         return reinterpret_cast<il2cppPropertyInfo*(IL2CPP_CALLTYPE)(void*, void**)>(
@@ -303,6 +452,78 @@ namespace IL2CPP::Module {
     il2cppPropertyInfo* GetPropertyByName(il2cppClass* klass, const char* name) {
         if (!E() || !klass || !name) return nullptr;
         return FindPropertyByIteration(klass, name);
+    }
+
+    uint32_t GetPropertyFlags(il2cppPropertyInfo* property) {
+        if (!E() || !E()->m_propertyGetFlags || !property) return 0;
+        return reinterpret_cast<uint32_t(IL2CPP_CALLTYPE)(void*)>(E()->m_propertyGetFlags)(property);
+    }
+
+    il2cppMethodInfo* GetPropertyGetter(il2cppPropertyInfo* property) {
+        if (!E() || !E()->m_propertyGetGetMethod || !property) return nullptr;
+        return reinterpret_cast<il2cppMethodInfo*(IL2CPP_CALLTYPE)(void*)>(
+            E()->m_propertyGetGetMethod)(property);
+    }
+
+    il2cppMethodInfo* GetPropertySetter(il2cppPropertyInfo* property) {
+        if (!E() || !E()->m_propertyGetSetMethod || !property) return nullptr;
+        return reinterpret_cast<il2cppMethodInfo*(IL2CPP_CALLTYPE)(void*)>(
+            E()->m_propertyGetSetMethod)(property);
+    }
+
+    const char* GetPropertyName(il2cppPropertyInfo* property) {
+        if (!E() || !E()->m_propertyGetName || !property) return nullptr;
+        return reinterpret_cast<const char*(IL2CPP_CALLTYPE)(void*)>(
+            E()->m_propertyGetName)(property);
+    }
+
+    il2cppClass* GetPropertyParent(il2cppPropertyInfo* property) {
+        if (!E() || !E()->m_propertyGetParent || !property) return nullptr;
+        return reinterpret_cast<il2cppClass*(IL2CPP_CALLTYPE)(void*)>(
+            E()->m_propertyGetParent)(property);
+    }
+
+    void* GetEvents(il2cppClass* klass, void** iter) {
+        if (!E() || !E()->m_classGetEvents || !klass || !iter) return nullptr;
+        __try {
+            return reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, void**)>(
+                E()->m_classGetEvents)(klass, iter);
+        } __except(1) {
+            return nullptr;
+        }
+    }
+
+    const char* GetEventName(void* eventInfo) {
+        if (!E() || !E()->m_eventGetName || !eventInfo) return nullptr;
+        return reinterpret_cast<const char*(IL2CPP_CALLTYPE)(void*)>(E()->m_eventGetName)(eventInfo);
+    }
+
+    il2cppMethodInfo* GetEventAddMethod(void* eventInfo) {
+        if (!E() || !E()->m_eventGetAddMethod || !eventInfo) return nullptr;
+        return reinterpret_cast<il2cppMethodInfo*(IL2CPP_CALLTYPE)(void*)>(
+            E()->m_eventGetAddMethod)(eventInfo);
+    }
+
+    il2cppMethodInfo* GetEventRemoveMethod(void* eventInfo) {
+        if (!E() || !E()->m_eventGetRemoveMethod || !eventInfo) return nullptr;
+        return reinterpret_cast<il2cppMethodInfo*(IL2CPP_CALLTYPE)(void*)>(
+            E()->m_eventGetRemoveMethod)(eventInfo);
+    }
+
+    il2cppMethodInfo* GetEventRaiseMethod(void* eventInfo) {
+        if (!E() || !E()->m_eventGetRaiseMethod || !eventInfo) return nullptr;
+        return reinterpret_cast<il2cppMethodInfo*(IL2CPP_CALLTYPE)(void*)>(
+            E()->m_eventGetRaiseMethod)(eventInfo);
+    }
+
+    il2cppClass* GetEventParent(void* eventInfo) {
+        if (!E() || !E()->m_eventGetParent || !eventInfo) return nullptr;
+        return reinterpret_cast<il2cppClass*(IL2CPP_CALLTYPE)(void*)>(E()->m_eventGetParent)(eventInfo);
+    }
+
+    uint32_t GetEventToken(void* eventInfo) {
+        if (!E() || !E()->m_eventGetToken || !eventInfo) return 0;
+        return reinterpret_cast<uint32_t(IL2CPP_CALLTYPE)(void*)>(E()->m_eventGetToken)(eventInfo);
     }
 
     il2cppObject* NewObject(il2cppClass* klass) {
@@ -326,10 +547,71 @@ namespace IL2CPP::Module {
         return reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(E()->m_stringNew)(str);
     }
 
+    uint64_t GetArrayLength(void* array) {
+        if (!E() || !E()->m_arrayLength || !array) return 0;
+        return reinterpret_cast<uint64_t(IL2CPP_CALLTYPE)(void*)>(E()->m_arrayLength)(array);
+    }
+
+    void* NewArrayFull(il2cppClass* arrayClass, const uint64_t* lengths, const int64_t* lowerBounds) {
+        if (!E() || !E()->m_arrayNewFull || !arrayClass || !lengths) return nullptr;
+        return reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, const uint64_t*, const int64_t*)>(
+            E()->m_arrayNewFull)(arrayClass, lengths, lowerBounds);
+    }
+
+    uint32_t GetArrayElementSize(il2cppClass* arrayClass) {
+        if (!E() || !E()->m_arrayElementSize || !arrayClass) return 0;
+        return reinterpret_cast<uint32_t(IL2CPP_CALLTYPE)(void*)>(E()->m_arrayElementSize)(arrayClass);
+    }
+
+    bool GetArrayBounds(void* array, uint32_t dimension, uint64_t* length, int64_t* lowerBound) {
+        if (length) *length = 0;
+        if (lowerBound) *lowerBound = 0;
+        if (!E() || !E()->m_helperArrayGetBounds || !array || !length || !lowerBound) return false;
+        return reinterpret_cast<uint8_t(IL2CPP_CALLTYPE)(void*, uint32_t, uint64_t*, int64_t*)>(
+            E()->m_helperArrayGetBounds)(array, dimension, length, lowerBound) != 0;
+    }
+
+    bool SetReferenceWithWriteBarrier(il2cppObject* object, void** targetAddress, void* value) {
+        if (!E() || !E()->m_gcWBarrierSetField || !targetAddress) return false;
+        reinterpret_cast<void(IL2CPP_CALLTYPE)(void*, void**, void*)>(
+            E()->m_gcWBarrierSetField)(object, targetAddress, value);
+        return true;
+    }
+
+    uint32_t GetTypeAttributes(il2cppType* type) {
+        if (!E() || !E()->m_typeGetAttrs || !type) return 0;
+        return reinterpret_cast<uint32_t(IL2CPP_CALLTYPE)(void*)>(E()->m_typeGetAttrs)(type);
+    }
+
+    bool TypesEqual(il2cppType* lhs, il2cppType* rhs) {
+        if (!E() || !E()->m_typeEquals || !lhs || !rhs) return false;
+        return reinterpret_cast<uint8_t(IL2CPP_CALLTYPE)(void*, void*)>(E()->m_typeEquals)(lhs, rhs) != 0;
+    }
+
+    void FormatException(il2cppObject* exception, char* buffer, uint32_t bufferSize) {
+        if (!E() || !E()->m_formatException || !exception || !buffer || bufferSize == 0 || bufferSize > static_cast<uint32_t>(INT32_MAX)) return;
+        buffer[bufferSize - 1] = '\0';
+        reinterpret_cast<void(IL2CPP_CALLTYPE)(void*, char*, int32_t)>(
+            E()->m_formatException)(exception, buffer, static_cast<int32_t>(bufferSize));
+        buffer[bufferSize - 1] = '\0';
+    }
+
+    void FormatStackTrace(il2cppObject* exception, char* buffer, uint32_t bufferSize) {
+        if (!E() || !E()->m_formatStackTrace || !exception || !buffer || bufferSize == 0) return;
+        reinterpret_cast<void(IL2CPP_CALLTYPE)(void*, char*, int32_t)>(
+            E()->m_formatStackTrace)(exception, buffer, static_cast<int32_t>(bufferSize));
+    }
+
     void* ResolveCall(std::string_view fullPath, bool isExtern) {
         if (!E() || !E()->m_helperResolveCall) return nullptr;
         return reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*, bool)>(
             E()->m_helperResolveCall)(std::string(fullPath).c_str(), isExtern);
+    }
+
+    void* ResolveExport(std::string_view name) {
+        if (!E() || !E()->m_helperResolveExport || name.empty()) return nullptr;
+        return reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(
+            E()->m_helperResolveExport)(std::string(name).c_str());
     }
 
     const char* GetStableName(const char* obfuscatedName) {

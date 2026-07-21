@@ -64,6 +64,26 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
+        // GraphicsBuffer.Target flags (Vertex = 1). Must be non-zero before
+        // GetVertexBuffer returns a valid buffer.
+        [[nodiscard]] int GetVertexBufferTarget() const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.SkinnedMeshRenderer"), IL2CPP_STR("get_vertexBufferTarget"), 0);
+            return MethodHandler::invoke<int>(m, raw());
+        }
+        void SetVertexBufferTarget(int target) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.SkinnedMeshRenderer"), IL2CPP_STR("set_vertexBufferTarget"), 1);
+            void* params[] = { &target };
+            MethodHandler::invoke(m, raw(), params);
+        }
+
+        // Returns a managed UnityEngine.GraphicsBuffer wrapping the current
+        // GPU-skinned vertex data (positions at offset 0), or nullptr.
+        // Caller must Dispose it (does not free the underlying GPU buffer).
+        [[nodiscard]] void* GetVertexBuffer() const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.SkinnedMeshRenderer"), IL2CPP_STR("GetVertexBuffer"), 0);
+            return MethodHandler::invoke<void*>(m, raw());
+        }
+
         [[nodiscard]] float GetBlendShapeWeight(int index) const {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.SkinnedMeshRenderer"), IL2CPP_STR("GetBlendShapeWeight"), 1);
             void* params[] = { &index };

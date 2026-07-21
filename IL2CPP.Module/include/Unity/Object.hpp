@@ -21,7 +21,7 @@ namespace IL2CPP::Module::Unity {
         /// <summary>Check if the Unity native pointer is still valid.</summary>
         [[nodiscard]] bool IsValid() const noexcept {
             if (!valid()) return false;
-            void* cachedPtr = read<void*>(0x10);
+            void* cachedPtr = read<void*>(g_layoutOffsets.objectCachedPtr);
             return IsValidPointer(cachedPtr);
         }
 
@@ -58,6 +58,31 @@ namespace IL2CPP::Module::Unity {
                 std::string(name).c_str());
             void* params[] = { il2cppStr };
             MethodHandler::invoke(m, raw(), params);
+        }
+
+        void DontUnload() {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Object"), IL2CPP_STR("set_hideFlags"), 1);
+            if (m) { int flags = 32; void* p[] = { &flags }; MethodHandler::invoke(m, raw(), p); }
+        }
+
+        /// Construct a new managed object of the given class: allocate + run a matching .ctor.
+        /// The generic counterpart to object_new/array_new. Works for any wrapper type.
+        /// @tparam T      Wrapper type to return (defaults to Object).
+        /// @param className Full class name (e.g. "UnityEngine.Material").
+        /// @param ctorParams Boxed/pointer ctor arguments, or nullptr for a parameterless ctor.
+        /// @param argc     Constructor argument count.
+        template<typename T = Object> requires std::is_base_of_v<ManagedObject, T>
+        [[nodiscard]] static T New(std::string_view className, void** ctorParams = nullptr, int argc = 0) {
+            Class klass = Class::find(className);
+            if (!klass) return T{};
+            return T{ klass.new_instance(ctorParams, argc).raw() };
+        }
+
+        /// Construct a new object when you already hold the Class handle.
+        template<typename T = Object> requires std::is_base_of_v<ManagedObject, T>
+        [[nodiscard]] static T New(Class klass, void** ctorParams = nullptr, int argc = 0) {
+            if (!klass) return T{};
+            return T{ klass.new_instance(ctorParams, argc).raw() };
         }
 
         /// <summary>Instantiate (clone) this object.</summary>

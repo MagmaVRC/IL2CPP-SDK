@@ -18,6 +18,7 @@ namespace IL2CPP::Module::Unity {
 
     class AssetBundleRequest;
     class AssetBundleUnloadOperation;
+    class AssetBundleCreateRequest;
 
     class AssetBundle : public Object {
         static std::vector<std::string> StringArrayToVector(void* rawArray) {
@@ -31,60 +32,40 @@ namespace IL2CPP::Module::Unity {
             return result;
         }
 
-        static std::string WriteTempFile(const void* data, size_t size) {
-            char tempDir[MAX_PATH];
-            char tempPath[MAX_PATH];
-            if (!GetTempPathA(MAX_PATH, tempDir)) return "";
-            if (!GetTempFileNameA(tempDir, "ab_", 0, tempPath)) return "";
-
-            FILE* f = nullptr;
-            if (fopen_s(&f, tempPath, "wb") != 0 || !f) return "";
-            size_t written = fwrite(data, 1, size, f);
-            fclose(f);
-
-            if (written != size) {
-                DeleteFileA(tempPath);
-                return "";
-            }
-            return tempPath;
-        }
-
     public:
         using Object::Object;
 
+        // Both loaders resolve a *logical* capability; IL2CPP.Core picks the real
+        // strategy (managed internal method, or a native binding when the target
+        // stripped it) transparently — see the Core capability registry.
         [[nodiscard]] static AssetBundle LoadFromFile(std::string_view path, uint32_t crc = 0, uint64_t offset = 0) {
-            auto* e = GetExports();
-            if (!e || !e->m_stringNew) return AssetBundle{};
             System::String str = System::String::create(std::string(path).c_str());
-
-            // Use runtime_invoke on the managed LoadFromFile_Internal — works on
-            // both 2022.3 and Unity 6 regardless of internal marshaling changes.
-            static auto m = MethodHandler::resolve(
-                IL2CPP_STR("UnityEngine.AssetBundle"), IL2CPP_STR("LoadFromFile_Internal"), 3);
-            if (m) {
-                uint64_t offsetVal = offset;
-                void* params[] = { str.raw(), &crc, &offsetVal };
-                return AssetBundle{ MethodHandler::invoke<void*>(m, nullptr, params) };
-            }
-
-            // Direct fallback
-            static auto fn = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, uint32_t, uint64_t)>(
-                Module::ResolveCall("UnityEngine.AssetBundle::LoadFromFile_Internal", true));
-            if (!fn) return AssetBundle{};
-            return AssetBundle{ fn(str.raw(), crc, offset) };
+            if (!str) return AssetBundle{};
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AssetBundle"), IL2CPP_STR("LoadFromFile"));
+            if (!m) return AssetBundle{};
+            uint64_t offsetVal = offset;
+            void* params[] = { str.raw(), &crc, &offsetVal };
+            return AssetBundle{ MethodHandler::invoke<void*>(m, nullptr, params) };
         }
 
-        [[nodiscard]] static AssetBundle LoadFromMemory(const void* data, size_t size) {
+        [[nodiscard]] static AssetBundle LoadFromMemory(const void* data, size_t size, uint32_t crc = 0) {
             if (!data || size == 0) return AssetBundle{};
-            std::string tempPath = WriteTempFile(data, size);
-            if (tempPath.empty()) return AssetBundle{};
-            AssetBundle bundle = LoadFromFile(tempPath);
-            DeleteFileA(tempPath.c_str());
-            return bundle;
+            auto bytes = System::Array<uint8_t>::FromBytes(data, size);  // managed byte[]
+            if (!bytes) return AssetBundle{};
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AssetBundle"), IL2CPP_STR("LoadFromMemory"));
+            if (!m) return AssetBundle{};
+            void* arr = bytes.raw();
+            void* params[] = { arr, &crc };
+            return AssetBundle{ MethodHandler::invoke<void*>(m, nullptr, params) };
         }
+
+        // Async variants — return an AssetBundleCreateRequest to poll (GetIsDone / GetAssetBundle).
+        // Defined in AssetBundleCreateRequest.hpp (needs the complete request type).
+        [[nodiscard]] static AssetBundleCreateRequest LoadFromFileAsync(std::string_view path, uint32_t crc = 0, uint64_t offset = 0);
+        [[nodiscard]] static AssetBundleCreateRequest LoadFromMemoryAsync(const void* data, size_t size, uint32_t crc = 0);
 
         [[nodiscard]] static std::vector<AssetBundle> GetAllLoaded() {
-            return Object::FindObjectsOfTypeAs<AssetBundle>("UnityEngine.AssetBundle");
+            return Object::FindObjectsOfTypeAs<AssetBundle>(IL2CPP_STR("UnityEngine.AssetBundle"));
         }
 
 

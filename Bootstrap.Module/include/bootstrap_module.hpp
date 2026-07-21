@@ -16,7 +16,7 @@ namespace Bootstrap::Module {
     /// Low-level connection management. Do not mix with BootstrapModule RAII.
     [[nodiscard]] bool Connect();
     /// Low-level disconnection. Do not mix with BootstrapModule RAII.
-    void Disconnect();
+    [[nodiscard]] bool Disconnect();
     [[nodiscard]] bool is_connected() noexcept;
 
     class BootstrapModule {

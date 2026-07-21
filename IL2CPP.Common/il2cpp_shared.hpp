@@ -1,5 +1,7 @@
 #pragma once
+#include <cstddef>
 #include <cstdint>
+#include <type_traits>
 
 #ifndef IL2CPP_STR
 #   define IL2CPP_STR(x) x
@@ -156,7 +158,7 @@ namespace IL2CPP {
         void*       m_helperSymbolLookup;    // (kind,human,member) -> void*
 
         uint32_t    m_uVersion;
-        uint32_t    _reserved = 0;
+        uint32_t    m_uSize = 0;
 
         // Runtime-discovered struct offsets (populated by DiscoverStructOffsets/DiscoverClassOffsets)
         // -1 = not yet discovered. Used by both Core and Module.
@@ -214,8 +216,96 @@ namespace IL2CPP {
         void*       m_formatException   = nullptr;
         void*       m_objectGetClass    = nullptr;
         void*       m_classGetName      = nullptr;
+
+        void*       m_threadCurrent = nullptr;
+        void*       m_gcHandleNew = nullptr;
+        void*       m_gcHandleGetTarget = nullptr;
+        void*       m_gcHandleFree = nullptr;
+
+        void*       m_classIsAssignableFrom = nullptr;
+        void*       m_objectGetVirtualMethod = nullptr;
+
+        void*       m_arrayLength = nullptr;
+        void*       m_arrayNewFull = nullptr;
+        void*       m_arrayElementSize = nullptr;
+        void*       m_gcWBarrierSetField = nullptr;
+        void*       m_classGetRank = nullptr;
+        void*       m_offsetOfArrayLength = nullptr;
+        void*       m_offsetOfArrayBounds = nullptr;
+        void*       m_helperArrayGetBounds = nullptr;
+
+        void*       m_methodGetToken = nullptr;
+        void*       m_methodGetSlot = nullptr;
+        void*       m_methodGetObject = nullptr;
+        void*       m_methodGetFromReflection = nullptr;
+
+        void*       m_typeGetAttrs = nullptr;
+        void*       m_typeEquals = nullptr;
+        void*       m_typeGetClassOrElementClass = nullptr;
+
+        void*       m_classGetInterfaces = nullptr;
+        void*       m_classValueSize = nullptr;
+        void*       m_classHasReferences = nullptr;
+
+        void*       m_propertyGetFlags = nullptr;
+        void*       m_propertyGetGetMethod = nullptr;
+        void*       m_propertyGetSetMethod = nullptr;
+        void*       m_propertyGetName = nullptr;
+        void*       m_propertyGetParent = nullptr;
+
+        int32_t     m_offEventName = -1;
+        int32_t     m_offEventAdd = -1;
+        int32_t     m_offEventRemove = -1;
+        int32_t     m_offEventRaise = -1;
+        int32_t     m_offEventParent = -1;
+        int32_t     m_offEventToken = -1;
+        int32_t     _eventReserved0 = 0;
+        int32_t     _eventReserved1 = 0;
+
+        void*       m_eventGetName = nullptr;
+        void*       m_eventGetAddMethod = nullptr;
+        void*       m_eventGetRemoveMethod = nullptr;
+        void*       m_eventGetRaiseMethod = nullptr;
+        void*       m_eventGetParent = nullptr;
+        void*       m_eventGetToken = nullptr;
+
+        void*       m_formatStackTrace = nullptr;
+        void*       m_fieldGetFlags = nullptr;
+        void*       m_fieldGetToken = nullptr;
+        void*       m_helperResolveExport = nullptr;
+
+        // Centralized runtime-layout offsets (single source of truth; the Module
+        // reads these instead of hardcoding constants). -1 = Module falls back to
+        // its compiled default. Core populates them in Initialize.
+        int32_t     m_offDelegateMethodPtr  = -1;  // System.Delegate → method_ptr      (default 0x10)
+        int32_t     m_offDelegateInvokeImpl = -1;  // System.Delegate → invoke_impl      (default 0x18)
+        int32_t     m_offDelegateTarget     = -1;  // System.Delegate → m_target         (default 0x20)
+        int32_t     m_offDelegateMethodInfo = -1;  // System.Delegate → method (MethodInfo*) (default 0x28)
+        int32_t     m_offDelegateExtraArg   = -1;  // System.Delegate → extra_arg        (default 0x38)
+        int32_t     m_offArrayBounds        = -1;  // Il2CppArray → bounds               (default 0x10)
+        int32_t     m_offArrayMaxLength     = -1;  // Il2CppArray → max_length           (default 0x18)
+        int32_t     m_offArrayData          = -1;  // Il2CppArray → vector (inline data)  (default 0x20)
+        int32_t     m_offObjectCachedPtr    = -1;  // UnityEngine.Object → m_CachedPtr    (default 0x10)
+        int32_t     _offsetsPadTail         = 0;   // keeps 8-byte tail alignment
+
+        // Unity dispatcher — main-thread queue drained from UpdateHook, worker thread pool.
+        // fn: plain C trampoline; ud: opaque payload (Module heap-boxes the lambda + deletes in trampoline).
+        void*       m_dispatchPostMain      = nullptr;   // bool(*)(void(*fn)(void*), void(*destroy)(void*), void* ud)
+        void*       m_dispatchPostWorker    = nullptr;   // bool(*)(void(*fn)(void*), void(*destroy)(void*), void* ud)
+        void*       m_dispatchIsMainThread  = nullptr;   // bool(*)()
+        void*       m_dispatchWorkerCount   = nullptr;   // uint32_t(*)()  — pool size (for tuning)
     };
 
-    constexpr uint32_t exports_version = 18;  // + symbol store publish/lookup helpers
+    constexpr uint32_t exports_version = 21;
+    constexpr uint32_t exports_size = static_cast<uint32_t>(sizeof(il2cpp_exports));
+
+    static_assert(std::is_standard_layout_v<il2cpp_exports>);
+    static_assert(std::is_trivially_copyable_v<il2cpp_exports>);
+    static_assert(sizeof(void*) == sizeof(uint64_t));
+    static_assert(offsetof(il2cpp_exports, m_uSize) == offsetof(il2cpp_exports, m_uVersion) + sizeof(uint32_t));
+    static_assert(offsetof(il2cpp_exports, m_threadCurrent) > offsetof(il2cpp_exports, m_classGetName));
+    static_assert(offsetof(il2cpp_exports, m_offObjectCachedPtr) > offsetof(il2cpp_exports, m_helperResolveExport));
+    static_assert(offsetof(il2cpp_exports, m_dispatchWorkerCount) + sizeof(void*) == sizeof(il2cpp_exports));
+    static_assert(exports_version == 21);
 
 } // namespace IL2CPP
