@@ -108,11 +108,13 @@ namespace IL2CPP::VRChat {
         ImmobilizeForVehicle
     };
 
-    enum class VRC_SerializationMethod : int {
+    enum class SerializationMethod : int {
         None = 0,
         All,
         OwnerOnly
     };
+
+    using VRC_SerializationMethod [[deprecated("use SerializationMethod")]] = SerializationMethod;
 
     enum class EventTiming : int {
         Update = 0,
@@ -123,8 +125,9 @@ namespace IL2CPP::VRChat {
 
     enum class NetworkEventTarget : int {
         All = 0,
-        Others = 1,
-        Owner = 2
+        Owner = 1,
+        Others = 2,
+        Self = 3
     };
 
     enum class SyncType : int {

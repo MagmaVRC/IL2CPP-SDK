@@ -146,6 +146,48 @@ namespace IL2CPP::VRChat {
         return invoke_string_getter(m, raw());
     }
 
+    std::string APIUser::GetInstanceLocation() {
+        const auto names_instance = [](const std::string& text) {
+            return text.rfind("wrld_", 0) == 0 || text.rfind("local:", 0) == 0;
+        };
+
+        std::string here = GetLocation();
+        if (names_instance(here)) return here;
+
+        // Not a place but a state -- "traveling", "private", "offline". While travelling,
+        // and on builds that leave it at "traveling" after arriving, the instance actually
+        // joined is the one named here.
+        static auto m = MethodHandler::resolve("VRC.Core.APIUser", "get_travelingToLocation", 0);
+        std::string going = invoke_string_getter(m, raw());
+        return names_instance(going) ? going : std::string{};
+    }
+
+    APIUser APIUser::GetCurrentUser() {
+        // The property's backing field rather than get_CurrentUser: a static getter has to
+        // be invoked on a class whose cctor may not have run, and the field read cannot
+        // throw into the caller the way that invoke can.
+        // Resolved lazily and cached only once it succeeds: the first caller runs before
+        // the class is loaded, and a static initialised from that attempt would cache the
+        // failure for the rest of the session.
+        static IL2CPP::Module::Class klass{};
+        static IL2CPP::Module::Field field{};
+        if (!klass) {
+            klass = IL2CPP::Module::Class::find("VRC.Core.APIUser");
+            if (!klass) return {};
+        }
+        if (!field) {
+            field = klass.get_field("<CurrentUser>k__BackingField");
+            if (!field) return {};
+        }
+
+        const int offset = field.offset();
+        if (offset < 0) return {};
+        void* statics = klass.static_field_data();
+        if (!statics) return {};   // absent until the class has been initialised
+
+        return APIUser(*reinterpret_cast<void**>(static_cast<char*>(statics) + offset));
+    }
+
     std::vector<ApiBadge> APIUser::GetBadges() {
         std::vector<ApiBadge> result;
         if (!valid()) return result;

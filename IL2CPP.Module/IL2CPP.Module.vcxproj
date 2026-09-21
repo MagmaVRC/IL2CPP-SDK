@@ -96,10 +96,12 @@
     <ClCompile Include="source\ManagedObject.cpp" />
     <ClCompile Include="source\BindMiss.cpp" />
     <ClCompile Include="source\MethodHandler.cpp" />
+    <ClCompile Include="source\Cysharp\UniTask.cpp" />
     <ClCompile Include="source\Reflection.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\ClassCache.hpp" />
+    <ClInclude Include="include\Cysharp\UniTask.hpp" />
     <ClInclude Include="include\ClassResolver.hpp" />
     <ClInclude Include="include\Deobfuscation.hpp" />
     <ClInclude Include="include\il2cpp_module.hpp" />

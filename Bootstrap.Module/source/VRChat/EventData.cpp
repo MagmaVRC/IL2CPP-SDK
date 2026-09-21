@@ -19,7 +19,10 @@ namespace IL2CPP::VRChat {
 
     int EventData::GetSender() {
         if (!valid()) return 0;
-        return get_field<int>("sender");
+
+        const int cached = get_field<int>("sender");
+        if (cached != -1) return cached;
+        return call_method<int>("get_Sender", nullptr, 0);
     }
 
     uint8_t EventData::GetCustomDataKey() {

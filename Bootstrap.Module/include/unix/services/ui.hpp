@@ -66,6 +66,23 @@ public:
     template <class = void> void NavigateBack();
 };
 
+/// <summary>VRChat's MainMenu. A page is a tab holding a side list; controls go on its
+/// sections.</summary>
+class MainMenu {
+public:
+    /// <summary>Run build once VRChat's MainMenu is ready, or immediately if it already is.
+    /// Use this rather than Menu::OnReady, which fires too early to build one of these.</summary>
+    template <class = void> void OnReady(std::function<void()> build);
+    template <class = void> [[nodiscard]] bool IsReady() const;
+    /// <param name="name">Tab label, and the panel's title.</param>
+    template <class = void> [[nodiscard]] UIMainMenuPage CreatePage(std::string_view name,
+                                                                    std::string_view tooltip = "");
+    /// <summary>A section in VRChat's own Settings list rather than a page of your own.</summary>
+    template <class = void> [[nodiscard]] UISection AddSettingsSection(std::string_view name);
+    /// <summary>Re-acquire a page this module already made. Never creates.</summary>
+    template <class = void> [[nodiscard]] UIMainMenuPage FindPage(std::string_view name);
+};
+
 /// <summary>The players in the instance, and the local one.</summary>
 class Players {
 public:
@@ -262,6 +279,36 @@ template <class>
 void Menu::NavigateBack() {
     UNIX_USE(menu, navigate_back);
     detail::g_d.menu_navigate_back(detail::g_self);
+}
+
+template <class>
+void MainMenu::OnReady(std::function<void()> build) {
+    Host::Get().Menu().OnPhase(MenuPhase::MainMenuSetup, std::move(build));
+}
+
+template <class>
+bool MainMenu::IsReady() const {
+    UNIX_USE(mainmenu, is_ready);
+    return detail::g_d.mainmenu_is_ready(detail::g_self);
+}
+
+template <class>
+UIMainMenuPage MainMenu::CreatePage(std::string_view name, std::string_view tooltip) {
+    UNIX_USE(mainmenu, create_page);
+    return UIMainMenuPage{ detail::g_d.mainmenu_create_page(detail::g_self, Sv(name),
+                                                            Sv(tooltip)) };
+}
+
+template <class>
+UISection MainMenu::AddSettingsSection(std::string_view name) {
+    UNIX_USE(mainmenu, settings_section);
+    return UISection{ detail::g_d.mainmenu_settings_section(detail::g_self, Sv(name)) };
+}
+
+template <class>
+UIMainMenuPage MainMenu::FindPage(std::string_view name) {
+    UNIX_USE(mainmenu, find_page);
+    return UIMainMenuPage{ detail::g_d.mainmenu_find_page(detail::g_self, Sv(name)) };
 }
 
 template <class>

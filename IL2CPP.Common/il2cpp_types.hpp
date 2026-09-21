@@ -210,9 +210,9 @@ namespace IL2CPP {
     };
 
     enum class RenderMode : int {
-        WorldSpace = 0,
-        ScreenSpaceOverlay = 1,
-        ScreenSpaceCamera = 2
+        ScreenSpaceOverlay = 0,
+        ScreenSpaceCamera = 1,
+        WorldSpace = 2
     };
 
     enum class ImageType : int {

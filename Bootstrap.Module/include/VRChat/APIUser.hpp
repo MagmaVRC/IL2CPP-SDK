@@ -14,6 +14,18 @@ namespace IL2CPP::VRChat {
     public:
         using ApiModel::ApiModel;
 
+        /// <summary>The logged-in user, read off APIUser's own static. This is where the
+        /// local user lives: Player::GetAPIUser walks per-player offsets, and the local
+        /// player's slot is empty on builds that never populate it.</summary>
+        /// <returns>Null before login has completed.</returns>
+        [[nodiscard]] static APIUser GetCurrentUser();
+
+        /// <summary>The instance the user is actually in. `location` also carries states
+        /// rather than places -- "traveling", "private", "offline" -- and while travelling
+        /// the instance being joined is in `travelingToLocation` instead.</summary>
+        /// <returns>An instance id, or empty when neither field names one.</returns>
+        [[nodiscard]] std::string GetInstanceLocation();
+
         [[nodiscard]] std::string GetDisplayName();
         [[nodiscard]] std::string GetUsername();
         [[nodiscard]] std::string GetPronouns();

@@ -85,8 +85,18 @@ std::vector<uint8_t> UiSizedBlob(Call&& call) {
 
 }   // namespace detail
 
-/// <summary>Content surface of a page or sub-page: buttons, toggles and foldouts. Sliders,
-/// enum selectors, labels and separators are foldout content.</summary>
+/// <summary>Options for a text field row.</summary>
+struct TextInputDesc {
+    std::string_view Value{};
+    std::string_view Tooltip{};
+    std::string_view ConfigKey{};
+    /// <summary>Fired once the field settles on a new value. The string is the host's and
+    /// lives only for the call.</summary>
+    std::function<void(std::string_view)> OnChange{};
+};
+
+/// <summary>Content surface of a page or sub-page. Every control the host offers can go
+/// straight onto one: a foldout groups them, it is not what makes them possible.</summary>
 class UISurface {
 public:
     UISurface() = default;
@@ -111,6 +121,28 @@ public:
     template <class = void> UIFoldout AddFoldout(std::string_view title, bool expanded = true,
                                                  bool background = true,
                                                  bool autoSeparators = false);
+
+    // The settings rows, placed straight on the surface rather than inside a foldout. They
+    // land in the page's own column beside the foldouts, not in the tile grid, so a page can
+    // be one list of settings without a section header it does not want.
+    template <class = void> UISlider AddSlider(std::string_view label, const SliderDesc& desc);
+    template <class = void> UISlider AddSlider(std::string_view label, float* value,
+                                               const SliderDesc& desc);
+    template <class = void> UISlider AddSlider(std::string_view label, float* value,
+                                               float min, float max);
+    template <class = void> UIEnumSelector AddEnum(std::string_view label, const EnumDesc& desc);
+    template <class = void> UIEnumSelector AddEnum(std::string_view label, int32_t* value,
+                                                   const EnumDesc& desc);
+    template <class = void> UIEnumSelector AddEnum(std::string_view label, int32_t* value,
+                                                   std::span<const char* const> options);
+    template <class = void> UILabel     AddLabel(std::string_view text);
+    template <class = void> UISeparator AddSeparator();
+    template <class = void> UITextInput AddTextInput(std::string_view label,
+                                                     const TextInputDesc& desc = {});
+    /// <summary>A run of rows replaced as a block, for content not known when the page is
+    /// built.</summary>
+    /// <param name="onPress">Receives the index of the row pressed.</param>
+    template <class = void> UIList AddList(std::function<void(uint32_t)> onPress = {});
 protected:
     unix_handle m_handle{};
 };
@@ -142,8 +174,16 @@ public:
                                                    std::span<const char* const> options);
     template <class = void> UILabel     AddLabel(std::string_view text);
     template <class = void> UISeparator AddSeparator();
+    template <class = void> UITextInput AddTextInput(std::string_view label,
+                                                     const TextInputDesc& desc = {});
+    template <class = void> UIList AddList(std::function<void(uint32_t)> onPress = {});
     template <class = void> void SetExpanded(bool expanded);
     template <class = void> [[nodiscard]] bool IsExpanded() const;
+    /// <summary>Be told when the foldout expands or collapses, including when the user works
+    /// VRChat's own header toggle rather than SetExpanded.</summary>
+    template <class = void> void OnChange(std::function<void(bool)> fn);
+    template <class = void> UIFoldout& SetEnabled(bool on);
+    template <class = void> UIFoldout& SetVisible(bool on);
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
@@ -192,6 +232,9 @@ public:
     template <class = void> void NavigateTo();
     /// <summary>True while the menu has this page open.</summary>
     template <class = void> [[nodiscard]] bool IsVisible() const;
+    /// <summary>Show or hide this page's tab. The page stays, and NavigateTo and a nav row
+    /// on another page still reach it.</summary>
+    template <class = void> UIPage& SetTabVisible(bool visible);
     /// <summary>Destroy the host page. Unity main thread only.</summary>
     template <class = void> void Remove();
 
@@ -209,6 +252,40 @@ private:
     static void UNIX_CC OnPageEvent(void* ud, const unix_page_ev* e);
     void DispatchPageEvent(const unix_page_ev& e);
     unix_handle m_events{};
+};
+
+/// <summary>One row of a MainMenu page's side list, and the column its controls go on.
+/// VRChat shows exactly one section at a time and drives the switch itself.</summary>
+class UISection : public UISurface {
+public:
+    using UISurface::UISurface;
+    /// <summary>Show this section, as clicking its row does.</summary>
+    template <class = void> void Select();
+    /// <summary>Relabel the row, and the title its column takes when picked.</summary>
+    template <class = void> UISection& SetName(std::string_view name);
+    /// <summary>Destroy the section and its row. Unity main thread only.</summary>
+    template <class = void> void Remove();
+};
+
+/// <summary>A tab on VRChat's MainMenu, holding a side list of sections. Controls go on a
+/// section, never on the page.</summary>
+class UIMainMenuPage {
+public:
+    UIMainMenuPage() = default;
+    explicit UIMainMenuPage(unix_handle h) noexcept : m_handle(h) {}
+    [[nodiscard]] explicit operator bool() const noexcept { return m_handle != unix_null; }
+    [[nodiscard]] unix_handle Handle() const noexcept { return m_handle; }
+    /// <param name="name">Row label, and the column's title once picked.</param>
+    template <class = void> UISection AddSection(std::string_view name);
+    /// <summary>Open this page's tab.</summary>
+    template <class = void> void Open();
+    /// <summary>The title over the side list.</summary>
+    template <class = void> UIMainMenuPage& SetTitle(std::string_view title);
+    /// <summary>Destroy the page, its tab and its sections. Unity main thread only.</summary>
+    template <class = void> void Remove();
+
+private:
+    unix_handle m_handle{};
 };
 
 /// <summary>A tile on a page or sub-page.</summary>
@@ -273,6 +350,8 @@ public:
     template <class = void> void SetValue(float v);
     /// <summary>Drive the control without re-firing its own change callback.</summary>
     template <class = void> void SetValueSilent(float v);
+    template <class = void> UISlider& SetEnabled(bool on);
+    template <class = void> UISlider& SetVisible(bool on);
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
@@ -293,6 +372,8 @@ public:
     template <class = void> void SetIndex(int32_t i);
     /// <summary>Drive the control without re-firing its own change callback.</summary>
     template <class = void> void SetIndexSilent(int32_t i);
+    template <class = void> UIEnumSelector& SetEnabled(bool on);
+    template <class = void> UIEnumSelector& SetVisible(bool on);
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
@@ -308,6 +389,8 @@ public:
     friend bool operator==(UILabel a, UILabel b) noexcept { return a.m_handle == b.m_handle; }
 
     template <class = void> UILabel& SetText(std::string_view text);
+    template <class = void> UILabel& SetEnabled(bool on);
+    template <class = void> UILabel& SetVisible(bool on);
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
@@ -324,6 +407,51 @@ public:
         return a.m_handle == b.m_handle;
     }
 
+    template <class = void> UISeparator& SetVisible(bool on);
+    template <class = void> void Remove();
+private:
+    unix_handle m_handle{};
+};
+
+/// <summary>A text field row, cloned from VRChat's own input field. There is no managed
+/// listener to attach, so the host polls the field and reports a settled value.</summary>
+class UITextInput {
+public:
+    UITextInput() = default;
+    explicit UITextInput(unix_handle h) noexcept : m_handle(h) {}
+    [[nodiscard]] explicit operator bool() const noexcept { return m_handle != unix_null; }
+    [[nodiscard]] unix_handle Handle() const noexcept { return m_handle; }
+    friend bool operator==(UITextInput a, UITextInput b) noexcept {
+        return a.m_handle == b.m_handle;
+    }
+
+    template <class = void> [[nodiscard]] std::string GetText() const;
+    template <class = void> UITextInput& SetText(std::string_view text);
+    template <class = void> UITextInput& SetEnabled(bool on);
+    template <class = void> UITextInput& SetVisible(bool on);
+    template <class = void> void Remove();
+private:
+    unix_handle m_handle{};
+};
+
+/// <summary>A run of rows that is replaced as a block. The rows keep the place the list was
+/// declared at, so rebuilding one does not drop it below everything added since.</summary>
+class UIList {
+public:
+    UIList() = default;
+    explicit UIList(unix_handle h) noexcept : m_handle(h) {}
+    [[nodiscard]] explicit operator bool() const noexcept { return m_handle != unix_null; }
+    [[nodiscard]] unix_handle Handle() const noexcept { return m_handle; }
+    friend bool operator==(UIList a, UIList b) noexcept { return a.m_handle == b.m_handle; }
+
+    template <class = void> void SetItems(std::span<const std::string_view> items);
+    template <class = void> void SetItems(std::span<const char* const> items);
+    template <class = void> void Clear();
+    template <class = void> [[nodiscard]] uint32_t Count() const;
+    /// <summary>One row, so it can be restyled after the list was filled.</summary>
+    template <class = void> [[nodiscard]] UIButton Row(uint32_t index) const;
+    template <class = void> UIList& SetEnabled(bool on);
+    template <class = void> UIList& SetVisible(bool on);
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
@@ -380,6 +508,10 @@ public:
     /// and kind, so a handler needs nothing else.</summary>
     template <class = void> UIUserButton AddButton(std::string_view text, Sprite icon,
                                                    std::function<void(const UserEvent&)> onClick);
+    /// <summary>Put this row above VRChat's own action rows rather than after them. They
+    /// share one container, so this is the top of the actions block: below the profile
+    /// header, ahead of everything native. Two rows asking for it both land at the top.</summary>
+    template <class = void> UIUserRow& SetFront(bool front = true);
     /// <summary>A collapsible section on the user page, placed after this row and shown to the
     /// same audience. It takes the same controls a page foldout does.</summary>
     /// <param name="title">Header text.</param>
@@ -554,6 +686,41 @@ inline unix_handle AddSliderTo(unix_handle parent, std::string_view label, float
     return h;
 }
 
+inline unix_handle AddTextInputTo(unix_handle parent, std::string_view label,
+                                  const TextInputDesc& d) {
+    Node* n = nullptr;
+    if (d.OnChange) {
+        n = AllocNode([f = d.OnChange](const void* p) {
+            const auto* e = static_cast<const unix_widget_ev*>(p);
+            f(std::string_view{ e->s.data ? e->s.data : "", e->s.size });
+        });
+    }
+    unix_text_desc desc{};
+    desc.size       = sizeof(desc);
+    desc.label      = Sv(label);
+    desc.tooltip    = Sv(d.Tooltip);
+    desc.value      = Sv(d.Value);
+    desc.config_key = Sv(d.ConfigKey);
+    desc.on_change  = n ? &TrampWidget : nullptr;
+    desc.ud         = n;
+    const unix_handle h = g_d.menu_add_text_input(g_self, parent, &desc);
+    OwnNode(h, n);
+    return h;
+}
+
+inline unix_handle AddListTo(unix_handle parent, std::function<void(uint32_t)> onPress) {
+    Node* n = nullptr;
+    if (onPress) {
+        n = AllocNode([f = std::move(onPress)](const void* p) {
+            f(static_cast<uint32_t>(static_cast<const unix_widget_ev*>(p)->i));
+        });
+    }
+    const unix_handle h = g_d.menu_add_list(g_self, parent,
+                                            n ? &TrampWidget : nullptr, n);
+    OwnNode(h, n);
+    return h;
+}
+
 inline unix_handle AddEnumTo(unix_handle parent, std::string_view label, int32_t* bound,
                              const EnumDesc& d) {
     Node* n = nullptr;
@@ -701,10 +868,118 @@ UISeparator UIFoldout::AddSeparator() {
     return UISeparator{ detail::g_d.menu_add_separator(detail::g_self, m_handle) };
 }
 
+// ---- controls straight on a surface -------------------------------------------------
+// The host takes a page handle wherever it takes a foldout handle, so these are the foldout
+// bodies with a different parent.
+
+template <class>
+UISlider UISurface::AddSlider(std::string_view label, const SliderDesc& desc) {
+    UNIX_USE(menu, add_slider);
+    return UISlider{ detail::AddSliderTo(m_handle, label, nullptr, desc) };
+}
+
+template <class>
+UISlider UISurface::AddSlider(std::string_view label, float* value, const SliderDesc& desc) {
+    UNIX_USE(menu, add_slider);
+    return UISlider{ detail::AddSliderTo(m_handle, label, value, desc) };
+}
+
+template <class>
+UISlider UISurface::AddSlider(std::string_view label, float* value, float min, float max) {
+    UNIX_USE(menu, add_slider);
+    SliderDesc d{};
+    d.Min = min;
+    d.Max = max;
+    return UISlider{ detail::AddSliderTo(m_handle, label, value, d) };
+}
+
+template <class>
+UIEnumSelector UISurface::AddEnum(std::string_view label, const EnumDesc& desc) {
+    UNIX_USE(menu, add_enum);
+    return UIEnumSelector{ detail::AddEnumTo(m_handle, label, nullptr, desc) };
+}
+
+template <class>
+UIEnumSelector UISurface::AddEnum(std::string_view label, int32_t* value, const EnumDesc& desc) {
+    UNIX_USE(menu, add_enum);
+    return UIEnumSelector{ detail::AddEnumTo(m_handle, label, value, desc) };
+}
+
+template <class>
+UIEnumSelector UISurface::AddEnum(std::string_view label, int32_t* value,
+                                  std::span<const char* const> options) {
+    UNIX_USE(menu, add_enum);
+    EnumDesc d{};
+    d.Options = options;
+    return UIEnumSelector{ detail::AddEnumTo(m_handle, label, value, d) };
+}
+
+template <class>
+UILabel UISurface::AddLabel(std::string_view text) {
+    UNIX_USE(menu, add_label);
+    return UILabel{ detail::g_d.menu_add_label(detail::g_self, m_handle, Sv(text)) };
+}
+
+template <class>
+UISeparator UISurface::AddSeparator() {
+    UNIX_USE(menu, add_separator);
+    return UISeparator{ detail::g_d.menu_add_separator(detail::g_self, m_handle) };
+}
+
+template <class>
+UITextInput UISurface::AddTextInput(std::string_view label, const TextInputDesc& desc) {
+    UNIX_USE(menu, add_text_input);
+    return UITextInput{ detail::AddTextInputTo(m_handle, label, desc) };
+}
+
+template <class>
+UIList UISurface::AddList(std::function<void(uint32_t)> onPress) {
+    UNIX_USE(menu, add_list);
+    return UIList{ detail::AddListTo(m_handle, std::move(onPress)) };
+}
+
+template <class>
+UITextInput UIFoldout::AddTextInput(std::string_view label, const TextInputDesc& desc) {
+    UNIX_USE(menu, add_text_input);
+    return UITextInput{ detail::AddTextInputTo(m_handle, label, desc) };
+}
+
+template <class>
+UIList UIFoldout::AddList(std::function<void(uint32_t)> onPress) {
+    UNIX_USE(menu, add_list);
+    return UIList{ detail::AddListTo(m_handle, std::move(onPress)) };
+}
+
 template <class>
 void UIFoldout::SetExpanded(bool expanded) {
     UNIX_USE(menu, set_foldout_expanded);
     detail::g_d.menu_set_foldout_expanded(detail::g_self, m_handle, expanded);
+}
+
+template <class>
+void UIFoldout::OnChange(std::function<void(bool)> fn) {
+    UNIX_USE(menu, on_foldout_change);
+    detail::Node* n = nullptr;
+    if (fn) n = detail::AllocNode([f = std::move(fn)](const void* p) {
+        f(static_cast<const unix_widget_ev*>(p)->b);
+    });
+    detail::g_d.menu_on_foldout_change(detail::g_self, m_handle,
+                                       n ? &detail::TrampWidget : nullptr, n);
+    detail::OwnNode(m_handle, n);
+}
+
+template <class>
+UIFoldout& UIFoldout::SetEnabled(bool on) {
+    UNIX_USE(menu, set_control_enabled);
+    detail::g_d.menu_set_control_enabled(detail::g_self, m_handle, on);
+    return *this;
+}
+
+template <class>
+UIFoldout& UIFoldout::SetVisible(bool on) {
+    UNIX_USE(menu, set_control_visible);
+    detail::g_d.menu_set_control_visible(detail::g_self, m_handle, on);
+    return *this;
 }
 
 template <class>
@@ -850,9 +1125,60 @@ bool UIPage::IsVisible() const {
 }
 
 template <class>
+UIPage& UIPage::SetTabVisible(bool visible) {
+    UNIX_USE(menu, set_page_tab_visible);
+    detail::g_d.menu_set_page_tab_visible(detail::g_self, m_handle, visible);
+    return *this;
+}
+
+template <class>
 void UIPage::Remove() {
     detail::Cancel(m_events);
     m_events = unix_null;
+    detail::Cancel(m_handle);
+    m_handle = unix_null;
+}
+
+template <class>
+UISection UIMainMenuPage::AddSection(std::string_view name) {
+    UNIX_USE(mainmenu, add_section);
+    return UISection{ detail::g_d.mainmenu_add_section(detail::g_self, m_handle, Sv(name)) };
+}
+
+template <class>
+void UIMainMenuPage::Open() {
+    UNIX_USE(mainmenu, open_page);
+    detail::g_d.mainmenu_open_page(detail::g_self, m_handle);
+}
+
+template <class>
+UIMainMenuPage& UIMainMenuPage::SetTitle(std::string_view title) {
+    UNIX_USE(mainmenu, set_page_title);
+    detail::g_d.mainmenu_set_page_title(detail::g_self, m_handle, Sv(title));
+    return *this;
+}
+
+template <class>
+void UIMainMenuPage::Remove() {
+    detail::Cancel(m_handle);
+    m_handle = unix_null;
+}
+
+template <class>
+void UISection::Select() {
+    UNIX_USE(mainmenu, select_section);
+    detail::g_d.mainmenu_select_section(detail::g_self, m_handle);
+}
+
+template <class>
+UISection& UISection::SetName(std::string_view name) {
+    UNIX_USE(mainmenu, set_section_name);
+    detail::g_d.mainmenu_set_section_name(detail::g_self, m_handle, Sv(name));
+    return *this;
+}
+
+template <class>
+void UISection::Remove() {
     detail::Cancel(m_handle);
     m_handle = unix_null;
 }
@@ -1044,6 +1370,113 @@ void UISeparator::Remove() {
     m_handle = unix_null;
 }
 
+// ---- the shared control setters -----------------------------------------------------
+// menu.set_control_enabled and menu.set_control_visible take any control id, so every row
+// gets the pair the tiles already had.
+
+#define UNIX_UI_CONTROL_STATE(TYPE)                                              \
+    template <class>                                                             \
+    TYPE& TYPE::SetEnabled(bool on) {                                            \
+        UNIX_USE(menu, set_control_enabled);                                     \
+        detail::g_d.menu_set_control_enabled(detail::g_self, m_handle, on);      \
+        return *this;                                                            \
+    }                                                                            \
+    template <class>                                                             \
+    TYPE& TYPE::SetVisible(bool on) {                                            \
+        UNIX_USE(menu, set_control_visible);                                     \
+        detail::g_d.menu_set_control_visible(detail::g_self, m_handle, on);      \
+        return *this;                                                            \
+    }
+
+UNIX_UI_CONTROL_STATE(UISlider)
+UNIX_UI_CONTROL_STATE(UIEnumSelector)
+UNIX_UI_CONTROL_STATE(UILabel)
+UNIX_UI_CONTROL_STATE(UITextInput)
+UNIX_UI_CONTROL_STATE(UIList)
+#undef UNIX_UI_CONTROL_STATE
+
+template <class>
+UISeparator& UISeparator::SetVisible(bool on) {
+    UNIX_USE(menu, set_control_visible);
+    detail::g_d.menu_set_control_visible(detail::g_self, m_handle, on);
+    return *this;
+}
+
+// ---- text input ---------------------------------------------------------------------
+
+template <class>
+std::string UITextInput::GetText() const {
+    UNIX_USE(menu, get_text_input);
+    const uint32_t need = detail::g_d.menu_get_text_input(detail::g_self, m_handle, nullptr, 0);
+    if (!need) return {};
+    std::string out(static_cast<size_t>(need) + 1, '\0');   // room for the host's terminator
+    const uint32_t got = detail::g_d.menu_get_text_input(detail::g_self, m_handle, out.data(),
+                                                         need + 1);
+    out.resize(got < need ? got : need);
+    return out;
+}
+
+template <class>
+UITextInput& UITextInput::SetText(std::string_view text) {
+    UNIX_USE(menu, set_text_input);
+    detail::g_d.menu_set_text_input(detail::g_self, m_handle, Sv(text));
+    return *this;
+}
+
+template <class>
+void UITextInput::Remove() {
+    detail::Cancel(m_handle);
+    m_handle = unix_null;
+}
+
+// ---- list ---------------------------------------------------------------------------
+
+template <class>
+void UIList::SetItems(std::span<const std::string_view> items) {
+    UNIX_USE(menu, set_list_items);
+    std::vector<unix_str> rows;
+    rows.reserve(items.size());
+    for (auto& s : items) rows.push_back(Sv(s));
+    detail::g_d.menu_set_list_items(detail::g_self, m_handle,
+                                    rows.empty() ? nullptr : rows.data(),
+                                    static_cast<uint32_t>(rows.size()));
+}
+
+template <class>
+void UIList::SetItems(std::span<const char* const> items) {
+    UNIX_USE(menu, set_list_items);
+    std::vector<unix_str> rows;
+    rows.reserve(items.size());
+    for (const char* s : items) rows.push_back(Sv(s ? std::string_view{ s } : std::string_view{}));
+    detail::g_d.menu_set_list_items(detail::g_self, m_handle,
+                                    rows.empty() ? nullptr : rows.data(),
+                                    static_cast<uint32_t>(rows.size()));
+}
+
+template <class>
+void UIList::Clear() {
+    UNIX_USE(menu, clear_list);
+    detail::g_d.menu_clear_list(detail::g_self, m_handle);
+}
+
+template <class>
+uint32_t UIList::Count() const {
+    UNIX_USE(menu, list_count);
+    return detail::g_d.menu_list_count(detail::g_self, m_handle);
+}
+
+template <class>
+UIButton UIList::Row(uint32_t index) const {
+    UNIX_USE(menu, list_row);
+    return UIButton{ detail::g_d.menu_list_row(detail::g_self, m_handle, index) };
+}
+
+template <class>
+void UIList::Remove() {
+    detail::Cancel(m_handle);
+    m_handle = unix_null;
+}
+
 template <class>
 UICornerButton& UICornerButton::SetColor(Color c) {
     UNIX_USE(menu, set_button_color);
@@ -1104,6 +1537,13 @@ UIUserButton UIUserRow::AddButton(std::string_view text, Sprite icon,
     const unix_handle h = detail::g_d.users_add_row_button(detail::g_self, m_handle, &d);
     detail::OwnNode(h, n);
     return UIUserButton{ h };
+}
+
+template <class>
+UIUserRow& UIUserRow::SetFront(bool front) {
+    UNIX_USE(users, set_row_front);
+    detail::g_d.users_set_row_front(detail::g_self, m_handle, front);
+    return *this;
 }
 
 template <class>
@@ -1259,6 +1699,361 @@ UIEnumSelector UIEnumHandler::Attach(UIFoldout parent, std::string_view label,
     d.OnChange = [this](int32_t i) { OnChanged(i); };
     m_control = parent.AddEnum(label, bound, d);
     return m_control;
+}
+
+
+// ============================================================ Action Menu
+
+/// <summary>One item on VRChat's radial Action Menu.
+///
+/// The wheel rebuilds a page from its Build() on every open and destroys the previous items,
+/// so an item is only valid inside the Build() that made it and inside the callbacks that
+/// Build() installed. Keep state in your module, not in an item.</summary>
+class ActionItem {
+public:
+    ActionItem() = default;
+    explicit ActionItem(unix_handle h) noexcept : m_handle(h) {}
+    [[nodiscard]] explicit operator bool() const noexcept { return m_handle != unix_null; }
+    [[nodiscard]] unix_handle Handle() const noexcept { return m_handle; }
+
+    template <class = void> ActionItem& SetLabel(std::string_view text);
+    /// <summary>Label by localization key, the way VRChat labels its own pedals — the wheel's
+    /// "Options" carries the key, not the word, so it follows the player's language.</summary>
+    /// <param name="key">Localization key; empty uses the fallback verbatim.</param>
+    template <class = void> ActionItem& SetLabelKey(std::string_view key,
+                                                    std::string_view fallback = {});
+    /// <summary>Text drawn inside the pedal instead of on the ring around it. VRChat leaves
+    /// this empty on its own root items and uses it to show values.</summary>
+    /// <param name="ringLabel">The ring label, set in the same call because the game exposes
+    /// the pair as a single method.</param>
+    template <class = void> ActionItem& SetCenterLabel(std::string_view text,
+                                                       std::string_view ringLabel = {});
+    /// <param name="name">A field of VRChat's own menu icon table: home, options, config,
+    /// expressions, tools, inventory, props, back, close, toggleOn, toggleOff, arrowUp,
+    /// arrowDown, arrowLeft, arrowRight, folder, micOn, micOff, camera, delete, ...</param>
+    template <class = void> ActionItem& SetIcon(std::string_view name);
+    /// <param name="texture">A UnityEngine.Texture2D.</param>
+    template <class = void> ActionItem& SetIcon(void* texture);
+    template <class = void> ActionItem& SetEnabled(bool enabled);
+    /// <summary>Radial fill, 0..1.</summary>
+    template <class = void> ActionItem& SetValue(float value);
+    /// <summary>The item's own component, for anything this API does not wrap.</summary>
+    template <class = void> [[nodiscard]] void* Object() const;
+
+private:
+    unix_handle m_handle{};
+};
+
+namespace detail {
+
+/// Stable storage for one item's callbacks. The host is handed a pointer to a slot as the
+/// item's user data, and clears its own item table at the top of every build, so the slots
+/// are safe to recycle there too.
+struct ActionSlot {
+    std::function<void()>      click;
+    std::function<bool()>      state;
+    std::function<float()>     radialGet;
+    std::function<void(float)> radialSet;
+};
+inline std::deque<ActionSlot> g_amSlots;
+
+inline void UNIX_CC AmClickThunk(void* ud, const unix_widget_ev*) {
+    auto* s = static_cast<ActionSlot*>(ud);
+    if (s && s->click) s->click();
+}
+inline bool UNIX_CC AmStateThunk(void* ud) {
+    auto* s = static_cast<ActionSlot*>(ud);
+    return s && s->state ? s->state() : false;
+}
+inline float UNIX_CC AmRadialGetThunk(void* ud) {
+    auto* s = static_cast<ActionSlot*>(ud);
+    return s && s->radialGet ? s->radialGet() : 0.0f;
+}
+inline void UNIX_CC AmRadialSetThunk(void* ud, float value) {
+    auto* s = static_cast<ActionSlot*>(ud);
+    if (s && s->radialSet) s->radialSet(value);
+}
+
+}   // namespace detail
+
+/// <summary>A page on VRChat's radial Action Menu — the wheel, not the QuickMenu.
+///
+/// Subclass it and override Build(). A page is a builder rather than a retained widget tree:
+/// Build() runs every time the page is opened and must add every item the page shows. Toggles
+/// are predicates the menu polls, so there is no state to push.
+///
+/// The root wheel belongs to VRChat and wipes its items whenever it rebuilds, so an entry on
+/// it is a standing request: AddToRootMenu re-adds it for as long as the page lives.</summary>
+class ActionPage {
+public:
+    ActionPage() = default;
+    /// <param name="name">Identifies the page in logs; the wheel shows item labels, not it.</param>
+    template <class = void> explicit ActionPage(std::string_view name);
+    ActionPage(const ActionPage&) = delete;
+    ActionPage& operator=(const ActionPage&) = delete;
+    virtual ~ActionPage();
+
+    [[nodiscard]] explicit operator bool() const noexcept { return m_handle != unix_null; }
+    [[nodiscard]] unix_handle Handle() const noexcept { return m_handle; }
+
+    /// <summary>Whether the Action Menu resolved on this build of the game.</summary>
+    template <class = void> [[nodiscard]] static bool IsReady();
+    /// <summary>One of the menu's own icons, by name. Null when the name is unknown.</summary>
+    template <class = void> [[nodiscard]] static void* BuiltinIcon(std::string_view name);
+
+    /// <summary>Push the page onto the wheel, running Build().</summary>
+    template <class = void> void Open();
+    /// <summary>Pop it, running the menu's own close path.</summary>
+    template <class = void> void Close();
+    template <class = void> void Remove();
+
+    /// <summary>Give the page an entry on VRChat's root wheel.</summary>
+    /// <param name="everyPage">Place it on whichever page is showing, VRChat's own sub-pages
+    /// included, rather than only on the root.</param>
+    template <class = void> void AddToRootMenu(std::string_view label,
+                                               std::string_view icon = {},
+                                               bool everyPage = false);
+    template <class = void> void RemoveFromRootMenu();
+    /// <summary>Art for the root entry, which AddToRootMenu cannot take: the wheel replaces
+    /// that pedal on every rebuild, and a Texture2D cannot be made before the graphics device
+    /// is up. Call it once you have one.</summary>
+    /// <param name="texture">A UnityEngine.Texture2D.</param>
+    template <class = void> void SetRootIcon(void* texture);
+
+    // ---- only inside Build() ----
+
+    template <class = void> ActionItem AddButton(std::string_view label,
+                                                 std::function<void()> onClick = {});
+    /// <param name="state">Polled by the menu for the tick. Keep it cheap and pure.</param>
+    template <class = void> ActionItem AddToggle(std::string_view label,
+                                                 std::function<bool()> state,
+                                                 std::function<void()> onClick);
+    template <class = void> ActionItem AddSubPage(std::string_view label,
+                                                  const ActionPage& page);
+    /// <summary>A pedal that opens the wheel's drag ring on a value of your own. The ring is
+    /// VRChat's radial puppet; the host binds it to a parameter it owns, so nothing on the
+    /// avatar is read or written.</summary>
+    /// <param name="get">Current value as 0..1. Polled while the ring is being dragged.</param>
+    /// <param name="set">Receives the new 0..1 value as the ring moves.</param>
+    template <class = void> ActionItem AddRadial(std::string_view label,
+                                                 std::function<float()> get,
+                                                 std::function<void(float)> set);
+    /// <summary>An explicit back item. The menu already adds one below the root, so this is
+    /// only for a page that wants a second.</summary>
+    template <class = void> ActionItem AddBack();
+
+protected:
+    /// <summary>Add the page's items. Runs on the Unity main thread, on every open.</summary>
+    virtual void Build() {}
+
+private:
+    static void UNIX_CC OnBuildThunk(void* ud);
+    unix_handle m_handle{};
+    unix_handle m_root{};
+};
+
+// ---- ActionItem ----
+
+template <class>
+ActionItem& ActionItem::SetLabel(std::string_view text) {
+    UNIX_USE(action, set_item_label);
+    detail::g_d.action_set_item_label(detail::g_self, m_handle, Sv(text));
+    return *this;
+}
+
+template <class>
+ActionItem& ActionItem::SetLabelKey(std::string_view key, std::string_view fallback) {
+    UNIX_USE(action, set_item_label_key);
+    detail::g_d.action_set_item_label_key(detail::g_self, m_handle, Sv(key), Sv(fallback));
+    return *this;
+}
+
+template <class>
+ActionItem& ActionItem::SetCenterLabel(std::string_view text, std::string_view ringLabel) {
+    UNIX_USE(action, set_item_center);
+    detail::g_d.action_set_item_center(detail::g_self, m_handle, Sv(text), Sv(ringLabel));
+    return *this;
+}
+
+template <class>
+ActionItem& ActionItem::SetIcon(std::string_view name) {
+    UNIX_USE(action, set_item_icon);
+    detail::g_d.action_set_item_icon(detail::g_self, m_handle, Sv(name), nullptr);
+    return *this;
+}
+
+template <class>
+ActionItem& ActionItem::SetIcon(void* texture) {
+    UNIX_USE(action, set_item_icon);
+    detail::g_d.action_set_item_icon(detail::g_self, m_handle, Sv({}), texture);
+    return *this;
+}
+
+template <class>
+ActionItem& ActionItem::SetEnabled(bool enabled) {
+    UNIX_USE(action, set_item_enabled);
+    detail::g_d.action_set_item_enabled(detail::g_self, m_handle, enabled);
+    return *this;
+}
+
+template <class>
+ActionItem& ActionItem::SetValue(float value) {
+    UNIX_USE(action, set_item_value);
+    detail::g_d.action_set_item_value(detail::g_self, m_handle, value);
+    return *this;
+}
+
+template <class>
+void* ActionItem::Object() const {
+    UNIX_USE(action, item_object);
+    return detail::g_d.action_item_object(detail::g_self, m_handle);
+}
+
+// ---- ActionPage ----
+
+template <class>
+ActionPage::ActionPage(std::string_view name) {
+    UNIX_USE(action, create_page);
+    m_handle = detail::g_d.action_create_page(detail::g_self, Sv(name),
+                                              &ActionPage::OnBuildThunk, this);
+}
+
+inline ActionPage::~ActionPage() {
+    // The host holds a pointer to this object as the build callback's user data, so the
+    // registration has to go with the object even when the caller never called Remove.
+    if (m_root) {
+        UNIX_USE(action, remove_root_item);
+        detail::g_d.action_remove_root_item(detail::g_self, m_root);
+        m_root = unix_null;
+    }
+    if (m_handle) {
+        UNIX_USE(action, remove_page);
+        detail::g_d.action_remove_page(detail::g_self, m_handle);
+        m_handle = unix_null;
+    }
+}
+
+inline void UNIX_CC ActionPage::OnBuildThunk(void* ud) {
+    // The host dropped this module's items just before calling, so the slots they pointed at
+    // are free; recycling them here is what keeps one deque from growing per menu open.
+    detail::g_amSlots.clear();
+    if (ud) static_cast<ActionPage*>(ud)->Build();
+}
+
+template <class>
+bool ActionPage::IsReady() {
+    UNIX_USE(action, is_ready);
+    return detail::g_d.action_is_ready(detail::g_self);
+}
+
+template <class>
+void* ActionPage::BuiltinIcon(std::string_view name) {
+    UNIX_USE(action, builtin_icon);
+    return detail::g_d.action_builtin_icon(detail::g_self, Sv(name));
+}
+
+template <class>
+void ActionPage::Open() {
+    UNIX_USE(action, open_page);
+    detail::g_d.action_open_page(detail::g_self, m_handle);
+}
+
+template <class>
+void ActionPage::Close() {
+    UNIX_USE(action, close_page);
+    detail::g_d.action_close_page(detail::g_self, m_handle);
+}
+
+template <class>
+void ActionPage::Remove() {
+    UNIX_USE(action, remove_page);
+    detail::g_d.action_remove_page(detail::g_self, m_handle);
+    m_handle = unix_null;
+}
+
+template <class>
+void ActionPage::AddToRootMenu(std::string_view label, std::string_view icon, bool everyPage) {
+    UNIX_USE(action, add_root_item);
+    UNIX_USE(action, set_root_scope);
+    if (m_root) RemoveFromRootMenu();
+    m_root = detail::g_d.action_add_root_item(detail::g_self, m_handle, Sv(label), Sv(icon));
+    if (m_root && everyPage && detail::g_d.action_set_root_scope)
+        detail::g_d.action_set_root_scope(detail::g_self, m_root, true);
+}
+
+template <class>
+void ActionPage::RemoveFromRootMenu() {
+    UNIX_USE(action, remove_root_item);
+    if (!m_root) return;
+    detail::g_d.action_remove_root_item(detail::g_self, m_root);
+    m_root = unix_null;
+}
+
+template <class>
+void ActionPage::SetRootIcon(void* texture) {
+    UNIX_USE(action, set_root_icon);
+    if (m_root) detail::g_d.action_set_root_icon(detail::g_self, m_root, texture);
+}
+
+template <class>
+ActionItem ActionPage::AddButton(std::string_view label, std::function<void()> onClick) {
+    UNIX_USE(action, add_item);
+    auto& slot = detail::g_amSlots.emplace_back();
+    slot.click = std::move(onClick);
+    unix_am_desc d{};
+    d.size     = sizeof(d);
+    d.label    = Sv(label);
+    d.on_click = slot.click ? &detail::AmClickThunk : nullptr;
+    d.ud       = &slot;
+    return ActionItem{ detail::g_d.action_add_item(detail::g_self, &d) };
+}
+
+template <class>
+ActionItem ActionPage::AddToggle(std::string_view label, std::function<bool()> state,
+                                 std::function<void()> onClick) {
+    UNIX_USE(action, add_item);
+    auto& slot = detail::g_amSlots.emplace_back();
+    slot.click = std::move(onClick);
+    slot.state = std::move(state);
+    unix_am_desc d{};
+    d.size     = sizeof(d);
+    d.label    = Sv(label);
+    d.on_click = slot.click ? &detail::AmClickThunk : nullptr;
+    d.state    = slot.state ? &detail::AmStateThunk : nullptr;
+    d.ud       = &slot;
+    return ActionItem{ detail::g_d.action_add_item(detail::g_self, &d) };
+}
+
+template <class>
+ActionItem ActionPage::AddSubPage(std::string_view label, const ActionPage& page) {
+    UNIX_USE(action, add_item);
+    unix_am_desc d{};
+    d.size  = sizeof(d);
+    d.label = Sv(label);
+    d.page  = page.Handle();
+    return ActionItem{ detail::g_d.action_add_item(detail::g_self, &d) };
+}
+
+template <class>
+ActionItem ActionPage::AddRadial(std::string_view label, std::function<float()> get,
+                                 std::function<void(float)> set) {
+    UNIX_USE(action, add_radial);
+    auto& slot = detail::g_amSlots.emplace_back();
+    slot.radialGet = std::move(get);
+    slot.radialSet = std::move(set);
+    return ActionItem{ detail::g_d.action_add_radial(
+        detail::g_self, Sv(label),
+        slot.radialGet ? &detail::AmRadialGetThunk : nullptr,
+        slot.radialSet ? &detail::AmRadialSetThunk : nullptr, &slot) };
+}
+
+template <class>
+ActionItem ActionPage::AddBack() {
+    UNIX_USE(action, add_item);
+    unix_am_desc d{};
+    d.size = sizeof(d);
+    d.back = true;
+    return ActionItem{ detail::g_d.action_add_item(detail::g_self, &d) };
 }
 
 }   // namespace UNIx

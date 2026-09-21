@@ -1,6 +1,7 @@
 #include <VRChat/Networking.hpp>
 #include <IL2CPP.Module/include/MethodHandler.hpp>
 #include <IL2CPP.Module/include/System/String.hpp>
+#include <cstring>
 
 namespace IL2CPP::VRChat {
 
@@ -125,9 +126,31 @@ namespace IL2CPP::VRChat {
         return MethodHandler::invoke<int64_t>(m, nullptr);
     }
 
+    namespace {
+        // Both RPC overloads are named RPC and take four arguments, so resolve(name, argc)
+        // cannot tell them apart: it answered with whichever the class listed first, and the
+        // other call then passed an int* where a VRCPlayerApi was expected, or the reverse.
+        // The first parameter's type is what separates them.
+        IL2CPP::Module::Method ResolveRpc(bool byPlayer) {
+            IL2CPP::Module::Class k = IL2CPP::Module::Class::find("VRC.SDKBase.Networking");
+            if (!k) return IL2CPP::Module::Method{ nullptr };
+            for (const IL2CPP::Module::Method& m : k.get_methods()) {
+                const char* n = m.name();
+                if (!n || std::strcmp(n, "RPC") != 0 || m.param_count() != 4) continue;
+                const IL2CPP::Module::Type t = m.get_param_type(0);
+                const char* tn = t ? t.name() : nullptr;
+                if (!tn) continue;
+                const bool isPlayer = std::strstr(tn, "VRCPlayerApi") != nullptr;
+                if (isPlayer == byPlayer) return m;
+            }
+            return IL2CPP::Module::Method{ nullptr };
+        }
+    }
+
     void Networking::RPC(RpcDestination targetClients, IL2CPP::Module::Unity::GameObject targetObject,
                          std::string_view methodName, void* parameters) {
-        static auto m = MethodHandler::resolve("VRC.SDKBase.Networking", "RPC", 4);
+        static auto m = ResolveRpc(false);
+        if (!m) return;
         auto str = IL2CPP::Module::System::String::create(methodName);
         int dest = static_cast<int>(targetClients);
         void* params[4] = { &dest, targetObject.raw(), str.raw(), parameters };
@@ -136,7 +159,8 @@ namespace IL2CPP::VRChat {
 
     void Networking::RPC(VRCPlayerApi targetPlayer, IL2CPP::Module::Unity::GameObject targetObject,
                          std::string_view methodName, void* parameters) {
-        static auto m = MethodHandler::resolve("VRC.SDKBase.Networking", "RPC", 4);
+        static auto m = ResolveRpc(true);
+        if (!m) return;
         auto str = IL2CPP::Module::System::String::create(methodName);
         void* params[4] = { targetPlayer.raw(), targetObject.raw(), str.raw(), parameters };
         MethodHandler::invoke<void>(m, nullptr, params);

@@ -110,6 +110,7 @@ namespace IL2CPP::Module::Unity {
 
         [[nodiscard]] Transform GetParent() const {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_parent"), 0);
+            if (!raw()) return Transform{};
             return Transform{ MethodHandler::invoke<void*>(m, raw()) };
         }
         void SetParent(Transform parent, bool worldPositionStays = true) {
@@ -296,18 +297,25 @@ namespace IL2CPP::Module::Unity {
     };
 
 
+    // These three are the ones call sites chain -- go.GetTransform().GetParent() and the like
+    // -- so a dead entry anywhere in a chain used to reach il2cpp with a null instance and
+    // fault inside the callee. An empty wrapper propagates instead, which every call site
+    // already tests for.
     inline Transform Component::GetTransform() const {
         static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Component"), IL2CPP_STR("get_transform"), 0);
+        if (!raw()) return Transform{};
         return Transform{ MethodHandler::invoke<void*>(m, raw()) };
     }
 
     inline GameObject Component::GetGameObject() const {
         static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Component"), IL2CPP_STR("get_gameObject"), 0);
+        if (!raw()) return GameObject{};
         return GameObject{ MethodHandler::invoke<void*>(m, raw()) };
     }
 
     inline Transform GameObject::GetTransform() const {
         static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("get_transform"), 0);
+        if (!raw()) return Transform{};
         return Transform{ MethodHandler::invoke<void*>(m, raw()) };
     }
 

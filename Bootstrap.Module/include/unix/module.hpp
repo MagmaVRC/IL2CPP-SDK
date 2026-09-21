@@ -24,13 +24,16 @@
 namespace UNIx {
 
 // Services (unix/services/*.hpp)
-class Config; class Menu; class UserPage; class Players; class Renderer; class Log;
-class FileSystem; class Bus; class Hotkeys; class Nameplates; class Tweens; class Ui;
+class Config; class Menu; class MainMenu; class UserPage; class Players; class Renderer;
+class Log; class FileSystem; class Bus; class Hotkeys; class Nameplates; class Tweens; class Ui;
 class Deob; class Studio; class Clipboard; class Perf; class License; class WorldScripts;
 class Console; class Explorer; class Photon; class Modules; class Telemetry; class Il2Cpp;
+class Udon; class PlayerApi; class Net; class Notify;
 // UI objects (unix/ui.hpp, except Hotkey and StudioPage which live in unix/services/core.hpp)
-class UISurface; class UIPage; class UISubPage; class UIFoldout; class UIButton; class UILabel;
+class UISurface; class UIPage; class UISubPage; class UISection; class UIMainMenuPage;
+class UIFoldout; class UIButton; class UILabel;
 class UIToggle; class UISlider; class UIEnumSelector; class UISeparator; class UICornerButton;
+class UITextInput; class UIList;
 class UIUserButton; class UIUserRow; class Nameplate; class Tween; class Hotkey; class StudioPage;
 
 using Color = unix_color;   using Vec2 = unix_vec2;  using Vec3 = unix_vec3; using Vec4 = unix_vec4;
@@ -62,6 +65,20 @@ enum class OffsetTable : uint32_t {
 
 /// <summary>A borrowed string view over a std::string_view. The one conversion, spelled once.</summary>
 constexpr unix_str Sv(std::string_view s) noexcept { return { s.data(), (uint32_t)s.size() }; }
+
+/// <summary>The other direction: a unix_str as a view, empty when the host sent nothing.</summary>
+constexpr std::string_view View(unix_str s) noexcept {
+    return s.data ? std::string_view{ s.data, s.size } : std::string_view{};
+}
+
+/// <summary>The instance id a world event carries -- `wrld_...:12345~region(eu)`, or
+/// `local:...` for a local build. Unlike `id` this changes between two instances of one
+/// world, so it is what a module keys its world state on.</summary>
+/// <returns>Empty when the host predates the field; `id` is still filled in that case.</returns>
+inline std::string_view LocationOf(const WorldEvent& e) noexcept {
+    if (e.size < offsetof(unix_world_ev, location) + sizeof(unix_str)) return {};
+    return View(e.location);
+}
 
 namespace detail {
 
@@ -335,6 +352,7 @@ public:
     // complete: the service headers are included after this declaration, not before it.
     template <class = void> [[nodiscard]] ::UNIx::Config&        Config();
     template <class = void> [[nodiscard]] ::UNIx::Menu&          Menu();
+    template <class = void> [[nodiscard]] ::UNIx::MainMenu&      MainMenu();
     template <class = void> [[nodiscard]] ::UNIx::Players&       Players();
     template <class = void> [[nodiscard]] ::UNIx::Renderer&      Renderer();
     template <class = void> [[nodiscard]] ::UNIx::Log&           Log();
@@ -356,6 +374,10 @@ public:
     template <class = void> [[nodiscard]] ::UNIx::Modules&       Modules();
     template <class = void> [[nodiscard]] ::UNIx::Telemetry&     Telemetry();
     template <class = void> [[nodiscard]] ::UNIx::Il2Cpp&        Il2Cpp();
+    template <class = void> [[nodiscard]] ::UNIx::Udon&          Udon();
+    template <class = void> [[nodiscard]] ::UNIx::PlayerApi&     PlayerApi();
+    template <class = void> [[nodiscard]] ::UNIx::Net&           Net();
+    template <class = void> [[nodiscard]] ::UNIx::Notify&        Notify();
 
     template <class = void> [[nodiscard]] std::string    GetName() const;
     template <class = void> [[nodiscard]] unix_host_kind GetKind() const;
@@ -392,6 +414,7 @@ protected:
     }
     UNIX_SERVICE_ACCESSOR(Config,       Config)
     UNIX_SERVICE_ACCESSOR(Menu,         Menu)
+    UNIX_SERVICE_ACCESSOR(MainMenu,     MainMenu)
     UNIX_SERVICE_ACCESSOR(Players,      Players)
     UNIX_SERVICE_ACCESSOR(Renderer,     Renderer)
     UNIX_SERVICE_ACCESSOR(Log,          Log)
@@ -619,6 +642,9 @@ const unix_module_desc* DescFor(T* self) {
 #include <unix/ui.hpp>
 #include <unix/services/core.hpp>
 #include <unix/services/ui.hpp>
+#include <unix/services/udon.hpp>
+#include <unix/services/notify.hpp>
+#include <unix/services/player.hpp>
 #if __has_include(<unix/services/photon.hpp>)
 #  include <unix/services/photon.hpp>
 #endif
@@ -632,6 +658,7 @@ const unix_module_desc* DescFor(T* self) {
 // nothing until something asks for it.
 UNIX_DEFINE_SERVICE(Config,       Config)
 UNIX_DEFINE_SERVICE(Menu,         Menu)
+UNIX_DEFINE_SERVICE(MainMenu,     MainMenu)
 UNIX_DEFINE_SERVICE(Players,      Players)
 UNIX_DEFINE_SERVICE(Renderer,     Renderer)
 UNIX_DEFINE_SERVICE(Log,          Log)
@@ -653,6 +680,10 @@ UNIX_DEFINE_SERVICE(Photon,       Photon)
 UNIX_DEFINE_SERVICE(Modules,      Modules)
 UNIX_DEFINE_SERVICE(Telemetry,    Telemetry)
 UNIX_DEFINE_SERVICE(Il2Cpp,       Il2Cpp)
+UNIX_DEFINE_SERVICE(Udon,         Udon)
+UNIX_DEFINE_SERVICE(PlayerApi,    PlayerApi)
+UNIX_DEFINE_SERVICE(Net,          Net)
+UNIX_DEFINE_SERVICE(Notify,       Notify)
 
 template <> struct std::hash<UNIx::Player> {
     std::size_t operator()(UNIx::Player p) const noexcept { return std::hash<void*>{}(p.Raw()); }

@@ -105,10 +105,48 @@ namespace IL2CPP::VRChat::Bridge {
         return out;
     }
 
+    /// <summary>Whether a pointer can actually be read. A pointer can be non-null, in
+    /// user-mode range and still land in reserved, uncommitted memory, which reads as a
+    /// plausible address right up until the dereference faults.</summary>
+    [[nodiscard]] inline bool Probe(const void* p) noexcept {
+        __try {
+            const volatile auto probe = *static_cast<const volatile uintptr_t*>(p);
+            (void)probe;
+            return true;
+        } __except (1) {
+            return false;
+        }
+    }
+
+    /// <summary>Whether `self` still looks like a live IL2CPP object rather than a stale
+    /// handle. Every object begins with its class pointer, so an object whose class does
+    /// not read back is one that has been collected or was never an object at all.</summary>
+    [[nodiscard]] inline bool LiveObject(void* self) noexcept {
+        const auto p = reinterpret_cast<uintptr_t>(self);
+        if (p < 0x10000ull || p >= 0x7FFFFFFFFFFFull || (p & 7ull) != 0ull) return false;
+        if (!Probe(self)) return false;
+
+        const auto klass = *reinterpret_cast<void* volatile*>(self);
+        const auto k = reinterpret_cast<uintptr_t>(klass);
+        if (k < 0x10000ull || k >= 0x7FFFFFFFFFFFull || (k & 7ull) != 0ull) return false;
+        return Probe(klass);
+    }
+
+    /// <summary>Read a pointer-sized member at a deobfuscated offset.</summary>
+    /// <returns>Null when the object is not one any more, rather than faulting on it.</returns>
     [[nodiscard]] inline void* MemberAt(void* self, int32_t offset) noexcept {
-        if (!self || offset <= 0) return nullptr;
-        return *reinterpret_cast<void**>(
-            reinterpret_cast<uintptr_t>(self) + static_cast<uintptr_t>(offset));
+        // A null check alone is what let a stale reference through: the crash that prompted
+        // this read a field off 0x200000008, which is non-null and reserved.
+        if (!self || offset <= 0 || !LiveObject(self)) return nullptr;
+
+        void* value = nullptr;
+        __try {
+            value = *reinterpret_cast<void**>(
+                reinterpret_cast<uintptr_t>(self) + static_cast<uintptr_t>(offset));
+        } __except (1) {
+            return nullptr;
+        }
+        return value;
     }
 
 } // namespace IL2CPP::VRChat::Bridge

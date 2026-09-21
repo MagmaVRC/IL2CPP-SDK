@@ -30,15 +30,37 @@ namespace IL2CPP::Module::Unity {
 
         bool LoadImage(const System::Array<uint8_t>& bytes, bool markNonReadable = false) {
             if (!bytes) return false;
-            static auto m3 = MethodHandler::resolve(IL2CPP_STR("UnityEngine.ImageConversion"), IL2CPP_STR("LoadImage"), 3);
-            if (m3) {
-                void* params[] = { raw(), bytes.raw(), &markNonReadable };
-                return MethodHandler::invoke<bool>(m3, nullptr, params);
+            // Selected by parameter type, not by argument count. Unity 6 added a
+            // LoadImage(Texture2D, ReadOnlySpan<byte>, bool) overload that shares its arity
+            // with 2022.3's LoadImage(Texture2D, byte[], bool), so resolving on the count
+            // alone hands a managed array to a method expecting a byref span and the load
+            // quietly fails on one of the two builds.
+            struct Found { Method m{}; int argc = 0; };
+            // Not cached until it succeeds: a miss here would otherwise be remembered from
+            // whichever call happened before the metadata was ready.
+            static Found found{};
+            if (!found.m) {
+                auto k = Class::find(IL2CPP_STR("UnityEngine.ImageConversion"));
+                if (!k) return false;
+                for (auto& m : k.get_methods()) {
+                    if (!m.name() || std::string_view(m.name()) != IL2CPP_STR("LoadImage")) continue;
+                    const int argc = static_cast<int>(m.param_count());
+                    if (argc != 2 && argc != 3) continue;
+                    auto t = m.get_param_type(1);
+                    auto c = t ? t.get_class() : Class{};
+                    if (!c || c.full_name() != IL2CPP_STR("System.Byte[]")) continue;
+                    // The three-argument form also carries markNonReadable, so prefer it.
+                    if (!found.m || argc > found.argc) found = Found{ m, argc };
+                }
+                if (!found.m) return false;
             }
-            static auto m2 = MethodHandler::resolve(IL2CPP_STR("UnityEngine.ImageConversion"), IL2CPP_STR("LoadImage"), 2);
-            if (!m2) return false;
+
+            if (found.argc == 3) {
+                void* params[] = { raw(), bytes.raw(), &markNonReadable };
+                return MethodHandler::invoke<bool>(found.m, nullptr, params);
+            }
             void* params[] = { raw(), bytes.raw() };
-            return MethodHandler::invoke<bool>(m2, nullptr, params);
+            return MethodHandler::invoke<bool>(found.m, nullptr, params);
         }
 
         bool LoadImage(const std::vector<uint8_t>& data) {
@@ -166,8 +188,14 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
+        /// <summary>Resize the texture, discarding its contents.</summary>
+        /// <param name="width">New width in pixels.</param>
+        /// <param name="height">New height in pixels.</param>
+        /// <returns>True when the texture was reallocated.</returns>
         [[nodiscard]] bool Resize(int width, int height) {
-            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Texture2D"), IL2CPP_STR("Resize"), 2);
+            // Unity 6 dropped the Resize spelling; Reinitialize is the same method and
+            // exists on 2022.3 as well.
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Texture2D"), IL2CPP_STR("Reinitialize"), 2);
             void* params[] = { &width, &height };
             return MethodHandler::invoke<bool>(m, raw(), params);
         }

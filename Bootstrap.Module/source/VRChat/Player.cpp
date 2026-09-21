@@ -34,7 +34,25 @@ namespace IL2CPP::VRChat {
         if (!valid()) return {};
         const auto o = player_table();
         if (!o) return {};
-        return APIUser(Bridge::MemberAt(raw(), o->api_user));
+        if (o->api_user > 0) {
+            // Same guard the model hop already carried: the detoured avatar setters fire
+            // on a background thread, where _player can point at an object that is no
+            // longer a live Player, and the slot then reads back as non-pointer bytes.
+            void* user = Bridge::MemberAt(raw(), o->api_user);
+            const auto address = reinterpret_cast<uintptr_t>(user);
+            if (address < 0x10000u || address >= 0x7FFFFFFE0000ull || (address & 7u) != 0) return {};
+            return APIUser(user);
+        }
+        // Builds that moved the user behind a data model: Player -> model -> APIUser.
+        if (o->size < sizeof(unix_player_offsets) || o->user_model <= 0) return {};
+
+        void* model = Bridge::MemberAt(raw(), o->user_model);
+        // Non-null is not enough: a wrong user_model offset yields whatever bytes live there,
+        // and the second hop then reads off an address that is not an object at all.
+        const auto address = reinterpret_cast<uintptr_t>(model);
+        if (address < 0x10000u || address >= 0x7FFFFFFE0000ull || (address & 7u) != 0) return {};
+
+        return APIUser(Bridge::MemberAt(model, o->user_model_api_user));
     }
 
     IL2CPP::Module::ManagedObject Player::GetUSpeaker() {

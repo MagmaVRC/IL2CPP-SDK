@@ -14,8 +14,90 @@ namespace UNIx {
         Ready              = unix_menu_ready,         LateReady        = unix_menu_late_ready,
         Il2CppReady        = unix_menu_il2cpp_ready,  WorldLoaded      = unix_menu_world_loaded,
         PlayerManagerReady = unix_menu_players_ready, RendererReady    = unix_menu_renderer_ready,
+        MainMenuSetup      = unix_menu_mm_setup,
     };
-    static_assert(static_cast<uint32_t>(MenuPhase::RendererReady) == unix_menu_renderer_ready);
+    static_assert(static_cast<uint32_t>(MenuPhase::MainMenuSetup) == unix_menu_mm_setup);
+
+    /// <summary>What kind of image this module was loaded as.</summary>
+    enum class HostKind : uint32_t {
+        Native = unix_host_native, Vm = unix_host_vm, Static = unix_host_static,
+    };
+    static_assert(static_cast<uint32_t>(HostKind::Static) == unix_host_static);
+
+    /// <summary>Which of the host's threads is running the current call.</summary>
+    enum class ThreadKind : uint32_t {
+        Unknown = unix_thread_unknown,     UnityMain = unix_thread_unity_main,
+        Render  = unix_thread_render,      Photon    = unix_thread_photon,
+        Loader  = unix_thread_loader,
+    };
+    static_assert(static_cast<uint32_t>(ThreadKind::Loader) == unix_thread_loader);
+
+    /// <summary>How early a module asks to be loaded.</summary>
+    enum class ModulePhase : uint32_t {
+        PreIl2Cpp  = unix_phase_pre_il2cpp,
+        PostIl2Cpp = unix_phase_post_il2cpp,
+        MenuReady  = unix_phase_menu_ready,
+    };
+    static_assert(static_cast<uint32_t>(ModulePhase::MenuReady) == unix_phase_menu_ready);
+
+    /// <summary>A point in one player's lifetime in the instance.</summary>
+    enum class PlayerPhase : uint32_t {
+        Awake          = unix_player_awake,
+        Joined         = unix_player_joined,
+        JoinedComplete = unix_player_joined_complete,
+        Left           = unix_player_left,
+        Update         = unix_player_update,
+    };
+    static_assert(static_cast<uint32_t>(PlayerPhase::Update) == unix_player_update);
+
+    /// <summary>Entering or leaving a world.</summary>
+    enum class WorldPhase : uint32_t { Entered = unix_world_entered, Left = unix_world_left };
+    static_assert(static_cast<uint32_t>(WorldPhase::Left) == unix_world_left);
+
+    /// <summary>A point in a UIPage's lifetime.</summary>
+    enum class PageEventKind : uint32_t {
+        Built = unix_page_built, Shown = unix_page_shown,       Hidden = unix_page_hidden,
+        Tick  = unix_page_tick,  SceneLoaded = unix_page_scene_loaded,
+    };
+    static_assert(static_cast<uint32_t>(PageEventKind::SceneLoaded) == unix_page_scene_loaded);
+
+    /// <summary>Whether a control changed because the user moved it, or because the host put it
+    /// back after a refused change.</summary>
+    enum class WidgetKind : uint32_t { Change = unix_wk_change, Restore = unix_wk_restore };
+    static_assert(static_cast<uint32_t>(WidgetKind::Restore) == unix_wk_restore);
+
+    /// <summary>Where an icon's image comes from.</summary>
+    enum class IconKind : uint32_t {
+        None      = unix_icon_none,       Bundle = unix_icon_bundle,
+        SpritePtr = unix_icon_sprite_ptr, VrcId  = unix_icon_vrc_id,
+    };
+    static_assert(static_cast<uint32_t>(IconKind::VrcId) == unix_icon_vrc_id);
+
+    /// <summary>What a bind note reports about one symbol.</summary>
+    enum class NoteKind : uint32_t {
+        Deprecated        = unix_note_deprecated,
+        Experimental      = unix_note_experimental,
+        Removed           = unix_note_removed,
+        Unknown           = unix_note_unknown,
+        HostTooOld        = unix_note_host_too_old,
+        SignatureMismatch = unix_note_signature_mismatch,
+        Denied            = unix_note_denied,
+        UndeclaredCap     = unix_note_undeclared_cap,
+        UnusedCap         = unix_note_unused_cap,
+        UnknownCap        = unix_note_unknown_cap,
+        SlotBudget        = unix_note_slot_budget,
+        UnavailableCount  = unix_note_unavailable_summary,
+        BadRequest        = unix_note_bad_request,
+    };
+    static_assert(static_cast<uint32_t>(NoteKind::BadRequest) == unix_note_bad_request);
+
+    /// <summary>What a call refused to do. `Status` is the raw ABI spelling of the same values.</summary>
+    enum class StatusCode : int32_t {
+        Ok      = unix_ok,        Absent = unix_e_absent,  Denied = unix_e_denied,
+        BadArg  = unix_e_arg,     State  = unix_e_state,   Thread = unix_e_thread,
+        Removed = unix_e_removed, Busy   = unix_e_busy,
+    };
+    static_assert(static_cast<int32_t>(StatusCode::Busy) == unix_e_busy);
 
     /// <summary>Severity carried by log.write and by Unity's own log callback.</summary>
     enum class LogLevel : uint32_t { Error = 0, Assert, Warning, Log, Exception };
@@ -258,6 +340,9 @@ namespace Bootstrap {
     using fn_menu_button_callback = void(__cdecl*)(uint32_t button_id);
     using fn_menu_slider_callback = void(__cdecl*)(uint32_t slider_id, float value);
     using fn_menu_enum_callback   = void(__cdecl*)(uint32_t selector_id, int32_t index);
+    using fn_menu_text_callback   = void(__cdecl*)(uint32_t input_id, char const* value,
+                                                   uint32_t value_len);
+    using fn_menu_list_callback   = void(__cdecl*)(uint32_t list_id, uint32_t row_index);
 
     using fn_user_select_callback = void(__cdecl*)(void* player, void* api_user,
         char const* display_name, uint32_t name_len,

@@ -7,7 +7,7 @@
 #define UNIX_ABI          1u
 #define UNIX_VER(ma, mi, pa) ((uint32_t)((ma) & 0xFFu) << 16 | \
                               (uint32_t)((mi) & 0xFFu) <<  8 | (uint32_t)((pa) & 0xFFu))
-#define UNIX_SDK_VERSION  UNIX_VER(7, 0, 0)
+#define UNIX_SDK_VERSION  UNIX_VER(7, 4, 0)
 #define UNIX_CC           __cdecl
 #define UNIX_BIND_REQ_V1  32u     // the FROZEN 7.0 stride floor, never sizeof (§3.2)
 
@@ -56,18 +56,26 @@ typedef enum : uint64_t {
     unix_cap_config = 1ull<<0,  unix_cap_fs = 1ull<<1,        unix_cap_menu = 1ull<<2,
     unix_cap_players = 1ull<<3, unix_cap_hooks = 1ull<<4,
     unix_cap_memory = 1ull<<5,  // reserved at 7.0: declarable, but no row carries it (§6.7)
-    unix_cap_net = 1ull<<6,     // likewise reserved: every net.* row is a tombstone (§6.7)
+    unix_cap_net = 1ull<<6,     // reserved at 7.0 when every net.* row was a tombstone; live at
+                                // 7.1, where it gates VRC.SDKBase.Networking (§6.7)
     unix_cap_clipboard = 1ull<<7, unix_cap_license = 1ull<<8,
     unix_cap_perf = 1ull<<9,    unix_cap_worldscripts = 1ull<<10,
     unix_cap_photon_veto = 1ull<<11, unix_cap_player_inject = 1ull<<12,
     unix_cap_telemetry = 1ull<<13,   unix_cap_studio = 1ull<<14, unix_cap_explorer = 1ull<<15,
     unix_cap_bus = 1ull<<16,         unix_cap_hotkey = 1ull<<17, unix_cap_introspect = 1ull<<18,
     unix_cap_resources = 1ull<<19,   unix_cap_host_settings = 1ull<<20,
-} unix_cap;                                        // 21 of 64 spent at 7.0
+    // Reading and driving world scripts: entry points, heap variables, local and networked
+    // events, and the RPC path. Separate from unix_cap_worldscripts, which is the host's own
+    // curated world-script bindings, not raw Udon.
+    unix_cap_udon = 1ull<<21,
+    // Drawing on VRChat's own HUD notification widgets. Separate from unix_cap_menu, which
+    // is the module's own menu surface rather than the client's notification stack.
+    unix_cap_notify = 1ull<<22,
+} unix_cap;                                        // 23 of 64 spent at 7.4
 
 // Every bit this ABI version defines. Widened with each new bit; §7.2 rung 3 masks the
 // grant with it, because a host holding only the enumerators cannot compute the complement.
-enum : uint64_t { unix_cap_all = (1ull << 21) - 1 };
+enum : uint64_t { unix_cap_all = (1ull << 23) - 1 };
 
 typedef enum : uint32_t { unix_host_native = 0, unix_host_vm, unix_host_static } unix_host_kind;
 
@@ -84,7 +92,7 @@ typedef enum : uint32_t {
     unix_menu_qm_pre_setup = 0, unix_menu_qm_setup, unix_menu_qm_post_setup,
     unix_menu_pre_ready, unix_menu_ready, unix_menu_late_ready,
     unix_menu_il2cpp_ready, unix_menu_world_loaded, unix_menu_players_ready,
-    unix_menu_renderer_ready
+    unix_menu_renderer_ready, unix_menu_mm_setup
 } unix_menu_phase;
 
 typedef enum : uint32_t {
@@ -94,7 +102,8 @@ typedef enum : uint32_t {
 
 typedef enum : uint32_t {
     unix_h_page = 1, unix_h_ctl, unix_h_plate, unix_h_tween, unix_h_sub,
-    unix_h_hotkey, unix_h_studio_page, unix_h_command, unix_h_hook
+    unix_h_hotkey, unix_h_studio_page, unix_h_command, unix_h_hook,
+    unix_h_am_page, unix_h_am_root
 } unix_handle_kind;   // NOT encoded in the handle: the host keeps {handle -> owner, kind} (§3.8)
 
 // Append-only, like note kinds. A module treats an unrecognised kind as a change.
@@ -174,7 +183,12 @@ struct unix_player_ev  { uint32_t size; unix_player_phase phase; void *player, *
 struct unix_scene_ev   { uint32_t size; int32_t handle, mode; uint32_t loaded;
                          static constexpr uint32_t kAbiTag = 0x73636e00u; };
 typedef enum : uint32_t { unix_world_entered = 0, unix_world_left } unix_world_phase;
+// `location` is the whole instance id -- `wrld_...:12345~region(eu)`, or `local:...` for a
+// local build -- so a module can tell a new instance of the same world from a re-entry, and
+// see the transitions `id` alone cannot show. Appended and size-guarded, so kAbiTag does not
+// move (§6.3). `id` stays the bare world id and is empty outside a published world.
 struct unix_world_ev   { uint32_t size; unix_world_phase phase; int32_t handle; unix_str id, name;
+                         unix_str location;
                          static constexpr uint32_t kAbiTag = 0x776c6400u; };
 // The Photon payload is a managed object, not a byte buffer: consumers call GetCode /
 // GetSender / GetCustomData / GetParameter / SetSender on IL2CPP::VRChat::EventData.
@@ -229,6 +243,8 @@ typedef void (UNIX_CC* unix_cb_hook)    (void* ud, const unix_hook_ev*);
 typedef void (UNIX_CC* unix_cb_page)    (void* ud, const unix_page_ev*);
 typedef bool (UNIX_CC* unix_cb_photon)  (void* ud, const unix_photon_ev*);
 typedef bool (UNIX_CC* unix_cb_avail)   (void* ud);   // Studio PageDesc::available
+typedef float(UNIX_CC* unix_cb_radial)  (void* ud);
+typedef void (UNIX_CC* unix_cb_radial_set)(void* ud, float v);
 
 /* ---- descriptor structs: every one leads with `size` (§3.11) ---- */
 
@@ -256,6 +272,13 @@ struct unix_enum_desc   { uint32_t size; unix_str label, config_key;
                           static constexpr uint32_t kAbiTag = 0x656e6d00u; };
 struct unix_foldout_desc{ uint32_t size; unix_str title; bool expanded, background, auto_separators;
                           static constexpr uint32_t kAbiTag = 0x666c6400u; };
+// A text field row, cloned from VRChat's own input field. There is no managed listener to
+// attach from a module, so the host polls the field and reports a settled value through
+// `on_change` with the text in unix_widget_ev::s. That string is the host's and is valid only
+// for the duration of the call.
+struct unix_text_desc   { uint32_t size; unix_str label, tooltip, value, config_key;
+                          unix_cb_widget on_change; void* ud;
+                          static constexpr uint32_t kAbiTag = 0x74786400u; };
 // Studio's PageDesc: the icon is a UIKit glyph string, the body draws outside any frame the
 // host owns, and `available` gates the page in the sidebar.
 struct unix_page_desc   { uint32_t size; unix_str id, title, icon_glyph; uint32_t group;
@@ -263,6 +286,16 @@ struct unix_page_desc   { uint32_t size; unix_str id, title, icon_glyph; uint32_
                           static constexpr uint32_t kAbiTag = 0x70676500u; };
 struct unix_cmd_desc    { uint32_t size; unix_str name, help; unix_cb_command on_run; void* ud;
                           static constexpr uint32_t kAbiTag = 0x63736400u; };
+// One item on the Action Menu wheel. The wheel rebuilds a page from its build callback on
+// every open, so a descriptor is submitted per build rather than retained.
+// `state` makes the item a toggle: the menu polls it for the tick, there is no on/off to set.
+// `page` makes it open another Action Menu page instead of firing `on_click`.
+// `icon` names a field of VRChat's own menu icon table (home, options, tools, back, ...);
+// `texture` is a UnityEngine.Texture2D and wins when both are given.
+struct unix_am_desc     { uint32_t size; unix_str label, icon; void* texture;
+                          unix_handle page; unix_cb_widget on_click; unix_cb_avail state;
+                          void* ud; bool back;
+                          static constexpr uint32_t kAbiTag = 0x616d6900u; };
 // `signature` and `is_static` are what HookPersistence::ResolveAndRegister needs to fill a
 // PendingHook; without them the class/method pair is ambiguous. Inline char arrays, not
 // unix_str: explorer.list_hooks writes this row back into caller storage (§3.6).
@@ -318,6 +351,7 @@ struct unix_vrc_player_offsets { uint32_t size;
                                  static constexpr uint32_t kAbiTag = 0x6f766100u; };
 struct unix_player_offsets     { uint32_t size;
                                  int32_t vrc_player_api, vrc_player, api_user, uspeaker;
+                                 int32_t user_model, user_model_api_user;
                                  static constexpr uint32_t kAbiTag = 0x706f6600u; };
 struct unix_nameplate_offsets  { uint32_t size;
                                  int32_t gameobject_contents, gameobject_sub_text,
@@ -331,6 +365,207 @@ struct unix_nameplate_offsets  { uint32_t size;
                                          gameobject_dev_icon, gameobject_group_info,
                                          gameobject_avatar_progress, gameobject_friend_icon;
                                  static constexpr uint32_t kAbiTag = 0x6e706f00u; };
+
+/* ---- player (VRCPlayerApi) and net (VRC.SDKBase.Networking) ---- */
+
+// Every flag one VRCPlayerApi answers, in one call: asking eleven times costs eleven managed
+// invokes for state that is read together.
+struct unix_player_info { uint32_t size; int32_t player_id;
+                          char display_name[128];
+                          bool is_local, is_master, is_instance_owner, is_moderator, is_super,
+                               is_suspended, is_valid, in_vr, grounded, vrc_plus;
+                          static constexpr uint32_t kAbiTag = 0x70696e00u; };
+
+struct unix_locomotion   { uint32_t size;
+                           float gravity, run_speed, walk_speed, strafe_speed, jump_impulse;
+                           bool immobilized;   // set only; VRChat exposes no getter
+                           static constexpr uint32_t kAbiTag = 0x6c6f6300u; };
+
+struct unix_voice        { uint32_t size;
+                           float gain, distance_near, distance_far, volumetric_radius;
+                           bool lowpass;
+                           static constexpr uint32_t kAbiTag = 0x766f6300u; };
+
+// Write-only: VRChat exposes setters for avatar audio and no getters, so a read would be a lie.
+struct unix_avatar_audio { uint32_t size;
+                           float gain, near_radius, far_radius, volumetric_radius;
+                           bool force_spatial, custom_curve;
+                           static constexpr uint32_t kAbiTag = 0x61766100u; };
+
+struct unix_avatar_scale { uint32_t size;
+                           float eye_height, eye_height_min, eye_height_max;
+                           bool manual_scaling_allowed;
+                           static constexpr uint32_t kAbiTag = 0x61767300u; };
+
+struct unix_storage_usage{ uint32_t size;
+                           int32_t player_data_used, player_data_limit,
+                                   player_object_used, player_object_limit;
+                           static constexpr uint32_t kAbiTag = 0x73747500u; };
+
+// player.set_nameplate_visible and set_nameplate_color both restore VRChat's own value rather
+// than take one, so the "off" case is a value, not a null pointer.
+typedef enum : int32_t {
+    unix_plate_restore = -1, unix_plate_hide = 0, unix_plate_show = 1
+} unix_plate_visibility;
+
+/* ---- udon ---- */
+
+// VRChat's NetworkEventTarget, in its order. Owner is 1 and Others is 2: the two are easy to
+// swap, and swapping them silently sends to the wrong audience.
+typedef enum : uint32_t {
+    unix_udon_all = 0, unix_udon_owner, unix_udon_others, unix_udon_self
+} unix_udon_target;
+
+// VRChat's RPC Destination, which is a wider audience list than NetworkEventTarget and is the
+// only path that reaches ONE named player.
+typedef enum : uint32_t {
+    unix_rpc_all = 0, unix_rpc_others, unix_rpc_owner, unix_rpc_master,
+    unix_rpc_all_buffered, unix_rpc_others_buffered, unix_rpc_local,
+    unix_rpc_all_buffer_one, unix_rpc_others_buffer_one, unix_rpc_target_player
+} unix_rpc_target;
+
+typedef enum : uint32_t {
+    unix_udon_v_none = 0, unix_udon_v_bool, unix_udon_v_int, unix_udon_v_uint,
+    unix_udon_v_float, unix_udon_v_string, unix_udon_v_object
+} unix_udon_value_kind;
+
+// One Udon value, in text plus a decoded scalar. `text` is inline, never a pointer: the host
+// fills this record into caller storage (§3.6). Writing it, `text` is the literal and
+// `type_name` optionally forces the type it is parsed as.
+struct unix_udon_value { uint32_t size; unix_udon_value_kind kind;
+                         bool b; int64_t i; double d; void* obj;
+                         char text[192], type_name[128];
+                         static constexpr uint32_t kAbiTag = 0x75647600u; };
+
+// One named argument for udon.run_event_params, which VRChat binds to the program's own
+// parameter symbols for the duration of the call.
+struct unix_udon_arg   { uint32_t size; char name[96]; unix_udon_value value;
+                         static constexpr uint32_t kAbiTag = 0x75646100u; };
+
+struct unix_udon_entry { uint32_t size; char name[128]; uint32_t address;
+                         bool exported, network_callable;
+                         int32_t max_events_per_second; uint32_t param_count;
+                         static constexpr uint32_t kAbiTag = 0x75646500u; };
+
+struct unix_udon_param { uint32_t size; char name[96], type_name[128], symbol[128];
+                         static constexpr uint32_t kAbiTag = 0x75647000u; };
+
+struct unix_udon_var   { uint32_t size; char name[128], type_name[128], text[192];
+                         uint32_t address; unix_udon_value_kind kind;
+                         bool synced; char interpolation[16];
+                         static constexpr uint32_t kAbiTag = 0x75647200u; };
+
+struct unix_udon_info  { uint32_t size; char script_name[128], object_name[128], object_path[256];
+                         uint32_t entry_count, symbol_count, heap_capacity, sync_method;
+                         bool ready, has_error, initialized, interactive,
+                              event_processing_disabled, networking_supported;
+                         static constexpr uint32_t kAbiTag = 0x75646900u; };
+
+typedef enum : uint32_t { unix_udon_input_button = 0, unix_udon_input_axis } unix_udon_input_kind;
+
+struct unix_udon_input { uint32_t size; unix_udon_input_kind kind;
+                         bool boolean_value; float float_value; uint32_t hand;
+                         static constexpr uint32_t kAbiTag = 0x75646e00u; };
+
+// Lifecycle: a behaviour finished loading, or asked for serialization.
+typedef enum : uint32_t { unix_udon_init = 0, unix_udon_serialize } unix_udon_life;
+struct unix_udon_ev    { uint32_t size; unix_udon_life kind; void *behaviour, *program;
+                         static constexpr uint32_t kAbiTag = 0x75646c00u; };
+
+// One networked Udon event crossing this client, before it is delivered or sent. Returning
+// false from the callback drops it: nothing runs locally, nothing goes out.
+typedef enum : uint32_t { unix_udon_inbound = 0, unix_udon_outbound } unix_udon_direction;
+struct unix_udon_net_ev { uint32_t size; unix_udon_direction direction;
+                          void *behaviour, *sender;              // sender: VRCPlayerApi, inbound only
+                          unix_str event, script;
+                          const unix_udon_value* params; uint32_t param_count;
+                          uint64_t serial; double time;
+                          static constexpr uint32_t kAbiTag = 0x75646e76u; };
+
+typedef void (UNIX_CC* unix_cb_udon)     (void* ud, const unix_udon_ev*);
+typedef bool (UNIX_CC* unix_cb_udon_net) (void* ud, const unix_udon_net_ev*);
+
+// VRChat's HUD notification widgets, oldest to newest. unix_notify_auto picks the best one the
+// running client has: the Voyager toast when that HUD is up, else the carousel toast.
+typedef enum : uint32_t {
+    unix_notify_auto = 0,
+    unix_notify_card,        // legacy NotificationHud card: icon with a ring timer, two lines
+    unix_notify_pill,        // SpecialNotification: centre pill, one line, no countdown
+    unix_notify_banner,      // SpecialNotification with image_url: full image panel
+    unix_notify_toast,       // carousel toast: one line, icon, queued three at a time
+    unix_notify_event,       // carousel toast with title, body and a badge
+    unix_notify_voyager,     // Voyager small: stacks, several on screen at once
+    unix_notify_voyager_big, // Voyager large: ring timer, title and body, strictly sequential
+    unix_notify_announcement,// a menu page in VRChat's own styling: heading, body and buttons,
+                             // up until it is answered rather than for a duration
+} unix_notify_style;
+
+typedef enum : uint32_t {
+    unix_notify_centre = 0, unix_notify_left, unix_notify_right
+} unix_notify_placement;
+
+typedef enum : uint32_t {
+    unix_notify_low = 0, unix_notify_normal, unix_notify_high
+} unix_notify_priority;
+
+// Every widget is a single shared object, so several modules notifying at once are scheduled
+// rather than allowed to overwrite one another. These say what to do when a style is busy.
+enum : uint32_t {
+    unix_notify_f_none       = 0,
+    unix_notify_f_replace    = 1u<<0,   // drop this module's queued rows on the same channel
+    unix_notify_f_now        = 1u<<1,   // show at once, overwriting whatever is up
+    unix_notify_f_skip_busy  = 1u<<2,   // drop this one rather than queue it
+    unix_notify_f_coalesce   = 1u<<3,   // fold into a queued row with the same channel and text
+};
+
+// Everything every widget can show. A field a style has no slot for is ignored rather than
+// refused, so one description can be retargeted at another style without editing it.
+// An announcement's buttons report which one was pressed, by its ordinal among the button
+// rows. A notification taken down without an answer reports unix_notify_no_answer instead.
+typedef void (UNIX_CC* unix_cb_notify_action)(void* ud, uint32_t button);
+enum : uint32_t {
+    unix_notify_no_answer = 0xFFFFFFFFu,
+    // A toggle reports while the page stays up, so it is not the answer: the handler runs and
+    // the announcement goes on waiting for a button.
+    unix_notify_toggled   = 0x80000000u,
+};
+
+// An announcement is described as rows, top to bottom, so a module lays the page out rather
+// than filling fixed slots. Unknown kinds are skipped, which is what lets rows be added.
+typedef enum : uint32_t {
+    unix_ann_heading = 0,   // large title line
+    unix_ann_text,          // a paragraph
+    unix_ann_pill,          // the small tag above the heading, tinted
+    unix_ann_image,         // sprite in `icon`, `height` pixels tall
+    unix_ann_button,        // `text`, optional `icon`; tint marks it the primary one
+    unix_ann_separator,
+    unix_ann_toggle,        // `text` with a switch; its state is reported as a press
+    unix_ann_footer,        // small print under the buttons
+} unix_ann_row_kind;
+
+struct unix_ann_row { uint32_t size; unix_ann_row_kind kind;
+                      unix_str text; unix_icon icon; unix_color tint;
+                      float height; bool on;
+                      static constexpr uint32_t kAbiTag = 0x616e7277u; };
+
+struct unix_notification { uint32_t size; unix_notify_style style;
+                           unix_str title, text, badge_text, image_url;
+                           unix_str action_text, dismiss_text;   // the two-button shorthand
+                           const unix_ann_row* rows; uint32_t row_count;  // or the full layout
+                           unix_str header;              // the window's own title, "News"
+                           unix_cb_notify_action on_action; void* action_ud;
+                           bool closable;                // show the corner close button
+                           unix_icon icon, badge_icon;
+                           unix_color tint;              // alpha 0 keeps the widget's own colour
+                           unix_color text_color;        // the lines' colour; alpha 0 keeps VRChat's
+                           float text_scale;             // multiplies the lines' font size; <= 0 keeps it
+                           float seconds;                // <= 0 takes the style's default
+                           unix_notify_placement placement;
+                           unix_notify_priority priority;
+                           uint32_t channel;             // the module's own grouping tag, 0 for none
+                           uint32_t flags;               // unix_notify_f_*
+                           bool sound;
+                           static constexpr uint32_t kAbiTag = 0x6e746679u; };
 
 struct unix_module_desc {
     uint32_t size; void* user;
@@ -469,7 +704,8 @@ inline constexpr uint32_t kUnixAbiTags[] = {
     unix_cmd_ev::kAbiTag, unix_hook_ev::kAbiTag, unix_input_ev::kAbiTag,
     unix_page_ev::kAbiTag,
     unix_button_desc::kAbiTag, unix_toggle_desc::kAbiTag, unix_slider_desc::kAbiTag,
-    unix_enum_desc::kAbiTag, unix_foldout_desc::kAbiTag, unix_page_desc::kAbiTag,
+    unix_enum_desc::kAbiTag, unix_foldout_desc::kAbiTag, unix_text_desc::kAbiTag,
+    unix_page_desc::kAbiTag,
     unix_cmd_desc::kAbiTag, unix_hook_desc::kAbiTag, unix_log_options::kAbiTag,
     unix_module_info::kAbiTag, unix_hotkey_info::kAbiTag,
     unix_ws_info::kAbiTag, unix_ws_entry::kAbiTag, unix_ws_var::kAbiTag,

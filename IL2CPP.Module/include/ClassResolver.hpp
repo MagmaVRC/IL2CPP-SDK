@@ -1022,6 +1022,25 @@ namespace IL2CPP::Module {
                 }
             }
 
+            // Field enumeration comes up empty on a class whose fields the runtime has
+            // not materialised yet; the by-name export answers anyway, so a named query
+            // that found nothing gets one direct lookup before it is called a miss.
+            for (auto& query : m_fieldQueries) {
+                if (query.matched() || query.m_name.empty()) continue;
+                Class cur = m_klass;
+                for (int lookupDepth = 0; cur && lookupDepth < 64; ++lookupDepth) {
+                    if (Field f = cur.get_field(query.m_name)) {
+                        detail::FieldMatchCtx ctx;
+                        ctx.field = f;
+                        ctx.fieldClass = detail::ClassFromFieldType(f);
+                        ctx.isStatic = detail::is_field_static(f);
+                        ctx.name = query.m_name.c_str();
+                        if (query.matches(m_klass, ctx)) { query.capture(f); break; }
+                    }
+                    cur = m_includeInherited ? cur.parent() : Class{};
+                }
+            }
+
             bool ok = true;
             auto check = [&](bool valid, auto&& describe) {
                 if (valid) return true;

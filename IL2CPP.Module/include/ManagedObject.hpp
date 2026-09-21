@@ -16,6 +16,20 @@ namespace IL2CPP::Module {
         return reinterpret_cast<uintptr_t>(ptr) - lo <= range;
     }
 
+    // Reads one pointer without trusting the address. A field slot on a dead or recycled
+    // object holds whatever bytes were left there, and those pass every arithmetic test
+    // an inline check can afford -- the last one to fault was page-aligned and sat on a
+    // MEM_RESERVE base. __except(1) swallows only the access violation from this load.
+    [[nodiscard]] inline bool ReadPointerGuarded(void* addr, void** out) noexcept {
+        __try {
+            *out = *reinterpret_cast<void* volatile*>(addr);
+            return true;
+        } __except (1) {
+            *out = nullptr;
+            return false;
+        }
+    }
+
     // Runtime-layout offsets, cached once at Connect() from the Core exports table
     // (see il2cpp_exports::m_offDelegate*/m_offArray*/m_offObjectCachedPtr). Defaults
     // are the IL2CPP 2022.3/Unity 6 layout, so reads are correct even before Connect.
@@ -46,8 +60,16 @@ namespace IL2CPP::Module {
         void* m_native = nullptr;  // il2cppObject*
 
         [[nodiscard]] bool valid() const noexcept {
-            if (!IsValidPointer(m_native)) return false;
-            return IsValidPointer(*reinterpret_cast<void**>(m_native));
+            // The arithmetic tests are a free pre-filter, not the guarantee: every
+            // il2cppObject* and Il2CppClass* is 8-aligned, so they reject most garbage
+            // for the cost of an AND. The klass load itself is what actually decides,
+            // and it is guarded, because a field slot can hold an aligned address that
+            // is simply not mapped.
+            const auto self = reinterpret_cast<uintptr_t>(m_native);
+            if ((self & 7u) != 0 || !IsValidPointer(m_native)) return false;
+            void* klass = nullptr;
+            if (!ReadPointerGuarded(m_native, &klass)) return false;
+            return (reinterpret_cast<uintptr_t>(klass) & 7u) == 0 && IsValidPointer(klass);
         }
 
         [[nodiscard]] Class get_class_internal() const noexcept {
