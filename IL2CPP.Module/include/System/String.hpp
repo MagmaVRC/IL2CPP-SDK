@@ -40,6 +40,16 @@ namespace IL2CPP::Module::System {
             const int len = length();
             if (len <= 0) return {};
             const wchar_t* wc = ptr_at<const wchar_t>(kCharsOffset);
+            int ascii = 0;
+            while (ascii < len && wc[ascii] < 0x80) ++ascii;
+            if (ascii == len) {
+                std::string out;
+                out.resize_and_overwrite(static_cast<size_t>(len), [wc](char* p, size_t n) {
+                    for (size_t i = 0; i < n; ++i) p[i] = static_cast<char>(wc[i]);
+                    return n;
+                });
+                return out;
+            }
             const int utf8Len = WideCharToMultiByte(CP_UTF8, 0, wc, len, nullptr, 0, nullptr, nullptr);
             if (utf8Len <= 0) return {};
             std::string out;

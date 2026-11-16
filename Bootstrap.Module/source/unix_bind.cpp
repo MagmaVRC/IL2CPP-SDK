@@ -23,7 +23,11 @@ constexpr RowId kRowIds[kSymCount] = {
 std::mutex         g_nodeMutex;
 std::deque<Node>   g_nodePool;
 std::vector<Node*> g_nodeFree;
-std::unordered_map<unix_handle, Node*> g_nodeOwners;
+std::unordered_multimap<unix_handle, Node*> g_nodeOwners;
+
+struct PageLive { uint32_t live = 0; bool settled = false; };
+std::mutex g_pageMutex;
+std::unordered_map<unix_handle, PageLive> g_pageLive;
 
 std::mutex g_loadMutex;
 struct LoadReg { const void* value; std::function<void()> writeback; };
@@ -94,46 +98,126 @@ Node* AllocNodeRaw() {
 
 void FreeNode(Node* n) noexcept {
     if (!n) return;
+    std::function<void(const void*)> fn;
+    std::function<bool(const void*)> ret;
+    {
+        std::lock_guard<std::mutex> lock(g_nodeMutex);
+        n->owner = unix_null;
+        if (n->busy) { n->dead = true; return; }
+        fn.swap(n->fn);
+        ret.swap(n->ret);
+        n->dead = false;
+        g_nodeFree.push_back(n);
+    }
+}
+
+bool EnterNode(Node* n) noexcept {
     std::lock_guard<std::mutex> lock(g_nodeMutex);
-    n->fn = nullptr;
-    n->ret = nullptr;
-    g_nodeFree.push_back(n);
+    ++n->busy;
+    return !n->dead;
+}
+
+void LeaveNode(Node* n) noexcept {
+    bool release = false;
+    {
+        std::lock_guard<std::mutex> lock(g_nodeMutex);
+        if (n->busy) --n->busy;
+        release = n->busy == 0 && n->dead;
+    }
+    if (release) FreeNode(n);
+}
+
+void PageTrack(unix_handle page) {
+    if (page == unix_null) return;
+    std::lock_guard<std::mutex> lock(g_pageMutex);
+    ++g_pageLive[page].live;
+}
+
+void PageSettle(unix_handle page) noexcept {
+    std::lock_guard<std::mutex> lock(g_pageMutex);
+    const auto it = g_pageLive.find(page);
+    if (it != g_pageLive.end()) it->second.settled = true;
+}
+
+bool PageUntrack(unix_handle page) noexcept {
+    std::lock_guard<std::mutex> lock(g_pageMutex);
+    const auto it = g_pageLive.find(page);
+    if (it == g_pageLive.end()) return false;
+    if (it->second.live > 1) { --it->second.live; return false; }
+    const bool orphan = !it->second.settled;
+    g_pageLive.erase(it);
+    return orphan;
 }
 
 void OwnNode(unix_handle h, Node* n) {
     if (!n) return;
     if (h == unix_null) { FreeNode(n); return; }
     std::lock_guard<std::mutex> lock(g_nodeMutex);
-    g_nodeOwners[h] = n;
+    n->owner = h;
+    g_nodeOwners.emplace(h, n);
+}
+
+void ReleaseOwned(unix_handle h) noexcept {
+    if (h == unix_null) return;
+    for (;;) {
+        Node* n = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(g_nodeMutex);
+            const auto it = g_nodeOwners.find(h);
+            if (it == g_nodeOwners.end()) return;
+            n = it->second;
+            g_nodeOwners.erase(it);
+        }
+        FreeNode(n);
+    }
+}
+
+void ForgetNode(Node* n) noexcept {
+    if (!n) return;
+    bool release = false;
+    {
+        std::lock_guard<std::mutex> lock(g_nodeMutex);
+        if (n->owner == unix_null) {
+            release = static_cast<bool>(n->fn) || static_cast<bool>(n->ret);
+        } else {
+            const auto [first, last] = g_nodeOwners.equal_range(n->owner);
+            for (auto it = first; it != last; ++it) {
+                if (it->second != n) continue;
+                g_nodeOwners.erase(it);
+                release = true;
+                break;
+            }
+        }
+    }
+    if (release) FreeNode(n);
 }
 
 void Cancel(unix_handle h) {
+    UNIX_USE(core, cancel);
     if (h == unix_null) return;
     g_d.core_cancel(g_self, h);
-    Node* n = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(g_nodeMutex);
-        const auto it = g_nodeOwners.find(h);
-        if (it == g_nodeOwners.end()) return;
-        n = it->second;
-        g_nodeOwners.erase(it);
-    }
-    FreeNode(n);
+    ReleaseOwned(h);
 }
 
 void UNIX_CC TrampTask(void* ud) {
     auto* n = static_cast<Node*>(ud);
-    if (n && n->fn) n->fn(nullptr);
+    if (!n) return;
+    NodeScope s(n);
+    if (s && n->fn) n->fn(nullptr);
 }
 
 bool UNIX_CC TrampPhoton(void* ud, const unix_photon_ev* ev) {
     auto* n = static_cast<Node*>(ud);
-    return (n && n->ret) ? n->ret(ev) : true;
+    if (!n) return true;
+    NodeScope s(n);
+    return (s && n->ret) ? n->ret(ev) : true;
 }
 
 bool UNIX_CC TrampAvail(void* ud) {
     auto* n = static_cast<Node*>(ud);
-    return (n && n->ret) ? n->ret(nullptr) : true;
+    if (!n) return true;
+    NodeScope s(n);
+    return (s && n->ret) ? n->ret(nullptr) : true;
 }
 
 void RegisterLoad(const void* value, std::function<void()> writeback) {

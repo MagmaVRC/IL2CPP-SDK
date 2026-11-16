@@ -71,6 +71,10 @@ namespace IL2CPP::Module {
         [[nodiscard]] const char* access_modifier() const;
 
         void get_value(void* obj, void* out_value) const;
+        /// <summary>Write an instance field through il2cpp_field_set_value, which applies the GC write barrier.</summary>
+        /// <param name="obj">Object that owns the field.</param>
+        /// <param name="value">For a value-type field, a pointer to the value. For a reference-type field
+        /// (string, class, array), the object pointer itself, not its address.</param>
         void set_value(void* obj, void* value) const;
         void get_static_value(void* out_value) const;
         void set_static_value(void* value) const;

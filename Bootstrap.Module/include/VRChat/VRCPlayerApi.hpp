@@ -46,6 +46,11 @@ namespace IL2CPP::VRChat {
         [[nodiscard]] IL2CPP::Quaternion GetBoneRotation(HumanBodyBones bone);
 
         void SetVelocity(IL2CPP::Vector3 v);
+
+        /// <summary>Whether a teleport the client issued is on the stack on this thread,
+        /// which is what distinguishes it from one the world or the game issued.</summary>
+        [[nodiscard]] static bool TeleportInProgress() noexcept;
+
         void TeleportTo(IL2CPP::Vector3 pos, IL2CPP::Quaternion rot);
         void TeleportTo(IL2CPP::Vector3 pos, IL2CPP::Quaternion rot, SpawnOrientation o);
         void TeleportTo(IL2CPP::Vector3 pos, IL2CPP::Quaternion rot, SpawnOrientation o, bool lerpOnRemote);
@@ -124,6 +129,16 @@ namespace IL2CPP::VRChat {
         static VRCPlayerApi GetPlayerById(int id);
 
         static VRCPlayerApi GetLocalPlayer();
+    };
+
+    /// <summary>Marks the teleport made inside it as one the client asked for, so a hook
+    /// that blocks world teleports lets it through. The TeleportTo overloads above already
+    /// carry one; code that reaches the method itself has to open its own.</summary>
+    struct TeleportScope {
+        TeleportScope() noexcept;
+        ~TeleportScope() noexcept;
+        TeleportScope(const TeleportScope&) = delete;
+        TeleportScope& operator=(const TeleportScope&) = delete;
     };
 
 } // namespace IL2CPP::VRChat

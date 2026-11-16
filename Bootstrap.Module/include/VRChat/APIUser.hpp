@@ -50,6 +50,13 @@ namespace IL2CPP::VRChat {
         [[nodiscard]] std::string GetThumbnailUrl();
 
         [[nodiscard]] bool GetIsFriend();
+
+        /// <summary>Whether the local user is friends with a user id, answered from the
+        /// local user's own friend list.</summary>
+        /// <param name="userId">Target user id.</param>
+        /// <returns>False when the id is empty or the local user is not loaded yet.</returns>
+        [[nodiscard]] static bool IsFriendsWith(const std::string& userId);
+
         [[nodiscard]] std::string GetLocation();
         [[nodiscard]] std::vector<ApiBadge> GetBadges();
 

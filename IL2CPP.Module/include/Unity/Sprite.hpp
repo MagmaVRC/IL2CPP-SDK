@@ -53,6 +53,18 @@ namespace IL2CPP::Module::Unity {
             return Sprite{ MethodHandler::invoke<void*>(m, nullptr, params) };
         }
 
+        /// <summary>Create a sprite with 9-slice borders (left, bottom, right, top in pixels).</summary>
+        [[nodiscard]] static Sprite Create(void* texture, const Rect& rect, const Vector2& pivot,
+                                           float pixelsPerUnit, uint32_t extrude, MeshType meshType,
+                                           const Vector4& border) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Sprite"), IL2CPP_STR("Create"), 8);
+            Rect r = rect; Vector2 p = pivot; Vector4 b = border;
+            uint32_t meshTypeVal = static_cast<uint32_t>(meshType);
+            bool fallbackPhysics = false;
+            void* params[] = { texture, &r, &p, &pixelsPerUnit, &extrude, &meshTypeVal, &b, &fallbackPhysics };
+            return Sprite{ MethodHandler::invoke<void*>(m, nullptr, params) };
+        }
+
         static Sprite LoadFromFile(std::string_view path, float pixelsPerUnit = 100.0f) {
             auto tex = Texture2D::LoadFromFile(path);
             if (!tex) return {};

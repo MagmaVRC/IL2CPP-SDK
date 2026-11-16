@@ -1,5 +1,6 @@
 #pragma once
 #include "UIBehaviour.hpp"
+#include "Scrollbar.hpp"
 #include "../MethodHandler.hpp"
 #include <IL2CPP.Common/il2cpp_types.hpp>
 
@@ -139,6 +140,51 @@ namespace IL2CPP::Module::Unity {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.ScrollRect"), IL2CPP_STR("set_viewport"), 1);
             void* params[] = { rectTransform };
             MethodHandler::invoke(m, raw(), params);
+        }
+
+        /// <summary>Scrollbar driven by, and driving, the vertical offset; pass the Scrollbar's raw pointer.
+        /// Wiring hands the bar's <c>value</c> and <c>size</c> to this ScrollRect: it recomputes both from its own
+        /// viewport/content bounds on every layout pass and overwrites whatever a caller wrote, while a value
+        /// change on the bar writes back through SetVerticalNormalizedPosition to the content's anchoredPosition.
+        /// Published contract: wire the bar and then never write its value or size - read the offset from the
+        /// ScrollRect instead. A caller that wants to drive value and size itself must leave the bar unwired and
+        /// subscribe to onValueChanged by hand. Reserve the gutter yourself; see
+        /// <c>SetVerticalScrollbarVisibility</c>.</summary>
+        void SetVerticalScrollbar(void* scrollbar) {
+            static Method m; if (!m) m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.ScrollRect"), IL2CPP_STR("set_verticalScrollbar"), 1);
+            void* params[] = { scrollbar };
+            MethodHandler::invoke(m, raw(), params);
+        }
+        void SetVerticalScrollbar(const Scrollbar& scrollbar) {
+            SetVerticalScrollbar(scrollbar.raw());
+        }
+        [[nodiscard]] void* GetVerticalScrollbarRaw() const {
+            static Method m; if (!m) m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.ScrollRect"), IL2CPP_STR("get_verticalScrollbar"), 0);
+            return MethodHandler::invoke<void*>(m, raw());
+        }
+
+        /// <summary>0 Permanent, 1 AutoHide, 2 AutoHideAndExpandViewport. Permanent leaves the viewport rect
+        /// entirely to the caller: the ScrollRect never resizes it and any gutter is the caller's to reserve.</summary>
+        void SetVerticalScrollbarVisibility(int visibility) {
+            static Method m; if (!m) m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.ScrollRect"), IL2CPP_STR("set_verticalScrollbarVisibility"), 1);
+            void* params[] = { &visibility };
+            MethodHandler::invoke(m, raw(), params);
+        }
+        [[nodiscard]] int GetVerticalScrollbarVisibility() const {
+            static Method m; if (!m) m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.ScrollRect"), IL2CPP_STR("get_verticalScrollbarVisibility"), 0);
+            return MethodHandler::invoke<int>(m, raw());
+        }
+
+        /// <summary>Gap between the viewport and the vertical scrollbar; only applied under
+        /// AutoHideAndExpandViewport visibility.</summary>
+        void SetVerticalScrollbarSpacing(float spacing) {
+            static Method m; if (!m) m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.ScrollRect"), IL2CPP_STR("set_verticalScrollbarSpacing"), 1);
+            void* params[] = { &spacing };
+            MethodHandler::invoke(m, raw(), params);
+        }
+        [[nodiscard]] float GetVerticalScrollbarSpacing() const {
+            static Method m; if (!m) m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.ScrollRect"), IL2CPP_STR("get_verticalScrollbarSpacing"), 0);
+            return MethodHandler::invoke<float>(m, raw());
         }
 
         void SetNormalizedPosition(float value, int axis) {

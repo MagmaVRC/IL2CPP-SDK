@@ -7,7 +7,7 @@
 #define UNIX_ABI          1u
 #define UNIX_VER(ma, mi, pa) ((uint32_t)((ma) & 0xFFu) << 16 | \
                               (uint32_t)((mi) & 0xFFu) <<  8 | (uint32_t)((pa) & 0xFFu))
-#define UNIX_SDK_VERSION  UNIX_VER(7, 4, 0)
+#define UNIX_SDK_VERSION  UNIX_VER(8, 0, 0)
 #define UNIX_CC           __cdecl
 #define UNIX_BIND_REQ_V1  32u     // the FROZEN 7.0 stride floor, never sizeof (§3.2)
 
@@ -71,11 +71,16 @@ typedef enum : uint64_t {
     // Drawing on VRChat's own HUD notification widgets. Separate from unix_cap_menu, which
     // is the module's own menu surface rather than the client's notification stack.
     unix_cap_notify = 1ull<<22,
-} unix_cap;                                        // 23 of 64 spent at 7.4
+    // Client-to-client messages over the UNIx relay link, on module channels only.
+    unix_cap_relay = 1ull<<23,
+    unix_cap_avatar     = 1ull<<24,
+    unix_cap_actuation  = 1ull<<25,
+    unix_cap_hud        = 1ull<<26,
+} unix_cap;                                        // 27 of 64 spent at 8.0
 
 // Every bit this ABI version defines. Widened with each new bit; §7.2 rung 3 masks the
 // grant with it, because a host holding only the enumerators cannot compute the complement.
-enum : uint64_t { unix_cap_all = (1ull << 23) - 1 };
+enum : uint64_t { unix_cap_all = (1ull << 27) - 1 };
 
 typedef enum : uint32_t { unix_host_native = 0, unix_host_vm, unix_host_static } unix_host_kind;
 
@@ -103,11 +108,34 @@ typedef enum : uint32_t {
 typedef enum : uint32_t {
     unix_h_page = 1, unix_h_ctl, unix_h_plate, unix_h_tween, unix_h_sub,
     unix_h_hotkey, unix_h_studio_page, unix_h_command, unix_h_hook,
-    unix_h_am_page, unix_h_am_root
+    unix_h_am_page, unix_h_am_root, unix_h_hud,
+    unix_h_last = unix_h_hud
 } unix_handle_kind;   // NOT encoded in the handle: the host keeps {handle -> owner, kind} (§3.8)
 
 // Append-only, like note kinds. A module treats an unrecognised kind as a change.
-typedef enum : uint32_t { unix_wk_change = 0, unix_wk_restore = 1 } unix_widget_kind;
+typedef enum : uint32_t { unix_wk_change = 0, unix_wk_restore = 1, unix_wk_release = 2 } unix_widget_kind;
+
+typedef enum : uint32_t { unix_menu_quick = 0, unix_menu_main, unix_menu_other } unix_menu_kind;
+typedef enum : uint32_t {
+    unix_transition_none = 0, unix_transition_left, unix_transition_right,
+    unix_transition_bottom, unix_transition_in_place, unix_transition_takeover
+} unix_page_transition;
+typedef enum : uint32_t {
+    unix_tween_local_position = 0, unix_tween_anchored_position, unix_tween_size_delta,
+    unix_tween_local_scale, unix_tween_local_euler, unix_tween_color, unix_tween_alpha,
+    unix_tween_group_alpha, unix_tween_fill_amount, unix_tween_float
+} unix_tween_prop;
+typedef enum : uint32_t { unix_step_tween = 0, unix_step_wait } unix_tween_step_kind;
+typedef enum : uint32_t { unix_app_vr_mode = 0, unix_app_focus, unix_app_display } unix_app_kind;
+typedef enum : uint32_t { unix_mod_enabled = 0, unix_mod_setting } unix_module_ev_kind;
+typedef enum : uint32_t {
+    unix_page_reason_none = 0, unix_page_reason_navigate, unix_page_reason_back,
+    unix_page_reason_covered, unix_page_reason_replaced, unix_page_reason_menu_closed,
+    unix_page_reason_menu_opened, unix_page_reason_removed
+} unix_page_reason;
+typedef enum : uint32_t { unix_scroll_nearest = 0, unix_scroll_top, unix_scroll_center } unix_scroll_align;
+typedef enum : uint32_t { unix_clear_controls = 0, unix_clear_sub_pages = 1u << 0 } unix_clear_flags;
+typedef enum : uint32_t { unix_crumb_mine = 1u << 0, unix_crumb_native = 1u << 1, unix_crumb_top = 1u << 2 } unix_crumb_flags;
 
 typedef enum : uint32_t {
     unix_note_deprecated = 1, unix_note_experimental, unix_note_removed,
@@ -220,10 +248,39 @@ struct unix_input_ev   { uint32_t size; void* hwnd; uint32_t msg; uint64_t wpara
                          static constexpr uint32_t kAbiTag = 0x696e7000u; };
 // Page lifecycle, delivered to a UNIx::UIPage subclass (§6.4). `dt` is meaningful for Tick only.
 typedef enum : uint32_t {
-    unix_page_built = 0, unix_page_shown, unix_page_hidden, unix_page_tick, unix_page_scene_loaded
+    unix_page_built = 0, unix_page_shown, unix_page_hidden, unix_page_tick, unix_page_scene_loaded,
+    unix_page_released
 } unix_page_event;
 struct unix_page_ev    { uint32_t size; unix_handle page; unix_page_event kind; float dt;
+                         unix_page_reason reason;
                          static constexpr uint32_t kAbiTag = 0x70657600u; };
+// The host reads the stride from out[0].size and writes min(stride, sizeof) per entry.
+struct unix_page_crumb { uint32_t size; unix_handle page; uint32_t flags; char title[64];
+                         static constexpr uint32_t kAbiTag = 0x70637200u; };
+struct unix_menu_open_ev   { uint32_t size; unix_menu_kind menu; bool open;
+                             static constexpr uint32_t kAbiTag = 0x6d6f7000u; };
+// `name` belongs to the host and is valid only for the call.
+struct unix_native_page_ev { uint32_t size; void* page; unix_menu_kind menu; bool shown; unix_str name;
+                             static constexpr uint32_t kAbiTag = 0x6e706700u; };
+struct unix_hover_ev       { uint32_t size; unix_handle ctl;
+                             static constexpr uint32_t kAbiTag = 0x686f7600u; };
+struct unix_keyboard_ev    { uint32_t size; unix_handle request; unix_str text;
+                             static constexpr uint32_t kAbiTag = 0x6b626500u; };
+// `avatar_id` belongs to the host and is valid only for the call.
+struct unix_avatar_ev      { uint32_t size; void *api, *player, *api_avatar; unix_str avatar_id;
+                             bool local, fallback;
+                             static constexpr uint32_t kAbiTag = 0x61766500u; };
+struct unix_app_state      { uint32_t size; bool in_vr, vr_known, focused;
+                             uint32_t width, height, refresh_hz;
+                             static constexpr uint32_t kAbiTag = 0x61707300u; };
+struct unix_app_ev         { uint32_t size; unix_app_kind kind; bool on;
+                             uint32_t width, height, refresh_hz;
+                             static constexpr uint32_t kAbiTag = 0x61706500u; };
+// `name` and `key` belong to the host and are valid only for the call. A setting event names
+// this module's own key; an enabled event may name any module.
+struct unix_module_ev      { uint32_t size; unix_module_ev_kind kind; unix_str name;
+                             bool enabled, external; unix_str key;
+                             static constexpr uint32_t kAbiTag = 0x6d646500u; };
 
 /* ---- callback shapes: one per payload, never reused across payloads ---- */
 
@@ -245,6 +302,29 @@ typedef bool (UNIX_CC* unix_cb_photon)  (void* ud, const unix_photon_ev*);
 typedef bool (UNIX_CC* unix_cb_avail)   (void* ud);   // Studio PageDesc::available
 typedef float(UNIX_CC* unix_cb_radial)  (void* ud);
 typedef void (UNIX_CC* unix_cb_radial_set)(void* ud, float v);
+typedef void (UNIX_CC* unix_cb_menu_open)  (void* ud, const unix_menu_open_ev*);
+typedef void (UNIX_CC* unix_cb_native_page)(void* ud, const unix_native_page_ev*);
+typedef void (UNIX_CC* unix_cb_hover)      (void* ud, const unix_hover_ev*);
+typedef void (UNIX_CC* unix_cb_avatar)     (void* ud, const unix_avatar_ev*);
+typedef void (UNIX_CC* unix_cb_app)        (void* ud, const unix_app_ev*);
+typedef void (UNIX_CC* unix_cb_module)     (void* ud, const unix_module_ev*);
+
+/* ---- tween descriptors ---- */
+
+// `from_count` 0 starts from the current value; `to_count` 0 means the property's own arity.
+// `bound` receives the value every tick for unix_tween_float; it must outlive the tween, and the
+// host stops touching it once the tween's handle is cancelled.
+struct unix_tween_desc     { uint32_t size; void* target; unix_tween_prop property;
+                             unix_vec4 from, to; uint32_t from_count, to_count;
+                             float* bound; float duration_ms, delay_ms;
+                             uint32_t ease; float ease_params[4]; bool ease_has_params;
+                             int32_t loops; bool yoyo, unscaled;
+                             unix_cb_tween on_done; void* ud;
+                             static constexpr uint32_t kAbiTag = 0x74776400u; };
+// `with_previous` runs this tween together with the step before it.
+struct unix_tween_step     { uint32_t size; unix_tween_step_kind kind; bool with_previous; float wait_ms;
+                             unix_tween_desc tween;
+                             static constexpr uint32_t kAbiTag = 0x74777300u; };
 
 /* ---- descriptor structs: every one leads with `size` (§3.11) ---- */
 
@@ -269,6 +349,7 @@ struct unix_enum_desc   { uint32_t size; unix_str label, config_key;
                           const unix_str* options; uint32_t count; int32_t def;
                           bool sub_indicator; unix_cb_widget on_change; void* ud;
                           int32_t* bound;
+                          unix_str tooltip;
                           static constexpr uint32_t kAbiTag = 0x656e6d00u; };
 struct unix_foldout_desc{ uint32_t size; unix_str title; bool expanded, background, auto_separators;
                           static constexpr uint32_t kAbiTag = 0x666c6400u; };
@@ -279,6 +360,25 @@ struct unix_foldout_desc{ uint32_t size; unix_str title; bool expanded, backgrou
 struct unix_text_desc   { uint32_t size; unix_str label, tooltip, value, config_key;
                           unix_cb_widget on_change; void* ud;
                           static constexpr uint32_t kAbiTag = 0x74786400u; };
+struct unix_nav_desc    { uint32_t size; unix_page_transition transition; bool modal, transparent;
+                          static constexpr uint32_t kAbiTag = 0x6e766400u; };
+// min == max keeps the current range; <= 0 power or display_scale, or an empty format, keeps
+// the current value.
+struct unix_slider_range{ uint32_t size; float min, max, power, display_scale; unix_str format;
+                          static constexpr uint32_t kAbiTag = 0x736c7200u; };
+typedef void (UNIX_CC* unix_cb_keyboard)(void* ud, const unix_keyboard_ev*);
+// `limit` 0 means unlimited; nothing fires on cancel.
+struct unix_keyboard_desc { uint32_t size; unix_str title, initial, placeholder; int32_t limit;
+                            bool multiline, numeric; unix_cb_keyboard on_submit; void* ud;
+                            static constexpr uint32_t kAbiTag = 0x6b626400u; };
+// An icon kind of none keeps the registered icon; quality < 0 means unrated.
+struct unix_hud_sample  { uint32_t size; char text[64]; float value; bool numeric; char suffix[16];
+                          float quality; unix_icon icon;
+                          static constexpr uint32_t kAbiTag = 0x68777300u; };
+typedef bool (UNIX_CC* unix_cb_hud_sample)(void* ud, unix_hud_sample*);
+struct unix_hud_widget_desc { uint32_t size; unix_str id, title; unix_icon icon; float width, interval;
+                              bool default_on; unix_cb_hud_sample sample; void* ud;
+                              static constexpr uint32_t kAbiTag = 0x68776400u; };
 // Studio's PageDesc: the icon is a UIKit glyph string, the body draws outside any frame the
 // host owns, and `available` gates the page in the sidebar.
 struct unix_page_desc   { uint32_t size; unix_str id, title, icon_glyph; uint32_t group;
@@ -338,6 +438,33 @@ struct unix_license_product{ uint32_t size; char id[64], name[96]; uint64_t expi
                              static constexpr uint32_t kAbiTag = 0x6c707200u; };
 struct unix_license_redeem { uint32_t size; uint32_t status; char message[192];
                              static constexpr uint32_t kAbiTag = 0x6c726400u; };
+// The user the QuickMenu's user page has selected. `kind` is UserPageKind, `rank` PlayerRank;
+// `player_id` is the Photon actor number, -1 for a user outside the instance. The 7.7 tail is
+// appended and size-guarded: `joined_ms` is time in the instance, 0 when unknown.
+struct unix_user_info      { uint32_t size; char user_id[64], display_name[128], avatar_id[64],
+                             platform[32], status[32];
+                             uint32_t kind, rank; int32_t player_id;
+                             bool is_local, in_instance, is_friend, on_mobile, age_verified;
+                             char avatar_name[96], avatar_release[16];
+                             uint64_t joined_ms;
+                             static constexpr uint32_t kAbiTag = 0x75696e00u; };
+
+// One pill in the info strip under the user page's profile header.
+typedef enum : uint32_t {
+    unix_pill_custom = 0, unix_pill_user_id, unix_pill_actor_id, unix_pill_avatar_name,
+    unix_pill_avatar_release, unix_pill_platform, unix_pill_rank, unix_pill_instance_time,
+    unix_pill_friend, unix_pill_client_fps, unix_pill_client_ping,
+} unix_user_pill_kind;
+// Filled by a provider. Empty `copy` makes the pill inert; `color` applies when `tinted`.
+struct unix_user_pill_out  { uint32_t size; char text[96], copy[128], tooltip[160];
+                             unix_color color; bool tinted;
+                             static constexpr uint32_t kAbiTag = 0x75706f00u; };
+typedef bool (UNIX_CC* unix_cb_user_pill)(void* ud, const unix_user_ev*, unix_user_pill_out*);
+// `provide` is required for unix_pill_custom and overrides the built-in text of any other kind.
+// `line` is 0 or 1; `audience` is UserPageAudience bits, 0 meaning all.
+struct unix_user_pill_desc { uint32_t size; uint32_t kind, line, audience;
+                             unix_cb_user_pill provide; void* ud;
+                             static constexpr uint32_t kAbiTag = 0x75706400u; };
 
 // deob.offsets payloads (§6.6). Offsets only: vrc_types.hpp's structs carry live IL2CPP class,
 // singleton and method pointers this row must not hand out, and have no leading `size`.
@@ -401,6 +528,10 @@ struct unix_storage_usage{ uint32_t size;
                            int32_t player_data_used, player_data_limit,
                                    player_object_used, player_object_limit;
                            static constexpr uint32_t kAbiTag = 0x73747500u; };
+
+struct unix_location     { uint32_t size; bool in_world;
+                           char world_id[64], instance_id[192], full[256], world_name[128], owner_id[64];
+                           static constexpr uint32_t kAbiTag = 0x6c636e00u; };
 
 // player.set_nameplate_visible and set_nameplate_color both restore VRChat's own value rather
 // than take one, so the "off" case is a value, not a null pointer.
@@ -567,6 +698,58 @@ struct unix_notification { uint32_t size; unix_notify_style style;
                            bool sound;
                            static constexpr uint32_t kAbiTag = 0x6e746679u; };
 
+/* ---- relay: client-to-client messages over the UNIx relay link ---- */
+
+typedef enum : uint32_t {
+    unix_relay_down = 0, unix_relay_connecting, unix_relay_no_messaging, unix_relay_ready
+} unix_relay_state;
+
+typedef enum : uint32_t { unix_relay_user = 0, unix_relay_room } unix_relay_route;
+
+typedef enum : uint32_t {
+    unix_relay_delivered = 0, unix_relay_expired, unix_relay_dropped
+} unix_relay_result;
+
+// Channels below unix_relay_module_channel_min are first-party; the host refuses them here.
+enum : uint32_t { unix_relay_module_channel_min = 0x8000u, unix_relay_channel_max = 0xFFFFu };
+
+enum : uint32_t { unix_relay_sub_allow_disputed = 1u<<0 };
+enum : uint32_t { unix_relay_send_datagram = 1u<<0 };
+
+// The sender as the relay stamped it; `slot` and `actor_id` are set only when `same_room`.
+// `user_id` and `data` are the host's and valid only for the duration of the call.
+struct unix_relay_msg_ev { uint32_t size; unix_str user_id; unix_relay_route route;
+                           uint32_t slot, actor_id;
+                           bool same_room, verified, disputed, reliable;
+                           uint32_t channel; const uint8_t* data; uint32_t len;
+                           static constexpr uint32_t kAbiTag = 0x726c6d00u; };
+// One room stream value; an empty body means the sender cleared that key.
+struct unix_relay_stream_ev { uint32_t size; unix_str user_id; uint32_t slot, actor_id;
+                              bool same_room, verified, disputed;
+                              uint32_t channel, key; const uint8_t* data; uint32_t len;
+                              static constexpr uint32_t kAbiTag = 0x726c7300u; };
+struct unix_relay_peer { uint32_t size; uint32_t actor_id, slot;
+                         bool verified, stale, disputed, self;
+                         static constexpr uint32_t kAbiTag = 0x726c7000u; };
+
+typedef void (UNIX_CC* unix_cb_relay_msg)   (void* ud, const unix_relay_msg_ev*);
+typedef bool (UNIX_CC* unix_cb_relay_accept)(void* ud, const unix_relay_msg_ev*);
+typedef void (UNIX_CC* unix_cb_relay_stream)(void* ud, const unix_relay_stream_ev*);
+typedef void (UNIX_CC* unix_cb_relay_result)(void* ud, unix_relay_result);
+
+// `accept` runs before any ack; false refuses the message so the sender resends. `reliable`
+// is not set in the event it sees. `on_revoked` runs once if the host revokes the
+// subscription after repeated faults. All three receive `ud`.
+struct unix_relay_sub_desc  { uint32_t size; uint32_t channel, flags;
+                              unix_cb_relay_msg on_message; unix_cb_relay_accept accept;
+                              unix_cb_task on_revoked; void* ud;
+                              static constexpr uint32_t kAbiTag = 0x726c6400u; };
+// Zero-filled means reliable with the default 10 s TTL. `on_result` runs once for a reliable
+// send the host accepted, and never once the module is torn down.
+struct unix_relay_send_desc { uint32_t size; uint32_t flags, ttl_ms, replace_key;
+                              unix_cb_relay_result on_result; void* ud;
+                              static constexpr uint32_t kAbiTag = 0x726c6f00u; };
+
 struct unix_module_desc {
     uint32_t size; void* user;
     bool (UNIX_CC* on_load)(void*, const unix_context*);
@@ -710,8 +893,23 @@ inline constexpr uint32_t kUnixAbiTags[] = {
     unix_module_info::kAbiTag, unix_hotkey_info::kAbiTag,
     unix_ws_info::kAbiTag, unix_ws_entry::kAbiTag, unix_ws_var::kAbiTag,
     unix_license_user::kAbiTag, unix_license_product::kAbiTag, unix_license_redeem::kAbiTag,
+    unix_user_info::kAbiTag, unix_user_pill_out::kAbiTag, unix_user_pill_desc::kAbiTag,
     unix_vrc_player_offsets::kAbiTag, unix_player_offsets::kAbiTag,
     unix_nameplate_offsets::kAbiTag,
+    unix_relay_msg_ev::kAbiTag, unix_relay_stream_ev::kAbiTag, unix_relay_peer::kAbiTag,
+    unix_relay_sub_desc::kAbiTag, unix_relay_send_desc::kAbiTag,
+    unix_am_desc::kAbiTag, unix_player_info::kAbiTag, unix_locomotion::kAbiTag,
+    unix_voice::kAbiTag, unix_avatar_audio::kAbiTag, unix_avatar_scale::kAbiTag,
+    unix_storage_usage::kAbiTag, unix_udon_value::kAbiTag, unix_udon_arg::kAbiTag,
+    unix_udon_entry::kAbiTag, unix_udon_param::kAbiTag, unix_udon_var::kAbiTag,
+    unix_udon_info::kAbiTag, unix_udon_input::kAbiTag, unix_udon_ev::kAbiTag,
+    unix_udon_net_ev::kAbiTag, unix_ann_row::kAbiTag, unix_notification::kAbiTag,
+    unix_page_crumb::kAbiTag, unix_menu_open_ev::kAbiTag, unix_native_page_ev::kAbiTag,
+    unix_hover_ev::kAbiTag, unix_nav_desc::kAbiTag, unix_slider_range::kAbiTag,
+    unix_tween_desc::kAbiTag, unix_tween_step::kAbiTag, unix_keyboard_ev::kAbiTag,
+    unix_keyboard_desc::kAbiTag, unix_hud_sample::kAbiTag, unix_hud_widget_desc::kAbiTag,
+    unix_avatar_ev::kAbiTag, unix_app_state::kAbiTag, unix_app_ev::kAbiTag,
+    unix_location::kAbiTag, unix_module_ev::kAbiTag,
 };
 consteval bool UnixTagsAreUnique() {
     for (size_t i = 1; i < sizeof(kUnixAbiTags) / sizeof(*kUnixAbiTags); ++i)

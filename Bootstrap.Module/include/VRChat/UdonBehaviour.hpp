@@ -77,6 +77,30 @@ namespace IL2CPP::VRChat {
         std::vector<UdonNetworkParam> parameters;
     };
 
+    /// <summary>The largest inline preview a collection summary accepts.</summary>
+    inline constexpr int kMaxCollectionPreview = 256;
+
+    /// <summary>How many elements the text summary of an array, List or Dictionary in a heap
+    /// slot shows inline. Honors a ScopedCollectionPreview on the calling thread.</summary>
+    [[nodiscard]] int GetCollectionPreviewCount();
+
+    /// <summary>Set how many elements a collection summary shows inline, for every thread.</summary>
+    /// <param name="count">Element count, clamped to 0..kMaxCollectionPreview. 0 shows only the shape and count.</param>
+    void SetCollectionPreviewCount(int count);
+
+    /// <summary>Overrides the collection preview count on the calling thread while alive.</summary>
+    class ScopedCollectionPreview {
+    public:
+        /// <param name="count">Element count for this thread; negative keeps the global value.</param>
+        explicit ScopedCollectionPreview(int count);
+        ~ScopedCollectionPreview();
+        ScopedCollectionPreview(const ScopedCollectionPreview&) = delete;
+        ScopedCollectionPreview& operator=(const ScopedCollectionPreview&) = delete;
+
+    private:
+        int m_previous;
+    };
+
     /// <summary>Box a literal as a managed value: as `typeName` when one is given, otherwise as
     /// the closest primitive the text itself names (true/false, an integer, a decimal, or a
     /// string).</summary>
@@ -234,6 +258,19 @@ namespace IL2CPP::VRChat {
 
         /// <summary>Get the IUdonProgram this behaviour runs, or null when no program is loaded.</summary>
         [[nodiscard]] void* GetProgram() const;
+
+        /// <summary>The program the read-only accessors see: the live one, else a copy retrieved
+        /// from serializedProgramAsset by LoadAssetProgram.</summary>
+        [[nodiscard]] void* GetInspectProgram() const;
+
+        /// <summary>For a behaviour that never initialized, deserialize its program from
+        /// serializedProgramAsset so the read-only accessors can inspect it. The copy is cached
+        /// per asset; GetProgram, GetVM and every write keep seeing only the live program.</summary>
+        /// <returns>True when a live or retrieved program is available.</returns>
+        bool LoadAssetProgram() const;
+
+        /// <summary>Release every program retrieved by LoadAssetProgram.</summary>
+        static void ClearAssetPrograms();
 
         /// <summary>Get the live IUdonHeap, preferring the VM's heap over the program's.</summary>
         [[nodiscard]] void* GetHeap() const;

@@ -31,6 +31,10 @@ namespace IL2CPP::VRChat {
         [[nodiscard]] int GetVersion();
         /// <summary>Author-assigned tags.</summary>
         [[nodiscard]] std::vector<std::string> GetTags();
+        /// <summary>Asset url of the package for the running platform.</summary>
+        [[nodiscard]] std::string GetAssetUrl();
+        /// <summary>Unity version the running platform's package was built with.</summary>
+        [[nodiscard]] std::string GetUnityVersion();
     };
 
 } // namespace IL2CPP::VRChat

@@ -89,7 +89,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return Component{};
             Type t = klass.get_type();
             if (!t) return Component{};
-            return GetComponent(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()));
+            return GetComponent(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)));
         }
 
         /// <summary>Get every component of a named type on this object and its descendants.</summary>
@@ -119,7 +119,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return Component{};
             Type t = klass.get_type();
             if (!t) return Component{};
-            return GetComponentInChildren(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()), includeInactive);
+            return GetComponentInChildren(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)), includeInactive);
         }
 
         /// <summary>Get a component in parent.</summary>
@@ -135,7 +135,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return Component{};
             Type t = klass.get_type();
             if (!t) return Component{};
-            return GetComponentInParent(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()), includeInactive);
+            return GetComponentInParent(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)), includeInactive);
         }
 
         /// <summary>Add a component.</summary>
@@ -151,7 +151,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return Component{};
             Type t = klass.get_type();
             if (!t) return Component{};
-            return AddComponent(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()));
+            return AddComponent(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)));
         }
 
 
@@ -169,7 +169,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return {};
             Type t = klass.get_type();
             if (!t) return {};
-            return GetComponents(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()));
+            return GetComponents(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)));
         }
 
         /// <summary>Get all components of the specified class by name.</summary>
@@ -194,7 +194,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return {};
             Type t = klass.get_type();
             if (!t) return {};
-            return GetComponentsAs<T>(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()));
+            return GetComponentsAs<T>(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)));
         }
 
         /// <summary>Get all components of the specified type in children.</summary>
@@ -211,7 +211,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return {};
             Type t = klass.get_type();
             if (!t) return {};
-            return GetComponentsInChildren(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()), includeInactive);
+            return GetComponentsInChildren(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)), includeInactive);
         }
 
         /// <summary>Get all components in children and return as std::vector&lt;T&gt;.</summary>
@@ -238,7 +238,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return {};
             Type t = klass.get_type();
             if (!t) return {};
-            return GetComponentsInParent(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()), includeInactive);
+            return GetComponentsInParent(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)), includeInactive);
         }
 
         /// <summary>Get all components in parent and return as std::vector&lt;T&gt;.</summary>
@@ -270,7 +270,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return false;
             Type t = klass.get_type();
             if (!t) return false;
-            return TryGetComponent(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()), out);
+            return TryGetComponent(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)), out);
         }
 
 
@@ -280,11 +280,21 @@ namespace IL2CPP::Module::Unity {
         }
 
         [[nodiscard]] bool GetActiveSelf() const {
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("get_activeSelf_Injected"), 1,
+                IL2CPP_STR("UnityEngine.GameObject::get_activeSelf_Injected(System.IntPtr)"));
+            if (auto fn = ic.as<bool(IL2CPP_CALLTYPE)(void*)>())
+                if (void* self = ICall::unity_self(raw())) return fn(self);
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("get_activeSelf"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }
 
         [[nodiscard]] bool GetActiveInHierarchy() const {
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("get_activeInHierarchy_Injected"), 1,
+                IL2CPP_STR("UnityEngine.GameObject::get_activeInHierarchy_Injected(System.IntPtr)"));
+            if (auto fn = ic.as<bool(IL2CPP_CALLTYPE)(void*)>())
+                if (void* self = ICall::unity_self(raw())) return fn(self);
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("get_activeInHierarchy"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }

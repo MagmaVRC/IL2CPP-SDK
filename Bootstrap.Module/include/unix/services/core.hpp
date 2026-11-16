@@ -278,75 +278,6 @@ public:
     template <class = void> [[nodiscard]] std::vector<std::string> GetStringArray(std::string_view k) const {
         return GetArray<std::string>(k);
     }
-
-    // One release only: the shipped snake_case surface, one line each, deleted in 7.1.
-    template <class = void> void set_int(std::string_view k, int32_t v) { SetInt(k, v); }
-    template <class = void> int32_t get_int(std::string_view k, int32_t d = 0) { return GetInt(k, d); }
-    template <class = void> void set_float(std::string_view k, float v) { SetFloat(k, v); }
-    template <class = void> float get_float(std::string_view k, float d = 0.f) { return GetFloat(k, d); }
-    template <class = void> void set_string(std::string_view k, std::string_view v) { SetString(k, v); }
-    template <class = void> std::string get_string(std::string_view k, std::string_view d = "") { return GetString(k, d); }
-    template <class = void> void set_bool(std::string_view k, bool v) { SetBool(k, v); }
-    template <class = void> bool get_bool(std::string_view k, bool d = false) { return GetBool(k, d); }
-    template <class = void> void save() { Save(); }
-    template <class = void> bool has_key(std::string_view k) { return HasKey(k); }
-    template <class = void> void remove_key(std::string_view k) { RemoveKey(k); }
-    template <class = void> void clear() { Clear(); }
-    template <class = void> std::vector<std::string> get_keys() { return GetKeys(); }
-    template <class = void> void set_double(std::string_view k, double v) { SetDouble(k, v); }
-    template <class = void> double get_double(std::string_view k, double d = 0.0) { return GetDouble(k, d); }
-    template <class = void> void set_int64(std::string_view k, int64_t v) { SetI64(k, v); }
-    template <class = void> int64_t get_int64(std::string_view k, int64_t d = 0) { return GetI64(k, d); }
-    template <class = void> void set_uint32(std::string_view k, uint32_t v) { SetU32(k, v); }
-    template <class = void> uint32_t get_uint32(std::string_view k, uint32_t d = 0) { return GetU32(k, d); }
-    template <class = void> void set_vec2(std::string_view k, float x, float y) { SetVec2(k, Vec2{ x, y }); }
-    template <class = void> std::pair<float, float> get_vec2(std::string_view k, float dx = 0, float dy = 0) {
-        const Vec2 v = GetVec2(k, Vec2{ dx, dy });
-        return { v.x, v.y };
-    }
-    template <class = void> void set_vec3(std::string_view k, float x, float y, float z) { SetVec3(k, Vec3{ x, y, z }); }
-    template <class = void> std::tuple<float, float, float> get_vec3(std::string_view k,
-                                                                    float dx = 0, float dy = 0, float dz = 0) {
-        const Vec3 v = GetVec3(k, Vec3{ dx, dy, dz });
-        return { v.x, v.y, v.z };
-    }
-    template <class = void> void set_vec4(std::string_view k, float x, float y, float z, float w) {
-        SetVec4(k, Vec4{ x, y, z, w });
-    }
-    template <class = void> std::tuple<float, float, float, float> get_vec4(std::string_view k,
-                                                                           float dx = 0, float dy = 0,
-                                                                           float dz = 0, float dw = 0) {
-        const Vec4 v = GetVec4(k, Vec4{ dx, dy, dz, dw });
-        return { v.x, v.y, v.z, v.w };
-    }
-    template <class = void> void set_int_array(std::string_view k, const std::vector<int32_t>& v) { SetArray<int32_t>(k, v); }
-    template <class = void> std::vector<int32_t> get_int_array(std::string_view k) { return GetArray<int32_t>(k); }
-    template <class = void> void set_float_array(std::string_view k, const std::vector<float>& v) { SetArray<float>(k, v); }
-    template <class = void> std::vector<float> get_float_array(std::string_view k) { return GetArray<float>(k); }
-    template <class = void> void set_double_array(std::string_view k, const std::vector<double>& v) { SetArray<double>(k, v); }
-    template <class = void> std::vector<double> get_double_array(std::string_view k) { return GetArray<double>(k); }
-    template <class = void> void set_string_array(std::string_view k, const std::vector<std::string>& v) { SetStringArray(k, v); }
-    template <class = void> std::vector<std::string> get_string_array(std::string_view k) { return GetStringArray(k); }
-    template <class = void> void set_bool_array(std::string_view k, const std::vector<bool>& v) { SetArray(k, v); }
-    template <class = void> std::vector<bool> get_bool_array(std::string_view k) { return GetBoolArray(k); }
-    template <class = void> void set_string_map(std::string_view k,
-                                                const std::vector<std::pair<std::string, std::string>>& e) {
-        SetStringMap(k, std::span<const std::pair<std::string, std::string>>(e.data(), e.size()));
-    }
-    template <class = void> std::vector<std::pair<std::string, std::string>> get_string_map(std::string_view k) {
-        return GetStringMap(k);
-    }
-
-    template <class = void> [[deprecated("use SetColor(key, Color)")]]
-    void set_color(std::string_view k, float r, float g, float b, float a) {
-        SetColor(k, Color{ r, g, b, a });
-    }
-    template <class = void> [[deprecated("use GetColor(key, Color)")]] [[nodiscard]]
-    std::tuple<float, float, float, float> get_color(std::string_view k, float r = 0, float g = 0,
-                                                     float b = 0, float a = 1) {
-        const Color c = GetColor(k, Color{ r, g, b, a });
-        return { c.r, c.g, c.b, c.a };
-    }
 };
 
 /// <summary>The client log. Every write also reaches the console fan-out.</summary>
@@ -996,6 +927,85 @@ public:
         if (detail::g_d.modules_info(detail::g_self, Sv(name), &i) != unix_ok) return std::nullopt;
         return i;
     }
+    /// <summary>Be told when any module is enabled or disabled. The name is the host's and
+    /// lives only for the call.</summary>
+    template <class = void> [[nodiscard]] Subscription
+    OnModuleToggled(std::function<void(std::string_view name, bool enabled)> fn) {
+        UNIX_USE(modules, on_changed);
+        if (!fn) return {};
+        detail::Node* n = detail::NodeFor<unix_module_ev>([f = std::move(fn)](const unix_module_ev& e) {
+            if (e.kind == unix_mod_enabled) f(View(e.name), e.enabled);
+        });
+        const unix_handle h = detail::g_d.modules_on_changed(detail::g_self, 1u << unix_mod_enabled,
+                                                             &detail::Tramp<unix_module_ev>, n);
+        if (h == unix_null) { detail::FreeNode(n); return {}; }
+        return Subscription{ h, n };
+    }
+    /// <summary>Be told when one of this module's own settings changes. The key is the host's
+    /// and lives only for the call.</summary>
+    template <class = void> [[nodiscard]] Subscription
+    OnSettingChanged(std::function<void(std::string_view key)> fn) {
+        UNIX_USE(modules, on_changed);
+        if (!fn) return {};
+        detail::Node* n = detail::NodeFor<unix_module_ev>([f = std::move(fn)](const unix_module_ev& e) {
+            if (e.kind == unix_mod_setting) f(View(e.key));
+        });
+        const unix_handle h = detail::g_d.modules_on_changed(detail::g_self, 1u << unix_mod_setting,
+                                                             &detail::Tramp<unix_module_ev>, n);
+        if (h == unix_null) { detail::FreeNode(n); return {}; }
+        return Subscription{ h, n };
+    }
+};
+
+/// <summary>The application: VR mode, window focus and display.</summary>
+class App {
+public:
+    /// <summary>VR mode, focus and display in one call. Zeroed when the host cannot say.</summary>
+    template <class = void> [[nodiscard]] AppState GetState() const {
+        UNIX_USE(core, app_state);
+        AppState s{};
+        s.size = sizeof(s);
+        if (detail::g_d.core_app_state(detail::g_self, &s) != unix_ok) {
+            s = AppState{};
+            s.size = sizeof(s);
+        }
+        return s;
+    }
+    template <class = void> [[nodiscard]] bool IsVr() const { return GetState().in_vr; }
+    template <class = void> [[nodiscard]] bool IsFocused() const { return GetState().focused; }
+    /// <summary>Be told when the client enters or leaves VR.</summary>
+    template <class = void> [[nodiscard]] Subscription OnVrMode(std::function<void(bool vr)> fn) {
+        const bool any = static_cast<bool>(fn);
+        return Subscribe(unix_app_vr_mode, [f = std::move(fn)](const unix_app_ev& e) { f(e.on); }, any);
+    }
+    /// <summary>Be told when the game window gains or loses focus.</summary>
+    template <class = void> [[nodiscard]] Subscription OnFocus(std::function<void(bool focused)> fn) {
+        const bool any = static_cast<bool>(fn);
+        return Subscribe(unix_app_focus, [f = std::move(fn)](const unix_app_ev& e) { f(e.on); }, any);
+    }
+    /// <summary>Be told when the display size or refresh rate changes.</summary>
+    template <class = void> [[nodiscard]] Subscription OnDisplay(std::function<void(const AppEvent&)> fn) {
+        const bool any = static_cast<bool>(fn);
+        return Subscribe(unix_app_display, [f = std::move(fn)](const unix_app_ev& e) { f(e); }, any);
+    }
+    /// <summary>Switch the client into or out of VR. Experimental: opt in with UNIX0050 in the
+    /// manifest. unix_e_busy while a switch is already running.</summary>
+    template <class = void> Status RequestVr(bool vr) {
+        UNIX_USE(core, request_vr);
+        return detail::g_d.core_request_vr(detail::g_self, vr);
+    }
+private:
+    template <class F> [[nodiscard]] Subscription Subscribe(unix_app_kind kind, F&& fn, bool any) {
+        UNIX_USE(core, on_app_event);
+        if (!any) return {};
+        detail::Node* n = detail::NodeFor<unix_app_ev>([kind, g = std::forward<F>(fn)](const unix_app_ev& e) {
+            if (e.kind == kind) g(e);
+        });
+        const unix_handle h = detail::g_d.core_on_app_event(detail::g_self, 1u << kind,
+                                                            &detail::Tramp<unix_app_ev>, n);
+        if (h == unix_null) { detail::FreeNode(n); return {}; }
+        return Subscription{ h, n };
+    }
 };
 
 class Telemetry {
@@ -1027,6 +1037,11 @@ template <class> inline unix_host_kind Host::GetKind() const {
     return static_cast<unix_host_kind>(detail::g_d.core_module_kind(detail::g_self));
 }
 
+template <class> inline ThreadKind Host::GetThread() const {
+    UNIX_USE(core, thread);
+    return static_cast<ThreadKind>(detail::g_d.core_thread(detail::g_self));
+}
+
 template <class> inline bool Host::Has(std::string_view symbol) const {
     if (!detail::g_ctx || !detail::g_ctx->bind) return false;
     // Namespace- and function-scope statics, never automatics: the VM path range-checks both.
@@ -1050,6 +1065,7 @@ template <class> inline void Host::RunOnMain(std::function<void()> fn) {
 }
 
 template <class> inline bool Host::IsLive() const noexcept {
+    UNIX_USE(core, live);
     return detail::g_d.core_live(detail::g_self);
 }
 

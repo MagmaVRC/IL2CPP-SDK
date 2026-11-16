@@ -9,10 +9,13 @@
 #include <IL2CPP.Module/include/Unity/Object.hpp>
 #include <IL2CPP.Module/include/il2cpp_module.hpp>
 #include <cctype>
+#include <excpt.h>
 #include <cstdlib>
 #include <cstring>
 #include <format>
 #include <unordered_map>
+#include <atomic>
+#include <algorithm>
 
 namespace IL2CPP::VRChat {
 
@@ -23,6 +26,30 @@ namespace IL2CPP::VRChat {
     using IL2CPP::Module::MethodHandler;
     using IL2CPP::Module::Type;
     using IL2CPP::Module::System::String;
+
+    namespace {
+        std::atomic<int> g_ubCollectionPreview{ 16 };
+        thread_local int t_ubCollectionPreview = -1;
+
+        int UbClampPreview(int count) {
+            return count < 0 ? 0 : (count > kMaxCollectionPreview ? kMaxCollectionPreview : count);
+        }
+    }
+
+    int GetCollectionPreviewCount() {
+        return t_ubCollectionPreview >= 0 ? t_ubCollectionPreview
+                                          : g_ubCollectionPreview.load(std::memory_order_relaxed);
+    }
+
+    void SetCollectionPreviewCount(int count) {
+        g_ubCollectionPreview.store(UbClampPreview(count), std::memory_order_relaxed);
+    }
+
+    ScopedCollectionPreview::ScopedCollectionPreview(int count) : m_previous(t_ubCollectionPreview) {
+        if (count >= 0) t_ubCollectionPreview = UbClampPreview(count);
+    }
+
+    ScopedCollectionPreview::~ScopedCollectionPreview() { t_ubCollectionPreview = m_previous; }
 
     namespace {
 
@@ -105,10 +132,11 @@ namespace IL2CPP::VRChat {
             var.display = std::to_string(value);
         }
 
-        void SetFloat(UdonVariable& var, double value) {
+        template <typename T>
+        void SetFloat(UdonVariable& var, T value) {
             var.kind = UdonValueKind::Float;
             var.integer = static_cast<int64_t>(value);
-            var.number = value;
+            var.number = static_cast<double>(value);
             var.display = std::format("{}", value);
         }
 
@@ -404,11 +432,46 @@ namespace IL2CPP::VRChat {
                 return dot == std::string::npos ? full : full.substr(dot + 1);
             };
 
+            auto clip = [](std::string text) {
+                if (text.size() > 24) { text.resize(24); text += "..."; }
+                return text.empty() ? std::string("?") : text;
+            };
+
+            const int preview = depth > 0 ? (std::min)(GetCollectionPreviewCount(), 4) : GetCollectionPreviewCount();
             Class klass = ManagedObject{ obj }.get_class();
             if (shape == UdonShape::Dictionary) {
                 const int total = ReadInt32Field(obj, FieldEither(klass, "_count", "count"));
                 const int freed = ReadInt32Field(obj, FieldEither(klass, "_freeCount", "freeCount"));
-                out = std::format("{}({})", shortName(typeName), total - freed);
+                const int live = total - freed;
+                out = std::format("{}({})", shortName(typeName), live);
+                if (preview <= 0 || live <= 0) return true;
+
+                ArrayStorage st = OpenArray(ReadPointerField(obj, FieldEither(klass, "_entries", "entries")));
+                if (!st.valid) return true;
+                Field keyF  = st.elementClass.get_field("key");
+                Field valF  = st.elementClass.get_field("value");
+                Field hashF = FieldEither(st.elementClass, "hashCode", "_hashCode");
+                const int keyOff  = UnboxedOffset(keyF);
+                const int valOff  = UnboxedOffset(valF);
+                const int hashOff = hashF ? UnboxedOffset(hashF) : -1;
+                if (keyOff < 0 || valOff < 0) return true;
+
+                const int scan = total < st.length ? total : st.length;
+                int shown = 0;
+                ++depth;
+                out += " {";
+                for (int i = 0; i < scan && shown < preview; ++i) {
+                    char* entry = st.base + static_cast<size_t>(i) * st.stride;
+                    if (hashOff >= 0 && *reinterpret_cast<int32_t*>(entry + hashOff) < 0) continue;
+                    UdonVariable key, val;
+                    DecodeValue(keyF.type(), entry + keyOff, key, false);
+                    DecodeValue(valF.type(), entry + valOff, val, false);
+                    if (shown++) out += ", ";
+                    out += clip(std::move(key.display)) + ": " + clip(std::move(val.display));
+                }
+                if (shown < live) out += ", ...";
+                out += "}";
+                --depth;
                 return true;
             }
 
@@ -428,8 +491,7 @@ namespace IL2CPP::VRChat {
             out = shape == UdonShape::Array ? std::format("{}[{}]", elem, count)
                                             : std::format("List<{}>({})", elem, count);
 
-            constexpr int kPreview = 4;
-            const int shown = count < kPreview ? count : kPreview;
+            const int shown = count < preview ? count : preview;
             if (shown <= 0) return true;
 
             ++depth;
@@ -438,8 +500,7 @@ namespace IL2CPP::VRChat {
                 UdonVariable el;
                 DecodeValue(st.elementType, st.base + static_cast<size_t>(i) * st.stride, el, false);
                 if (i) out += ", ";
-                if (el.display.size() > 24) { el.display.resize(24); el.display += "..."; }
-                out += el.display.empty() ? "?" : el.display;
+                out += clip(std::move(el.display));
             }
             if (shown < count) out += ", ...";
             out += "}";
@@ -746,7 +807,87 @@ namespace IL2CPP::VRChat {
             return {};
         }
 
+        struct UbAssetProgram {
+            Module::GCHandle asset   = 0;
+            Module::GCHandle program = 0;
+        };
+
+        std::mutex                                g_ubAssetLock;
+        std::unordered_map<void*, UbAssetProgram> g_ubAssetPrograms;
+
+        struct UbRetrieveCall {
+            const Method* method    = nullptr;
+            void*         asset     = nullptr;
+            void*         exception = nullptr;
+            void*         result    = nullptr;
+        };
+
+        void UbRetrieveSeh(UbRetrieveCall* call) {
+            __try {
+                call->result = call->method->invoke(call->asset, nullptr, &call->exception);
+            } __except (GetExceptionCode() == 0xC0000005u || GetExceptionCode() == 0xC0000094u ? 1 : 0) {
+                call->result = nullptr;
+                call->exception = call->asset;
+            }
+        }
+
+        void* UbCachedAssetProgram(void* asset) {
+            if (!asset) return nullptr;
+            std::lock_guard lock{ g_ubAssetLock };
+            auto it = g_ubAssetPrograms.find(asset);
+            return it == g_ubAssetPrograms.end() ? nullptr
+                                                 : static_cast<void*>(Module::GCHandleGetTarget(it->second.program));
+        }
+
+        void* UbRetrieveAssetProgram(void* asset) {
+            if (void* cached = UbCachedAssetProgram(asset)) return cached;
+            if (!asset || !Module::Unity::Object{ asset }.IsValid()) return nullptr;
+            const Method method = ManagedObject{ asset }.get_class().get_method("RetrieveProgram", 0);
+            if (!method) return nullptr;
+            UbRetrieveCall call{ &method, asset };
+            UbRetrieveSeh(&call);
+            if (call.exception || !Module::IsValidPointer(call.result)) return nullptr;
+            std::lock_guard lock{ g_ubAssetLock };
+            auto [it, fresh] = g_ubAssetPrograms.try_emplace(asset);
+            if (fresh) {
+                it->second.asset   = Module::GCHandleNew(static_cast<il2cppObject*>(asset), false);
+                it->second.program = Module::GCHandleNew(static_cast<il2cppObject*>(call.result), false);
+            }
+            return static_cast<void*>(Module::GCHandleGetTarget(it->second.program));
+        }
+
+        void* UbInspectProgram(const UdonBehaviour& ub) {
+            if (void* live = ub.GetProgram()) return live;
+            return UbCachedAssetProgram(ub.get_field<void*>("serializedProgramAsset"));
+        }
+
+        void* UbInspectHeap(const UdonBehaviour& ub) {
+            if (void* live = ub.GetHeap()) return live;
+            if (ub.GetProgram()) return nullptr;
+            return AutoProperty(ManagedObject{ UbInspectProgram(ub) }, "Heap", "<Heap>k__BackingField").raw();
+        }
+
     } // namespace
+
+    void* UdonBehaviour::GetInspectProgram() const {
+        if (!valid()) return nullptr;
+        return UbInspectProgram(*this);
+    }
+
+    bool UdonBehaviour::LoadAssetProgram() const {
+        if (!valid()) return false;
+        if (GetProgram()) return true;
+        return UbRetrieveAssetProgram(get_field<void*>("serializedProgramAsset")) != nullptr;
+    }
+
+    void UdonBehaviour::ClearAssetPrograms() {
+        std::lock_guard lock{ g_ubAssetLock };
+        for (auto& [asset, entry] : g_ubAssetPrograms) {
+            if (entry.asset) Module::GCHandleFree(entry.asset);
+            if (entry.program) Module::GCHandleFree(entry.program);
+        }
+        g_ubAssetPrograms.clear();
+    }
 
     bool UdonBehaviour::GetSynchronizePosition() {
         if (!valid()) return false;
@@ -860,7 +1001,7 @@ namespace IL2CPP::VRChat {
         const uintptr_t count = entries.size();
         out.reserve(static_cast<size_t>(count));
 
-        ManagedObject heap{ GetHeap() };
+        ManagedObject heap{ UbInspectHeap(*this) };
         for (uintptr_t i = 0; i < count; ++i) {
             ManagedObject entry{ entries[i] };
             if (!entry) continue;
@@ -945,16 +1086,18 @@ namespace IL2CPP::VRChat {
             boxed.push_back(value);
         }
 
+        // The parameter overloads are statics on NetworkCalling that take the receiver first;
+        // UdonBehaviour itself only has the parameterless instance send.
         const int argc = static_cast<int>(boxed.size());
         const std::string method = "SendCustomNetworkEvent" + std::to_string(argc);
-        Method m = MethodHandler::resolve("VRC.Udon.UdonBehaviour", method, argc + 2);
+        Method m = MethodHandler::resolve("VRC.SDK3.UdonNetworkCalling.NetworkCalling", method, argc + 3);
         if (!m) return fail(method + " unresolved");
 
         auto str = String::create(eventName);
         int iTarget = static_cast<int>(target);
-        void* params[10] = { &iTarget, str.raw() };
-        for (int i = 0; i < argc; ++i) params[i + 2] = boxed[static_cast<size_t>(i)];
-        MethodHandler::invoke<void>(m, raw(), params);
+        void* params[11] = { raw(), &iTarget, str.raw() };
+        for (int i = 0; i < argc; ++i) params[i + 3] = boxed[static_cast<size_t>(i)];
+        MethodHandler::invoke<void>(m, nullptr, params);
         return true;
     }
 
@@ -1276,6 +1419,9 @@ namespace IL2CPP::VRChat {
         static auto getTable = MethodHandler::resolve("VRC.Udon.UdonBehaviour", "get_SyncMetadataTable", 0);
         if (!getTable) return out;
         ManagedObject table{ MethodHandler::invoke<void*>(getTable, raw()) };
+        if (!table && !GetProgram())
+            table = AutoProperty(ManagedObject{ UbInspectProgram(*this) },
+                                 "SyncMetadataTable", "<SyncMetadataTable>k__BackingField");
         if (!table) return out;
 
         auto str = String::create(symbolName);
@@ -1322,7 +1468,7 @@ namespace IL2CPP::VRChat {
     void* UdonBehaviour::GetProgramVariable(std::string_view symbolName) {
         UdonVariable var;
         if (!TryGetSymbolAddress(symbolName, var.address)) return nullptr;
-        DecodeThroughApi(GetHeap(), var, false);
+        DecodeThroughApi(UbInspectHeap(*this), var, false);
         return var.boxed;
     }
 
@@ -1351,11 +1497,26 @@ namespace IL2CPP::VRChat {
         return get_field<void*>("_program");
     }
 
+    namespace {
+        int UbCachedFieldOffset(std::unordered_map<void*, int>& cache, const ManagedObject& obj, std::string_view name) {
+            const Class klass = obj.get_class();
+            if (!klass.raw()) return -1;
+            if (const auto it = cache.find(klass.raw()); it != cache.end()) return it->second;
+            const Field field = klass.get_field(name);
+            const int offset = field ? field.offset() : -1;
+            if (offset >= 0) cache.emplace(klass.raw(), offset);
+            return offset;
+        }
+    }
+
     void* UdonBehaviour::GetHeap() const {
         if (!valid()) return nullptr;
-        ManagedObject vm{ get_field<void*>("_udonVM") };
+        thread_local std::unordered_map<void*, int> vmOffsets, heapOffsets;
+        const int vmOffset = UbCachedFieldOffset(vmOffsets, *this, "_udonVM");
+        ManagedObject vm{ vmOffset >= 0 ? get_field<void*>(vmOffset) : nullptr };
         if (vm) {
-            if (void* h = vm.get_field<void*>("_heap")) return h;
+            const int heapOffset = UbCachedFieldOffset(heapOffsets, vm, "_heap");
+            if (void* h = heapOffset >= 0 ? vm.get_field<void*>(heapOffset) : nullptr) return h;
             if (void* h = vm.call_method<void*>("InspectHeap", nullptr, 0)) return h;
         }
         return AutoProperty(ManagedObject{ GetProgram() }, "Heap", "<Heap>k__BackingField").raw();
@@ -1371,7 +1532,7 @@ namespace IL2CPP::VRChat {
         // decodes nothing it does not need: GetSymbols() would resolve a type and an address
         // per symbol (four managed calls each), and even converting every name to UTF-8 costs
         // a conversion per symbol. Only a name carrying the reflection marker is decoded.
-        ManagedObject table = SymbolTableOf(GetProgram());
+        ManagedObject table = SymbolTableOf(UbInspectProgram(*this));
         Module::System::Array<void*> names = SymbolArray(table, "_symbols", "GetSymbols");
         const uintptr_t count = names.size();
         for (uintptr_t i = 0; i < count; ++i) {
@@ -1398,14 +1559,29 @@ namespace IL2CPP::VRChat {
 
     uint32_t UdonBehaviour::GetByteCodeLength() const {
         ManagedObject vm{ GetVM() };
-        if (!vm) return 0;
+        if (!vm) {
+            if (GetProgram()) return 0;
+            ManagedObject bytes = AutoProperty(ManagedObject{ UbInspectProgram(*this) },
+                                               "ByteCode", "<ByteCode>k__BackingField");
+            return static_cast<uint32_t>(Module::System::Array<uint8_t>{ bytes.raw() }.size() / 4);
+        }
         return static_cast<uint32_t>(
             Module::System::Array<uint32_t>{ vm.get_field<void*>("_processedByteCode") }.size());
     }
 
     std::vector<uint32_t> UdonBehaviour::GetByteCode() const {
         ManagedObject vm{ GetVM() };
-        if (!vm) return {};
+        if (!vm) {
+            if (GetProgram()) return {};
+            ManagedObject bytes = AutoProperty(ManagedObject{ UbInspectProgram(*this) },
+                                               "ByteCode", "<ByteCode>k__BackingField");
+            const std::vector<uint8_t> raw = Module::System::Array<uint8_t>{ bytes.raw() }.to_vector();
+            std::vector<uint32_t> words(raw.size() / 4);
+            for (size_t i = 0; i < words.size(); ++i)
+                words[i] = uint32_t{ raw[i * 4] } << 24 | uint32_t{ raw[i * 4 + 1] } << 16 |
+                           uint32_t{ raw[i * 4 + 2] } << 8 | uint32_t{ raw[i * 4 + 3] };
+            return words;
+        }
         return Module::System::Array<uint32_t>{ vm.get_field<void*>("_processedByteCode") }.to_vector();
     }
 
@@ -1431,21 +1607,21 @@ namespace IL2CPP::VRChat {
     }
 
     std::string UdonBehaviour::GetInstructionSetIdentifier() const {
-        ManagedObject id = AutoProperty(ManagedObject{ GetProgram() },
+        ManagedObject id = AutoProperty(ManagedObject{ UbInspectProgram(*this) },
                                         "InstructionSetIdentifier", "<InstructionSetIdentifier>k__BackingField");
         return id ? String(id.raw()).to_string() : std::string{};
     }
 
     std::vector<std::string> UdonBehaviour::GetEventNames() const {
-        return ReadSymbols(EntryPointsOf(GetProgram()), "_symbols", "GetSymbols");
+        return ReadSymbols(EntryPointsOf(UbInspectProgram(*this)), "_symbols", "GetSymbols");
     }
 
     std::vector<std::string> UdonBehaviour::GetNetworkedEventNames() const {
-        return ReadSymbols(EntryPointsOf(GetProgram()), "_exportedSymbols", "GetExportedSymbols");
+        return ReadSymbols(EntryPointsOf(UbInspectProgram(*this)), "_exportedSymbols", "GetExportedSymbols");
     }
 
     bool UdonBehaviour::HasEvent(std::string_view eventName) const {
-        ManagedObject entry = EntryPointsOf(GetProgram());
+        ManagedObject entry = EntryPointsOf(UbInspectProgram(*this));
         if (!entry) return false;
         auto str = String::create(eventName);
         void* params[1] = { str.raw() };
@@ -1454,7 +1630,7 @@ namespace IL2CPP::VRChat {
 
     std::vector<UdonSymbol> UdonBehaviour::GetEntryPoints() const {
         std::vector<UdonSymbol> out;
-        ManagedObject table = EntryPointsOf(GetProgram());
+        ManagedObject table = EntryPointsOf(UbInspectProgram(*this));
         if (!table) return out;
 
         auto names = ReadSymbols(table, "_symbols", "GetSymbols");
@@ -1473,7 +1649,7 @@ namespace IL2CPP::VRChat {
 
     std::vector<UdonSymbol> UdonBehaviour::GetSymbols() const {
         std::vector<UdonSymbol> out;
-        ManagedObject table = SymbolTableOf(GetProgram());
+        ManagedObject table = SymbolTableOf(UbInspectProgram(*this));
         if (!table) return out;
 
         auto names = ReadSymbols(table, "_symbols", "GetSymbols");
@@ -1495,7 +1671,7 @@ namespace IL2CPP::VRChat {
 
     std::vector<UdonSymbol> UdonBehaviour::GetSymbolAddresses() const {
         std::vector<UdonSymbol> out;
-        ManagedObject table = SymbolTableOf(GetProgram());
+        ManagedObject table = SymbolTableOf(UbInspectProgram(*this));
         if (!table) return out;
 
         auto names = ReadSymbols(table, "_symbols", "GetSymbols");
@@ -1512,21 +1688,21 @@ namespace IL2CPP::VRChat {
     }
 
     std::vector<std::string> UdonBehaviour::GetPublicVariableNames() const {
-        return ReadSymbols(SymbolTableOf(GetProgram()), "_exportedSymbols", "GetExportedSymbols");
+        return ReadSymbols(SymbolTableOf(UbInspectProgram(*this)), "_exportedSymbols", "GetExportedSymbols");
     }
 
     bool UdonBehaviour::TryGetSymbolAddress(std::string_view symbolName, uint32_t& address) const {
         bool found = false;
-        address = AddressOf(SymbolTableOf(GetProgram()), symbolName, found);
+        address = AddressOf(SymbolTableOf(UbInspectProgram(*this)), symbolName, found);
         return found;
     }
 
     uint32_t UdonBehaviour::GetHeapCapacity() const {
-        return static_cast<uint32_t>(HeapSlots(GetHeap()).size());
+        return static_cast<uint32_t>(HeapSlots(UbInspectHeap(*this)).size());
     }
 
     UdonVariable UdonBehaviour::ReadHeap(uint32_t address) const {
-        void* heap = GetHeap();
+        void* heap = UbInspectHeap(*this);
         UdonVariable var = ReadSlot(HeapSlots(heap), address, false);
         if (var.kind == UdonValueKind::Unknown && var.initialized) DecodeThroughApi(heap, var, false);
         return var;
@@ -1537,7 +1713,7 @@ namespace IL2CPP::VRChat {
         std::vector<UdonVariable> out;
         if (!addresses || count == 0) return out;
 
-        void* heap = GetHeap();
+        void* heap = UbInspectHeap(*this);
         auto slots = HeapSlots(heap);
         out.reserve(count);
         for (size_t i = 0; i < count; ++i) {
@@ -1550,7 +1726,7 @@ namespace IL2CPP::VRChat {
     }
 
     std::string UdonBehaviour::StringifyHeapValue(uint32_t address) const {
-        void* heap = GetHeap();
+        void* heap = UbInspectHeap(*this);
         UdonVariable var = ReadSlot(HeapSlots(heap), address, false);
         if (!var.initialized) return "(empty slot)";
         if (var.kind == UdonValueKind::Null) return "null";
@@ -1589,7 +1765,7 @@ namespace IL2CPP::VRChat {
     std::vector<UdonVariable> UdonBehaviour::DumpHeap(bool namedOnly) const {
         std::vector<UdonVariable> out;
 
-        void* heap = GetHeap();
+        void* heap = UbInspectHeap(*this);
         auto slots = HeapSlots(heap);
         const uintptr_t capacity = slots.size();
         if (capacity == 0) return out;
@@ -1613,7 +1789,7 @@ namespace IL2CPP::VRChat {
     std::vector<UdonCachedExtern> UdonBehaviour::GetCachedExterns() const {
         std::vector<UdonCachedExtern> out;
 
-        auto slots = HeapSlots(GetHeap());
+        auto slots = HeapSlots(UbInspectHeap(*this));
         const uintptr_t capacity = slots.size();
         for (uint32_t address = 0; address < capacity; ++address) {
             void* slot = slots[address];
@@ -1693,7 +1869,7 @@ namespace IL2CPP::VRChat {
     }
 
     std::string UdonBehaviour::GetHeapType(uint32_t address) const {
-        ManagedObject heap{ GetHeap() };
+        ManagedObject heap{ UbInspectHeap(*this) };
         if (!heap) return {};
         static Method getType = ResolveByReturn(heap.get_class(), "GetHeapVariableType", 1, "Type");
         if (!getType) return {};
@@ -1736,7 +1912,7 @@ namespace IL2CPP::VRChat {
         out.first = first < 0 ? 0 : first;
         if (max <= 0) return out;
 
-        void* obj = HeapValueObject(GetHeap(), address);
+        void* obj = HeapValueObject(UbInspectHeap(*this), address);
         if (!obj) return out;
         out.shape = ShapeOf(obj, out.typeName);
         if (out.shape == UdonShape::None) return out;
@@ -1811,7 +1987,13 @@ namespace IL2CPP::VRChat {
         if (shape == UdonShape::Dictionary) {
             ArrayStorage st = OpenArray(ReadPointerField(obj, FieldEither(klass, "_entries", "entries")));
             if (!st.valid) return fail("dictionary storage is unreadable");
-            if (index >= st.length) return fail("index out of range");
+            const int used = ReadInt32Field(obj, FieldEither(klass, "_count", "count"));
+            if (index >= st.length || index >= used) return fail("index out of range");
+            Field hashF = FieldEither(st.elementClass, "hashCode", "_hashCode");
+            const int hashOff = hashF ? UnboxedOffset(hashF) : -1;
+            if (hashOff >= 0 &&
+                *reinterpret_cast<int32_t*>(st.base + static_cast<size_t>(index) * st.stride + hashOff) < 0)
+                return fail("no live entry at that index");
             Field valF = st.elementClass.get_field("value");
             const int valOff = valF ? UnboxedOffset(valF) : -1;
             if (valOff < 0) return fail("dictionary entry has no value field");

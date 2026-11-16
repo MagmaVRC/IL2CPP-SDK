@@ -52,6 +52,28 @@ namespace IL2CPP::Module::Unity {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.Slider"), IL2CPP_STR("get_onValueChanged"), 0);
             return MethodHandler::invoke<void*>(m, raw());
         }
+
+        void SetValueWithoutNotify(float value) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.Slider"), IL2CPP_STR("SetValueWithoutNotify"), 1);
+            void* params[] = { &value };
+            MethodHandler::invoke(m, raw(), params);
+        }
+        void SetFillRectRaw(void* rect) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.Slider"), IL2CPP_STR("set_fillRect"), 1);
+            void* params[] = { rect };
+            MethodHandler::invoke(m, raw(), params);
+        }
+        void SetHandleRectRaw(void* rect) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.Slider"), IL2CPP_STR("set_handleRect"), 1);
+            void* params[] = { rect };
+            MethodHandler::invoke(m, raw(), params);
+        }
+        /// <summary>0 LeftToRight, 1 RightToLeft, 2 BottomToTop, 3 TopToBottom.</summary>
+        void SetDirection(int direction) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.Slider"), IL2CPP_STR("set_direction"), 1);
+            void* params[] = { &direction };
+            MethodHandler::invoke(m, raw(), params);
+        }
     };
 
 } // namespace IL2CPP::Module::Unity

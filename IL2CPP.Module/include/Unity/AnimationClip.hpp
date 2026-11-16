@@ -56,6 +56,20 @@ namespace IL2CPP::Module::Unity {
             return MethodHandler::invoke<bool>(m, raw());
         }
 
+        [[nodiscard]] bool GetIsLooping() const {
+            static Method m;
+            if (!m) m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AnimationClip"), IL2CPP_STR("get_isLooping"), 0);
+            return m ? MethodHandler::invoke<bool>(m, raw()) : false;
+        }
+
+        /// <summary>Get a fresh copy of the clip's events as a managed UnityEngine.AnimationEvent[].</summary>
+        /// <returns>The raw array, or null.</returns>
+        [[nodiscard]] void* GetEvents() const {
+            static Method m;
+            if (!m) m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AnimationClip"), IL2CPP_STR("get_events"), 0);
+            return m ? MethodHandler::invoke<void*>(m, raw()) : nullptr;
+        }
+
         [[nodiscard]] bool GetEmpty() const {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AnimationClip"), IL2CPP_STR("get_empty"), 0);
             return MethodHandler::invoke<bool>(m, raw());

@@ -1,5 +1,6 @@
 #pragma once
 #include "../ManagedObject.hpp"
+#include "../ICall.hpp"
 #include "../Reflection.hpp"
 #include "../MethodHandler.hpp"
 #include "../System/Array.hpp"
@@ -63,6 +64,14 @@ namespace IL2CPP::Module::Unity {
         void DontUnload() {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Object"), IL2CPP_STR("set_hideFlags"), 1);
             if (m) { int flags = 32; void* p[] = { &flags }; MethodHandler::invoke(m, raw(), p); }
+        }
+
+        /// <summary>Get the object's HideFlags bit mask.</summary>
+        /// <returns>0 when the getter could not be resolved.</returns>
+        [[nodiscard]] int GetHideFlags() const {
+            static Method m;
+            if (!m) m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Object"), IL2CPP_STR("get_hideFlags"), 0);
+            return m ? MethodHandler::invoke<int>(m, raw()) : 0;
         }
 
         /// Construct a new managed object of the given class: allocate + run a matching .ctor.
@@ -201,30 +210,34 @@ namespace IL2CPP::Module::Unity {
         /// Find all objects and return as std::vector<T>.
         /// @tparam T The wrapper type (must derive from ManagedObject)
         /// @param systemType The System.Type object pointer
+        /// @param includeInactive Also return components on inactive GameObjects.
         /// @return A vector of T containing all found objects.
         template<typename T> requires std::is_base_of_v<ManagedObject, T>
-        [[nodiscard]] static std::vector<T> FindObjectsOfTypeAs(Il2CppSystemType* systemType) {
+        [[nodiscard]] static std::vector<T> FindObjectsOfTypeAs(Il2CppSystemType* systemType,
+                                                                bool includeInactive = false) {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Object"), IL2CPP_STR("FindObjectsOfType"), 2);
             if (!systemType) return {};
-            bool inactive = false;
+            bool inactive = includeInactive;
             void* params[] = { systemType, &inactive };
             void* result = MethodHandler::invoke<void*>(m, nullptr, params);
             return FromArray<T>(result);
         }
 
         template<typename T> requires std::is_base_of_v<ManagedObject, T>
-        [[nodiscard]] static std::vector<T> FindObjectsOfTypeAs(Class klass) {
+        [[nodiscard]] static std::vector<T> FindObjectsOfTypeAs(Class klass, bool includeInactive = false) {
             if (!klass) return {};
             Type t = klass.get_type();
             if (!t) return {};
-            return FindObjectsOfTypeAs<T>(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()));
+            return FindObjectsOfTypeAs<T>(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()),
+                                          includeInactive);
         }
 
         template<typename T> requires std::is_base_of_v<ManagedObject, T>
-        [[nodiscard]] static std::vector<T> FindObjectsOfTypeAs(std::string_view className) {
+        [[nodiscard]] static std::vector<T> FindObjectsOfTypeAs(std::string_view className,
+                                                                bool includeInactive = false) {
             Class klass = Class::find(className);
             if (!klass) return {};
-            return FindObjectsOfTypeAs<T>(klass);
+            return FindObjectsOfTypeAs<T>(klass, includeInactive);
         }
 
 

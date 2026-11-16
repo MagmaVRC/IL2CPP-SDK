@@ -141,6 +141,21 @@ namespace IL2CPP::VRChat {
         return MethodHandler::invoke<bool>(m, raw());
     }
 
+    // APIUser.isFriend is only filled in on a model the friends API returned, so it
+    // reads false for the peers in an instance. The static check walks the local
+    // user's own friendIDs, which is populated for everyone.
+    bool APIUser::IsFriendsWith(const std::string& userId) {
+        if (userId.empty()) return false;
+        static auto m = MethodHandler::resolve("VRC.Core.APIUser", "IsFriendsWith", 1);
+        if (!m) return false;
+
+        auto managed = IL2CPP::Module::System::String::create(userId);
+        if (!managed) return false;
+
+        void* params[]{ managed.raw() };
+        return MethodHandler::invoke<bool>(m, nullptr, params);
+    }
+
     std::string APIUser::GetLocation() {
         static auto m = MethodHandler::resolve("VRC.Core.APIUser", "get_location", 0);
         return invoke_string_getter(m, raw());

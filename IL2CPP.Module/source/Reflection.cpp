@@ -877,7 +877,7 @@ namespace IL2CPP::Module {
         if (!m_native || !E() || !E()->m_classGetFieldFromName) return Field{};
 
         auto* klass = static_cast<il2cppClass*>(m_native);
-        std::string nameStr(fname);
+        const NulTerminated nameStr(fname);
         void* result = Module::GetFieldByName(klass, nameStr.c_str());
         if (result) return Field{ result };
 
@@ -1010,7 +1010,7 @@ namespace IL2CPP::Module {
     Method Class::get_method(std::string_view mname, int argc) const {
         if (!m_native || !E() || !E()->m_classGetMethodFromName) return Method{};
 
-        std::string nameStr(mname);
+        const NulTerminated nameStr(mname);
         void* result = reinterpret_cast<void*(IL2CPP_CALLTYPE)(void*, const char*, int)>(
             E()->m_classGetMethodFromName)(m_native, nameStr.c_str(), argc);
         if (result) return Method{ result };
@@ -1135,7 +1135,7 @@ namespace IL2CPP::Module {
     Property Class::get_property(std::string_view pname) const {
         if (!m_native || !E() || !E()->m_classGetPropertyFromName) return Property{};
 
-        std::string nameStr(pname);
+        const NulTerminated nameStr(pname);
         void* result = Module::GetPropertyByName(
             static_cast<il2cppClass*>(m_native), nameStr.c_str());
         if (result) return Property{ result };
@@ -1181,7 +1181,7 @@ namespace IL2CPP::Module {
     Class Class::find(std::string_view full_name) {
         if (!E() || !E()->m_helperFindClass) return Class{};
 
-        std::string nameStr(full_name);
+        const NulTerminated nameStr(full_name);
         void* result = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(
             E()->m_helperFindClass)(nameStr.c_str());
         if (result) return Class{ result };

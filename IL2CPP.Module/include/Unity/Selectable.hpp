@@ -58,6 +58,25 @@ namespace IL2CPP::Module::Unity {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.Selectable"), IL2CPP_STR("Select"), 0);
             MethodHandler::invoke(m, raw());
         }
+
+        /// <summary>UnityEngine.UI.ColorBlock: the ColorTint transition colours multiplied onto the target graphic.</summary>
+        struct ColorBlock {
+            Color normalColor{ 1, 1, 1, 1 };
+            Color highlightedColor{ 1, 1, 1, 1 };
+            Color pressedColor{ 1, 1, 1, 1 };
+            Color selectedColor{ 1, 1, 1, 1 };
+            Color disabledColor{ 1, 1, 1, 0.5f };
+            float colorMultiplier = 1.0f;
+            float fadeDuration = 0.1f;
+        };
+        static_assert(sizeof(ColorBlock) == 5 * sizeof(Color) + 2 * sizeof(float));
+
+        void SetColors(const ColorBlock& colors) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.Selectable"), IL2CPP_STR("set_colors"), 1);
+            ColorBlock c = colors;
+            void* params[] = { &c };
+            MethodHandler::invoke(m, raw(), params);
+        }
     };
 
 } // namespace IL2CPP::Module::Unity

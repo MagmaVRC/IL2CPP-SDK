@@ -1,6 +1,8 @@
 #pragma once
 #include "../MethodHandler.hpp"
+#include "../ICall.hpp"
 #include <IL2CPP.Common/il2cpp_types.hpp>
+#include <cstdint>
 
 namespace IL2CPP::Module::Unity {
 
@@ -22,11 +24,17 @@ namespace IL2CPP::Module::Unity {
         Screen() = delete;
 
         [[nodiscard]] static int GetWidth() {
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(nullptr, nullptr, 0, IL2CPP_STR("UnityEngine.Screen::get_width()"));
+            if (auto fn = ic.as<int32_t(IL2CPP_CALLTYPE)()>()) return fn();
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Screen"), IL2CPP_STR("get_width"), 0);
             return MethodHandler::invoke<int>(m, nullptr);
         }
 
         [[nodiscard]] static int GetHeight() {
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(nullptr, nullptr, 0, IL2CPP_STR("UnityEngine.Screen::get_height()"));
+            if (auto fn = ic.as<int32_t(IL2CPP_CALLTYPE)()>()) return fn();
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Screen"), IL2CPP_STR("get_height"), 0);
             return MethodHandler::invoke<int>(m, nullptr);
         }

@@ -2,9 +2,38 @@
 #include "Object.hpp"
 #include "../Reflection.hpp"
 #include "../MethodHandler.hpp"
+#include <atomic>
+#include <cstdint>
 #include <vector>
 
 namespace IL2CPP::Module::Unity {
+
+    namespace typecache {
+        /// <summary>System.Type object for a class, memoised per Il2CppClass*. Type objects are rooted by the runtime for the process lifetime.</summary>
+        inline void* CachedSystemType(const Class& klass, const Type& type) {
+            struct Node { void* klass; void* object; };
+            constexpr size_t kSlots = 256;
+            static std::atomic<const Node*> slots[kSlots]{};
+
+            void* key = klass.raw();
+            const size_t start = (reinterpret_cast<uintptr_t>(key) >> 3) % kSlots;
+            for (size_t i = 0; i < 8; ++i) {
+                auto& slot = slots[(start + i) % kSlots];
+                const Node* node = slot.load(std::memory_order_acquire);
+                if (node) {
+                    if (node->klass == key) return node->object;
+                    continue;
+                }
+                void* object = type.get_system_type_object();
+                if (!object || !key) return object;
+                const Node* fresh = new Node{ key, object };
+                const Node* expected = nullptr;
+                if (!slot.compare_exchange_strong(expected, fresh, std::memory_order_acq_rel)) delete fresh;
+                return object;
+            }
+            return type.get_system_type_object();
+        }
+    }
 
     class GameObject;
 
@@ -32,7 +61,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return Component{};
             Type t = klass.get_type();
             if (!t) return Component{};
-            return GetComponent(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()));
+            return GetComponent(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)));
         }
 
         /// <summary>Get a component by name.</summary>
@@ -55,7 +84,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return Component{};
             Type t = klass.get_type();
             if (!t) return Component{};
-            return GetComponentInChildren(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()), includeInactive);
+            return GetComponentInChildren(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)), includeInactive);
         }
 
         /// <summary>Get a component in parent by System.Type.</summary>
@@ -71,7 +100,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return Component{};
             Type t = klass.get_type();
             if (!t) return Component{};
-            return GetComponentInParent(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()), includeInactive);
+            return GetComponentInParent(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)), includeInactive);
         }
 
 
@@ -91,7 +120,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return {};
             Type t = klass.get_type();
             if (!t) return {};
-            return GetComponents(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()));
+            return GetComponents(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)));
         }
 
         /// <summary>Get all components of the specified class by name.</summary>
@@ -116,7 +145,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return {};
             Type t = klass.get_type();
             if (!t) return {};
-            return GetComponentsAs<T>(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()));
+            return GetComponentsAs<T>(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)));
         }
 
         /// <summary>Get all components of the specified type in children.</summary>
@@ -133,7 +162,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return {};
             Type t = klass.get_type();
             if (!t) return {};
-            return GetComponentsInChildren(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()), includeInactive);
+            return GetComponentsInChildren(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)), includeInactive);
         }
 
         /// <summary>Get all components in children and return as std::vector&lt;T&gt;.</summary>
@@ -160,7 +189,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return {};
             Type t = klass.get_type();
             if (!t) return {};
-            return GetComponentsInParent(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()), includeInactive);
+            return GetComponentsInParent(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)), includeInactive);
         }
 
         /// <summary>Get all components in parent and return as std::vector&lt;T&gt;.</summary>
@@ -196,7 +225,7 @@ namespace IL2CPP::Module::Unity {
             if (!klass) return false;
             Type t = klass.get_type();
             if (!t) return false;
-            return TryGetComponent(reinterpret_cast<Il2CppSystemType*>(t.get_system_type_object()), out);
+            return TryGetComponent(reinterpret_cast<Il2CppSystemType*>(typecache::CachedSystemType(klass, t)), out);
         }
     };
 

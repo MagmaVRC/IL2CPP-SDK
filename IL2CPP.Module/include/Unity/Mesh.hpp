@@ -43,6 +43,27 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
+        /// <summary>A managed Vector3[] for the array setters below, meant to be created once and reused.</summary>
+        [[nodiscard]] static System::Array<Vector3> NewVector3Array(uintptr_t count) {
+            return System::Array<Vector3>::Create(IL2CPP_STR("UnityEngine.Vector3"), count);
+        }
+
+        /// <summary>Assigns the vertices from a caller-owned managed Vector3[] without allocating a new array.</summary>
+        void SetVerticesArray(void* vector3Array) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Mesh"), IL2CPP_STR("set_vertices"), 1);
+            if (!vector3Array) return;
+            void* params[] = { vector3Array };
+            MethodHandler::invoke(m, raw(), params);
+        }
+
+        /// <summary>Assigns the normals from a caller-owned managed Vector3[] without allocating a new array.</summary>
+        void SetNormalsArray(void* vector3Array) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Mesh"), IL2CPP_STR("set_normals"), 1);
+            if (!vector3Array) return;
+            void* params[] = { vector3Array };
+            MethodHandler::invoke(m, raw(), params);
+        }
+
         [[nodiscard]] std::vector<Vector3> GetNormals() const {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Mesh"), IL2CPP_STR("get_normals"), 0);
             void* arr = MethodHandler::invoke<void*>(m, raw());

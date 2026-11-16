@@ -60,7 +60,9 @@ namespace detail {
 inline bool UNIX_CC TrampUdonNet(void* ud, const unix_udon_net_ev* ev) {
     auto* n = static_cast<Node*>(ud);
     // A registration whose closure is gone must not silently swallow the world's traffic.
-    return (n && n->ret && ev) ? n->ret(ev) : true;
+    if (!n || !ev) return true;
+    NodeScope s(n);
+    return (s && n->ret) ? n->ret(ev) : true;
 }
 }
 

@@ -84,18 +84,15 @@ namespace Hooking::Module {
         auto* vt = get_connection_vtable();
         if (!vt) return invalid_id;
 
-        void* trampoline = nullptr;
-        uint32_t hid = vt->create_detour(
+        // The core keeps this slot for relinks and writes it before the hook goes
+        // live, so it must be the caller's own storage, never a local.
+        static_assert(sizeof(FnPtr) == sizeof(void*));
+        return vt->create_detour(
             m_id,
             hook_name.data(), static_cast<uint32_t>(hook_name.size()),
             reinterpret_cast<void*>(target),
             reinterpret_cast<void*>(detour),
-            &trampoline);
-
-        if (hid != invalid_id && out_original)
-            *out_original = reinterpret_cast<FnPtr>(trampoline);
-
-        return hid;
+            reinterpret_cast<void**>(out_original));
     }
 
     template<typename CallbackFn>

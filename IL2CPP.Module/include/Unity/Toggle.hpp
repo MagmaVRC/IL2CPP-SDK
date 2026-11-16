@@ -1,6 +1,7 @@
 #pragma once
 #include "Selectable.hpp"
 #include "../MethodHandler.hpp"
+#include "../Reflection.hpp"
 
 namespace IL2CPP::Module::Unity {
 
@@ -25,8 +26,17 @@ namespace IL2CPP::Module::Unity {
         }
 
         [[nodiscard]] void* GetOnValueChangedRaw() const {
-            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.Toggle"), IL2CPP_STR("get_onValueChanged"), 0);
-            return MethodHandler::invoke<void*>(m, raw());
+            static auto f = Class::find(IL2CPP_STR("UnityEngine.UI.Toggle")).get_field(IL2CPP_STR("onValueChanged"));
+            if (!f || !raw()) return nullptr;
+            return *reinterpret_cast<void**>(static_cast<char*>(raw()) + f.offset());
+        }
+
+        /// <summary>Set the checkmark graphic Unity fades with isOn; null disables the fade.</summary>
+        void SetGraphicRaw(void* graphic) {
+            static auto f = Class::find(IL2CPP_STR("UnityEngine.UI.Toggle")).get_field(IL2CPP_STR("graphic"));
+            if (!f || !raw()) return;
+            if (graphic) f.set_value(raw(), graphic);
+            else *reinterpret_cast<void**>(static_cast<char*>(raw()) + f.offset()) = nullptr;
         }
     };
 

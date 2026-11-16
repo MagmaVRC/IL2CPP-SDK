@@ -61,6 +61,28 @@ namespace UNIx {
     };
     static_assert(static_cast<uint32_t>(PageEventKind::SceneLoaded) == unix_page_scene_loaded);
 
+    /// <summary>Which menu an event or page belongs to.</summary>
+    enum class MenuKind : uint32_t { Quick = unix_menu_quick, Main = unix_menu_main, Other = unix_menu_other };
+    static_assert(static_cast<uint32_t>(MenuKind::Other) == unix_menu_other);
+
+    /// <summary>How a page animates in when navigated to.</summary>
+    enum class PageTransition : uint32_t { None = unix_transition_none, Left, Right, Bottom, InPlace, Takeover };
+    static_assert(static_cast<uint32_t>(PageTransition::Takeover) == unix_transition_takeover);
+
+    /// <summary>The property a tween drives.</summary>
+    enum class TweenProperty : uint32_t { LocalPosition = unix_tween_local_position, AnchoredPosition, SizeDelta,
+        LocalScale, LocalEulerAngles, Color, Alpha, GroupAlpha, FillAmount, Float };
+    static_assert(static_cast<uint32_t>(TweenProperty::Float) == unix_tween_float);
+
+    /// <summary>Where a scrolled-to control ends up in the view.</summary>
+    enum class ScrollAlign : uint32_t { Nearest = unix_scroll_nearest, Top = unix_scroll_top, Center = unix_scroll_center };
+    static_assert(static_cast<uint32_t>(ScrollAlign::Center) == unix_scroll_center);
+
+    /// <summary>Why a page was shown or hidden.</summary>
+    enum class PageReason : uint32_t { None = unix_page_reason_none, Navigate, Back, Covered, Replaced,
+        MenuClosed, MenuOpened, Removed };
+    static_assert(static_cast<uint32_t>(PageReason::Removed) == unix_page_reason_removed);
+
     /// <summary>Whether a control changed because the user moved it, or because the host put it
     /// back after a refused change.</summary>
     enum class WidgetKind : uint32_t { Change = unix_wk_change, Restore = unix_wk_restore };
@@ -158,7 +180,11 @@ namespace UNIx {
         ShaderMaxLOD = 4,
         VSyncCount = 5,
         StreamingMipmapsBudget = 100,
-        LodBias = 101
+        LodBias = 101,
+        /// <summary>Read-only: presented FPS including generated frames, or 0 while frame generation is off.</summary>
+        GeneratedFps = 200,
+        /// <summary>Read-only: rendered FPS frame generation is fed, or 0 while it is off.</summary>
+        RenderedFps = 201
     };
 
     /// <summary>Declared type of a world script's public variable.</summary>
@@ -170,13 +196,22 @@ namespace UNIx {
     };
 
     /// <summary>Tween interpolation curve.</summary>
-    enum class Ease : uint8_t { Linear, EaseInOut, EaseOutBack, EaseOut, EaseIn };
+    enum class Ease : uint8_t {
+        Linear, EaseInOut, EaseOutBack, EaseOut, EaseIn,
+        QuadIn, QuadOut, QuadInOut, CubicIn, CubicOut, CubicInOut,
+        QuartIn, QuartOut, QuartInOut, QuintIn, QuintOut, QuintInOut,
+        ExpoIn, ExpoOut, ExpoInOut, SineIn, SineOut, SineInOut,
+        CircIn, CircOut, CircInOut, BackIn, BackOut, BackInOut,
+        ElasticIn, ElasticOut, ElasticInOut, BounceIn, BounceOut, BounceInOut,
+        Spring, CubicBezier
+    };
 
     static_assert(static_cast<uint8_t>(Ease::Linear) == 0);
     static_assert(static_cast<uint8_t>(Ease::EaseInOut) == 1);
     static_assert(static_cast<uint8_t>(Ease::EaseOutBack) == 2);
     static_assert(static_cast<uint8_t>(Ease::EaseOut) == 3);
     static_assert(static_cast<uint8_t>(Ease::EaseIn) == 4);
+    static_assert(static_cast<uint8_t>(Ease::CubicBezier) == 36);
 
     /// <summary>Studio sidebar grouping. Pages sort by group, then by registration order.</summary>
     enum class PageGroup : int32_t {
@@ -321,33 +356,3 @@ namespace UNIx {
     static_assert(static_cast<int32_t>(Sprite::Rocket) == 0);
 
 } // namespace UNIx
-
-// Deprecated for 7.1: one-release compatibility spelling for the pre-7.0 Bootstrap namespace.
-namespace Bootstrap {
-
-    using UNIx::Sprite;
-    using UNIx::PlayerRank;
-    using UNIx::ApiPlayerRank;
-    using UNIx::UserPageAudience;
-    using UNIx::UserPageKind;
-    using UNIx::PerfSetting;
-    using UNIx::WorldVarType;
-    using UNIx::LogLevel;
-    using UnityLogType = UNIx::LogLevel;
-
-    constexpr uint32_t invalid_id = ~0u;
-
-    using fn_menu_button_callback = void(__cdecl*)(uint32_t button_id);
-    using fn_menu_slider_callback = void(__cdecl*)(uint32_t slider_id, float value);
-    using fn_menu_enum_callback   = void(__cdecl*)(uint32_t selector_id, int32_t index);
-    using fn_menu_text_callback   = void(__cdecl*)(uint32_t input_id, char const* value,
-                                                   uint32_t value_len);
-    using fn_menu_list_callback   = void(__cdecl*)(uint32_t list_id, uint32_t row_index);
-
-    using fn_user_select_callback = void(__cdecl*)(void* player, void* api_user,
-        char const* display_name, uint32_t name_len,
-        char const* user_id, uint32_t user_id_len);
-    using fn_user_button_callback = void(__cdecl*)(uint32_t button_id, void* player, void* api_user,
-        char const* user_id, uint32_t user_id_len);
-
-} // namespace Bootstrap

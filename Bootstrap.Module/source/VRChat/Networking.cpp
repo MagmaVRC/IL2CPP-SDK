@@ -13,63 +13,35 @@ namespace IL2CPP::VRChat {
     }
 
     bool Networking::IsNetworkSettled() {
-        auto k = klass();
-        if (!k) return false;
-        static auto f = k.get_field("IsNetworkSettled");
-        if (!f) return false;
-        bool val = false;
-        f.get_static_value(&val);
-        return val;
+        static auto m = MethodHandler::resolve("VRC.SDKBase.Networking", "get_IsNetworkSettled", 0);
+        return MethodHandler::invoke<bool>(m, nullptr);
     }
 
     bool Networking::IsMaster() {
-        auto k = klass();
-        if (!k) return false;
-        static auto f = k.get_field("IsMaster");
-        if (!f) return false;
-        bool val = false;
-        f.get_static_value(&val);
-        return val;
+        static auto m = MethodHandler::resolve("VRC.SDKBase.Networking", "get_IsMaster", 0);
+        return MethodHandler::invoke<bool>(m, nullptr);
     }
 
     bool Networking::IsClogged() {
-        auto k = klass();
-        if (!k) return false;
-        static auto f = k.get_field("IsClogged");
-        if (!f) return false;
-        bool val = false;
-        f.get_static_value(&val);
-        return val;
+        static auto m = MethodHandler::resolve("VRC.SDKBase.Networking", "get_IsClogged", 0);
+        return MethodHandler::invoke<bool>(m, nullptr);
     }
 
     bool Networking::IsInstanceOwner() {
-        auto k = klass();
-        if (!k) return false;
-        static auto f = k.get_field("IsInstanceOwner");
-        if (!f) return false;
-        bool val = false;
-        f.get_static_value(&val);
-        return val;
+        static auto m = MethodHandler::resolve("VRC.SDKBase.Networking", "get_IsInstanceOwner", 0);
+        return MethodHandler::invoke<bool>(m, nullptr);
     }
 
     VRCPlayerApi Networking::GetLocalPlayer() {
-        auto k = klass();
-        if (!k) return {};
-        static auto f = k.get_field("LocalPlayer");
-        if (!f) return {};
-        void* val = nullptr;
-        f.get_static_value(&val);
-        return VRCPlayerApi(val);
+        static auto m = MethodHandler::resolve("VRC.SDKBase.Networking", "get_LocalPlayer", 0);
+        void* result = MethodHandler::invoke<void*>(m, nullptr);
+        return result ? VRCPlayerApi(result) : VRCPlayerApi();
     }
 
     VRCPlayerApi Networking::GetMaster() {
-        auto k = klass();
-        if (!k) return {};
-        static auto f = k.get_field("Master");
-        if (!f) return {};
-        void* val = nullptr;
-        f.get_static_value(&val);
-        return VRCPlayerApi(val);
+        static auto m = MethodHandler::resolve("VRC.SDKBase.Networking", "get_Master", 0);
+        void* result = MethodHandler::invoke<void*>(m, nullptr);
+        return result ? VRCPlayerApi(result) : VRCPlayerApi();
     }
 
     double Networking::GetServerTimeInSeconds() {
@@ -131,12 +103,12 @@ namespace IL2CPP::VRChat {
         // cannot tell them apart: it answered with whichever the class listed first, and the
         // other call then passed an int* where a VRCPlayerApi was expected, or the reverse.
         // The first parameter's type is what separates them.
-        IL2CPP::Module::Method ResolveRpc(bool byPlayer) {
+        IL2CPP::Module::Method ResolveByPlayerParam(const char* name, uint8_t argc, bool byPlayer) {
             IL2CPP::Module::Class k = IL2CPP::Module::Class::find("VRC.SDKBase.Networking");
             if (!k) return IL2CPP::Module::Method{ nullptr };
             for (const IL2CPP::Module::Method& m : k.get_methods()) {
                 const char* n = m.name();
-                if (!n || std::strcmp(n, "RPC") != 0 || m.param_count() != 4) continue;
+                if (!n || std::strcmp(n, name) != 0 || m.param_count() != argc) continue;
                 const IL2CPP::Module::Type t = m.get_param_type(0);
                 const char* tn = t ? t.name() : nullptr;
                 if (!tn) continue;
@@ -149,7 +121,7 @@ namespace IL2CPP::VRChat {
 
     void Networking::RPC(RpcDestination targetClients, IL2CPP::Module::Unity::GameObject targetObject,
                          std::string_view methodName, void* parameters) {
-        static auto m = ResolveRpc(false);
+        static auto m = ResolveByPlayerParam("RPC", 4, false);
         if (!m) return;
         auto str = IL2CPP::Module::System::String::create(methodName);
         int dest = static_cast<int>(targetClients);
@@ -159,7 +131,7 @@ namespace IL2CPP::VRChat {
 
     void Networking::RPC(VRCPlayerApi targetPlayer, IL2CPP::Module::Unity::GameObject targetObject,
                          std::string_view methodName, void* parameters) {
-        static auto m = ResolveRpc(true);
+        static auto m = ResolveByPlayerParam("RPC", 4, true);
         if (!m) return;
         auto str = IL2CPP::Module::System::String::create(methodName);
         void* params[4] = { targetPlayer.raw(), targetObject.raw(), str.raw(), parameters };
@@ -192,13 +164,17 @@ namespace IL2CPP::VRChat {
     }
 
     float Networking::SimulationTime(IL2CPP::Module::Unity::GameObject target) {
-        static auto m = MethodHandler::resolve("VRC.SDKBase.Networking", "SimulationTime", 1);
+        static IL2CPP::Module::Method m{};
+        if (!m) m = ResolveByPlayerParam("SimulationTime", 1, false);
+        if (!m) return 0.0f;
         void* params[1] = { target.raw() };
         return MethodHandler::invoke<float>(m, nullptr, params);
     }
 
     float Networking::SimulationTime(VRCPlayerApi target) {
-        static auto m = MethodHandler::resolve("VRC.SDKBase.Networking", "SimulationTime", 1);
+        static IL2CPP::Module::Method m{};
+        if (!m) m = ResolveByPlayerParam("SimulationTime", 1, true);
+        if (!m) return 0.0f;
         void* params[1] = { target.raw() };
         return MethodHandler::invoke<float>(m, nullptr, params);
     }

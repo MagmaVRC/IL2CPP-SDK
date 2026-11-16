@@ -8,6 +8,18 @@
 
 namespace IL2CPP::Module::Unity {
 
+    struct AnimatorStateInfo {
+        int   shortNameHash = 0;
+        int   nameHash = 0;
+        int   fullPathHash = 0;
+        float normalizedTime = 0.f;
+        float length = 0.f;
+        float speed = 0.f;
+        float speedMultiplier = 0.f;
+        int   tagHash = 0;
+        int   loop = 0;
+    };
+
     class Animator : public Behaviour {
     public:
         using Behaviour::Behaviour;
@@ -213,6 +225,87 @@ namespace IL2CPP::Module::Unity {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Animator"), IL2CPP_STR("IsInTransition"), 1);
             void* params[] = { &layerIndex };
             return MethodHandler::invoke<bool>(m, raw(), params);
+        }
+
+        /// <summary>Whether the animator has bound its controller and can answer state queries.</summary>
+        [[nodiscard]] bool GetIsInitialized() const {
+            static Method m;
+            if (!Lazy(m, IL2CPP_STR("get_isInitialized"), 0)) return false;
+            return MethodHandler::invoke<bool>(m, raw());
+        }
+
+        [[nodiscard]] int GetLayerCount() const {
+            static Method m;
+            if (!Lazy(m, IL2CPP_STR("get_layerCount"), 0)) return 0;
+            return MethodHandler::invoke<int>(m, raw());
+        }
+
+        [[nodiscard]] std::string GetLayerName(int layerIndex) const {
+            static Method m;
+            if (!Lazy(m, IL2CPP_STR("GetLayerName"), 1)) return {};
+            void* params[] = { &layerIndex };
+            void* str = MethodHandler::invoke<void*>(m, raw(), params);
+            return str ? System::String{ str }.to_string() : std::string();
+        }
+
+        [[nodiscard]] float GetLayerWeight(int layerIndex) const {
+            static Method m;
+            if (!Lazy(m, IL2CPP_STR("GetLayerWeight"), 1)) return 0.f;
+            void* params[] = { &layerIndex };
+            return MethodHandler::invoke<float>(m, raw(), params);
+        }
+
+        [[nodiscard]] AnimatorStateInfo GetCurrentAnimatorStateInfo(int layerIndex) const {
+            static Method m;
+            if (!Lazy(m, IL2CPP_STR("GetCurrentAnimatorStateInfo"), 1)) return {};
+            void* params[] = { &layerIndex };
+            return MethodHandler::invoke<AnimatorStateInfo>(m, raw(), params);
+        }
+
+        /// <summary>Get the controller's parameters as a managed UnityEngine.AnimatorControllerParameter[].</summary>
+        /// <returns>The raw array, or null.</returns>
+        [[nodiscard]] void* GetParameters() const {
+            static Method m;
+            if (!Lazy(m, IL2CPP_STR("get_parameters"), 0)) return nullptr;
+            return MethodHandler::invoke<void*>(m, raw());
+        }
+
+        /// <summary>Read a float parameter by its name hash, through the int-id path only.</summary>
+        [[nodiscard]] float GetFloatById(int id) const {
+            static Method m;
+            if (!Lazy(m, IL2CPP_STR("GetFloatID"), 1)) return 0.f;
+            void* params[] = { &id };
+            return MethodHandler::invoke<float>(m, raw(), params);
+        }
+
+        [[nodiscard]] int GetIntegerById(int id) const {
+            static Method m;
+            if (!Lazy(m, IL2CPP_STR("GetIntegerID"), 1)) return 0;
+            void* params[] = { &id };
+            return MethodHandler::invoke<int>(m, raw(), params);
+        }
+
+        [[nodiscard]] bool GetBoolById(int id) const {
+            static Method m;
+            if (!Lazy(m, IL2CPP_STR("GetBoolID"), 1)) return false;
+            void* params[] = { &id };
+            return MethodHandler::invoke<bool>(m, raw(), params);
+        }
+
+        /// <summary>Hash a parameter or state name the way the animator does.</summary>
+        [[nodiscard]] static int StringToHash(std::string_view name) {
+            static Method m;
+            auto* e = GetExports();
+            if (!Lazy(m, IL2CPP_STR("StringToHash"), 1) || !e || !e->m_stringNew) return 0;
+            void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(name).c_str());
+            void* params[] = { str };
+            return MethodHandler::invoke<int>(m, nullptr, params);
+        }
+
+    private:
+        static bool Lazy(Method& m, const char* name, int argc) {
+            if (!m) m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Animator"), name, argc);
+            return static_cast<bool>(m);
         }
     };
 

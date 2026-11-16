@@ -71,4 +71,10 @@ namespace IL2CPP::VRChat {
         return get_string_list(*this, IL2CPP_STR("get_tags"));
     }
 
+    std::string ApiContentModel::GetAssetUrl() { return get_string(*this, IL2CPP_STR("get_assetUrl")); }
+
+    std::string ApiContentModel::GetUnityVersion() {
+        return get_string(*this, IL2CPP_STR("get_unityVersion"));
+    }
+
 } // namespace IL2CPP::VRChat

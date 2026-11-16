@@ -25,6 +25,16 @@ namespace IL2CPP::VRChat {
         [[nodiscard]] static IL2CPP::Vector3 GetVector3(VRCPlayerApi player, std::string_view key);
         [[nodiscard]] static IL2CPP::Quaternion GetQuaternion(VRCPlayerApi player, std::string_view key);
         [[nodiscard]] static IL2CPP::Color GetColor(VRCPlayerApi player, std::string_view key);
+        [[nodiscard]] static uint8_t GetByte(VRCPlayerApi player, std::string_view key);
+        [[nodiscard]] static int8_t GetSByte(VRCPlayerApi player, std::string_view key);
+        [[nodiscard]] static int16_t GetShort(VRCPlayerApi player, std::string_view key);
+        [[nodiscard]] static uint16_t GetUShort(VRCPlayerApi player, std::string_view key);
+        [[nodiscard]] static uint32_t GetUInt(VRCPlayerApi player, std::string_view key);
+        [[nodiscard]] static uint64_t GetULong(VRCPlayerApi player, std::string_view key);
+        [[nodiscard]] static IL2CPP::Vector2 GetVector2(VRCPlayerApi player, std::string_view key);
+        [[nodiscard]] static IL2CPP::Vector4 GetVector4(VRCPlayerApi player, std::string_view key);
+        [[nodiscard]] static IL2CPP::Color32 GetColor32(VRCPlayerApi player, std::string_view key);
+        [[nodiscard]] static std::vector<uint8_t> GetBytes(VRCPlayerApi player, std::string_view key);
 
         static void SetInt(std::string_view key, int value);
         static void SetFloat(std::string_view key, float value);
@@ -35,6 +45,16 @@ namespace IL2CPP::VRChat {
         static void SetVector3(std::string_view key, IL2CPP::Vector3 value);
         static void SetQuaternion(std::string_view key, IL2CPP::Quaternion value);
         static void SetColor(std::string_view key, IL2CPP::Color value);
+        static void SetByte(std::string_view key, uint8_t value);
+        static void SetSByte(std::string_view key, int8_t value);
+        static void SetShort(std::string_view key, int16_t value);
+        static void SetUShort(std::string_view key, uint16_t value);
+        static void SetUInt(std::string_view key, uint32_t value);
+        static void SetULong(std::string_view key, uint64_t value);
+        static void SetVector2(std::string_view key, IL2CPP::Vector2 value);
+        static void SetVector4(std::string_view key, IL2CPP::Vector4 value);
+        static void SetColor32(std::string_view key, IL2CPP::Color32 value);
+        static void SetBytes(std::string_view key, const std::vector<uint8_t>& value);
     };
 
 } // namespace IL2CPP::VRChat

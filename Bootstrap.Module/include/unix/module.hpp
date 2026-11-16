@@ -4,6 +4,7 @@
 #include <unix/unix_ctx.hpp>
 #include <unix/unix_types.hpp>
 
+#include <array>
 #include <bitset>
 #include <concepts>
 #include <cstddef>
@@ -21,6 +22,10 @@
 #include <utility>
 #include <vector>
 
+#ifdef GetObject
+#undef GetObject
+#endif
+
 namespace UNIx {
 
 // Services (unix/services/*.hpp)
@@ -28,13 +33,16 @@ class Config; class Menu; class MainMenu; class UserPage; class Players; class R
 class Log; class FileSystem; class Bus; class Hotkeys; class Nameplates; class Tweens; class Ui;
 class Deob; class Studio; class Clipboard; class Perf; class License; class WorldScripts;
 class Console; class Explorer; class Photon; class Modules; class Telemetry; class Il2Cpp;
-class Udon; class PlayerApi; class Net; class Notify;
+class Udon; class PlayerApi; class Net; class Notify; class Relay;
+class App; class Avatars; class Hud; class Actuation;
 // UI objects (unix/ui.hpp, except Hotkey and StudioPage which live in unix/services/core.hpp)
 class UISurface; class UIPage; class UISubPage; class UISection; class UIMainMenuPage;
+class UIMainMenuSubPage;
 class UIFoldout; class UIButton; class UILabel;
 class UIToggle; class UISlider; class UIEnumSelector; class UISeparator; class UICornerButton;
 class UITextInput; class UIList;
 class UIUserButton; class UIUserRow; class Nameplate; class Tween; class Hotkey; class StudioPage;
+class KeyboardRequest; class HudWidget;
 
 using Color = unix_color;   using Vec2 = unix_vec2;  using Vec3 = unix_vec3; using Vec4 = unix_vec4;
 using Rect  = unix_rect;    using Icon = unix_icon;  using Status = unix_status;
@@ -55,6 +63,10 @@ using LicenseRedeem = unix_license_redeem;
 using VrcPlayerOffsets = unix_vrc_player_offsets;
 using PlayerOffsets    = unix_player_offsets;
 using NameplateOffsets = unix_nameplate_offsets;
+using NativePageEvent = unix_native_page_ev; using MenuOpenEvent = unix_menu_open_ev;
+using AvatarEvent   = unix_avatar_ev;   using AppEvent      = unix_app_ev;
+using AppState      = unix_app_state;   using ModuleEvent   = unix_module_ev;
+using KeyboardEvent = unix_keyboard_ev; using Location      = unix_location;
 
 /// <summary>Which deob offset table `deob.offsets` should fill.</summary>
 enum class OffsetTable : uint32_t {
@@ -156,14 +168,51 @@ namespace detail {
 struct Node {
     std::function<void(const void*)> fn;
     std::function<bool(const void*)> ret;
+    unix_handle owner = unix_null;
+    uint32_t    busy  = 0;
+    bool        dead  = false;
 };
 
 Node* AllocNodeRaw();
+/// <summary>Release a node. A node whose closure is running is only marked dead; the
+/// outermost trampoline frame frees it when the closure returns.</summary>
 void  FreeNode(Node*) noexcept;
+/// <summary>Mark a node's closure as running.</summary>
+/// <returns>False when the node was already released and its closure must not run.</returns>
+bool  EnterNode(Node* n) noexcept;
+/// <summary>End one EnterNode, freeing the node when it was released meanwhile.</summary>
+void  LeaveNode(Node* n) noexcept;
+
+/// <summary>Keeps a node's closure alive for one trampoline call.</summary>
+class NodeScope {
+public:
+    explicit NodeScope(Node* n) noexcept : m_n(n), m_live(n ? EnterNode(n) : false) {}
+    ~NodeScope() { if (m_n) LeaveNode(m_n); }
+    NodeScope(const NodeScope&) = delete;
+    NodeScope& operator=(const NodeScope&) = delete;
+    [[nodiscard]] explicit operator bool() const noexcept { return m_live; }
+private:
+    Node* m_n;
+    bool  m_live;
+};
+
+/// <summary>Count one live UIPage object over a page handle of this module.</summary>
+void PageTrack(unix_handle page);
+/// <summary>Mark the page built or deliberately kept, so the last object leaving never removes it.</summary>
+void PageSettle(unix_handle page) noexcept;
+/// <summary>Uncount one live UIPage object.</summary>
+/// <returns>True when it was the last one and the page was never built nor kept.</returns>
+bool PageUntrack(unix_handle page) noexcept;
 /// <summary>Bind a node's lifetime to the handle the host just minted. A null handle means
-/// the registration failed, and the node is released immediately.</summary>
+/// the registration failed, and the node is released immediately. One handle may own
+/// several nodes.</summary>
 void  OwnNode(unix_handle h, Node* n);
-/// <summary>core.cancel, plus the release of whatever node OwnNode tied to the handle.</summary>
+/// <summary>Release every node OwnNode tied to the handle, without calling the host.</summary>
+void  ReleaseOwned(unix_handle h) noexcept;
+/// <summary>Release one node: untie it from its owner handle, or free it when it has none.
+/// Does nothing for a node its owner already released.</summary>
+void  ForgetNode(Node* n) noexcept;
+/// <summary>core.cancel, plus the release of every node OwnNode tied to the handle.</summary>
 void  Cancel(unix_handle h);
 
 template <class F> [[nodiscard]] Node* AllocNode(F&& f) {
@@ -187,7 +236,9 @@ template <class Ev, class F> [[nodiscard]] Node* NodeForVeto(F&& f) {
 
 template <class Ev> void UNIX_CC Tramp(void* ud, const Ev* ev) {
     auto* n = static_cast<Node*>(ud);
-    if (n && n->fn && ev) n->fn(ev);
+    if (!n || !ev) return;
+    NodeScope s(n);
+    if (s && n->fn) n->fn(ev);
 }
 void UNIX_CC TrampTask(void* ud);
 bool UNIX_CC TrampPhoton(void* ud, const unix_photon_ev* ev);
@@ -331,10 +382,14 @@ public:
     [[nodiscard]] explicit operator bool() const noexcept { return m_raw != nullptr; }
     [[nodiscard]] void* Raw() const noexcept { return m_raw; }
     /// <summary>False once the game destroyed the object behind this pointer.</summary>
-    [[nodiscard]] bool IsAlive() const;
-    [[nodiscard]] bool IsLocal() const;
-    [[nodiscard]] std::string GetDisplayName() const;
-    [[nodiscard]] std::string GetUserId() const;
+    template <class = void> [[nodiscard]] bool IsAlive() const;
+    template <class = void> [[nodiscard]] bool IsLocal() const;
+    template <class = void> [[nodiscard]] std::string GetDisplayName() const;
+    template <class = void> [[nodiscard]] std::string GetUserId() const;
+    /// <summary>This player's VRCPlayerApi, the pointer every PlayerApi method takes.
+    /// Null when the player is gone.</summary>
+    template <class = void> [[nodiscard]] void* GetApi() const;
+    /// <summary>Defined in <unix/il2cpp.hpp>; include it to call this.</summary>
     [[nodiscard]] PlayerRank  GetRank() const;
     [[nodiscard]] Color       GetRankColor() const;
     friend bool operator==(Player a, Player b) noexcept { return a.m_raw == b.m_raw; }
@@ -378,9 +433,16 @@ public:
     template <class = void> [[nodiscard]] ::UNIx::PlayerApi&     PlayerApi();
     template <class = void> [[nodiscard]] ::UNIx::Net&           Net();
     template <class = void> [[nodiscard]] ::UNIx::Notify&        Notify();
+    template <class = void> [[nodiscard]] ::UNIx::Relay&         Relay();
+    template <class = void> [[nodiscard]] ::UNIx::App&           App();
+    template <class = void> [[nodiscard]] ::UNIx::Avatars&       Avatars();
+    template <class = void> [[nodiscard]] ::UNIx::Hud&           Hud();
+    template <class = void> [[nodiscard]] ::UNIx::Actuation&     Actuation();
 
     template <class = void> [[nodiscard]] std::string    GetName() const;
     template <class = void> [[nodiscard]] unix_host_kind GetKind() const;
+    /// <summary>Which of the host's threads is running this call.</summary>
+    template <class = void> [[nodiscard]] ThreadKind     GetThread() const;
     /// <summary>Resolve one symbol by name, for scripting bridges only. Runs the same
     /// adjudicator as any bind: capability gating, notes, and null on anything but a clean row.</summary>
     /// <param name="symbol">Fully qualified row name, e.g. "menu.add_button".</param>
@@ -436,6 +498,15 @@ protected:
     UNIX_SERVICE_ACCESSOR(Modules,      Modules)
     UNIX_SERVICE_ACCESSOR(Telemetry,    Telemetry)
     UNIX_SERVICE_ACCESSOR(Il2Cpp,       Il2Cpp)
+    UNIX_SERVICE_ACCESSOR(Udon,         Udon)
+    UNIX_SERVICE_ACCESSOR(PlayerApi,    PlayerApi)
+    UNIX_SERVICE_ACCESSOR(Net,          Net)
+    UNIX_SERVICE_ACCESSOR(Notify,       Notify)
+    UNIX_SERVICE_ACCESSOR(Relay,        Relay)
+    UNIX_SERVICE_ACCESSOR(App,          App)
+    UNIX_SERVICE_ACCESSOR(Avatars,      Avatars)
+    UNIX_SERVICE_ACCESSOR(Hud,          Hud)
+    UNIX_SERVICE_ACCESSOR(Actuation,    Actuation)
 #undef UNIX_SERVICE_ACCESSOR
 };
 
@@ -444,7 +515,11 @@ protected:
 class Module : protected Services {
 public:
     virtual ~Module() = default;
+    /// <summary>Called once after bind. May run off the Unity main thread, where a main-thread
+    /// row returns unix_e_thread: build menus from Menu().OnReady or MainMenu().OnReady.</summary>
     virtual bool OnLoad() { return true; }
+    /// <summary>May run off the Unity main thread. Destroying a UIPage or UISubPage here is
+    /// safe, but not while holding a lock that the page's own callbacks take.</summary>
     virtual void OnUnload() {}
     virtual void OnEnabled(bool) {}
     virtual void OnUpdate(float /*dt*/) {}
@@ -644,16 +719,16 @@ const unix_module_desc* DescFor(T* self) {
 #include <unix/services/ui.hpp>
 #include <unix/services/udon.hpp>
 #include <unix/services/notify.hpp>
+#include <unix/services/relay.hpp>
 #include <unix/services/player.hpp>
-#if __has_include(<unix/services/photon.hpp>)
-#  include <unix/services/photon.hpp>
-#endif
+#include <unix/services/hud.hpp>
+#include <unix/services/actuation.hpp>
+#include <unix/services/photon.hpp>
 #if __has_include(<unix/services/telemetry.hpp>)
 #  include <unix/services/telemetry.hpp>
 #endif
-#include <unix/compat/bootstrap_module_names.hpp>
 
-// The 23 service singletons, defined once, after every service header. A body is instantiated
+// The service singletons, defined once, after every service header. A body is instantiated
 // only when its accessor is called, so a service whose header this build does not ship costs
 // nothing until something asks for it.
 UNIX_DEFINE_SERVICE(Config,       Config)
@@ -684,6 +759,11 @@ UNIX_DEFINE_SERVICE(Udon,         Udon)
 UNIX_DEFINE_SERVICE(PlayerApi,    PlayerApi)
 UNIX_DEFINE_SERVICE(Net,          Net)
 UNIX_DEFINE_SERVICE(Notify,       Notify)
+UNIX_DEFINE_SERVICE(Relay,        Relay)
+UNIX_DEFINE_SERVICE(App,          App)
+UNIX_DEFINE_SERVICE(Avatars,      Avatars)
+UNIX_DEFINE_SERVICE(Hud,          Hud)
+UNIX_DEFINE_SERVICE(Actuation,    Actuation)
 
 template <> struct std::hash<UNIx::Player> {
     std::size_t operator()(UNIx::Player p) const noexcept { return std::hash<void*>{}(p.Raw()); }

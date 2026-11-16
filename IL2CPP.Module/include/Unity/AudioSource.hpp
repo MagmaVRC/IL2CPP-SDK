@@ -84,6 +84,20 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
+        /// <summary>Keep this source playing while AudioListener.pause is set.</summary>
+        void SetIgnoreListenerPause(bool value) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AudioSource"), IL2CPP_STR("set_ignoreListenerPause"), 1);
+            void* params[] = { &value };
+            MethodHandler::invoke(m, raw(), params);
+        }
+
+        /// <summary>Exempt this source from the global AudioListener.volume multiplier.</summary>
+        void SetIgnoreListenerVolume(bool value) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AudioSource"), IL2CPP_STR("set_ignoreListenerVolume"), 1);
+            void* params[] = { &value };
+            MethodHandler::invoke(m, raw(), params);
+        }
+
         [[nodiscard]] float GetMinDistance() const {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.AudioSource"), IL2CPP_STR("get_minDistance"), 0);
             return MethodHandler::invoke<float>(m, raw());

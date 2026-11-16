@@ -74,6 +74,11 @@ namespace IL2CPP::Module::Unity {
             void* params[] = { &value };
             MethodHandler::invoke(m, raw(), params);
         }
+        void SetPixelsPerUnitMultiplier(float value) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.UI.Image"), IL2CPP_STR("set_pixelsPerUnitMultiplier"), 1);
+            void* params[] = { &value };
+            MethodHandler::invoke(m, raw(), params);
+        }
     };
 
 } // namespace IL2CPP::Module::Unity

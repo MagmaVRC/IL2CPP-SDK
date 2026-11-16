@@ -24,10 +24,27 @@ namespace IL2CPP::Module {
             dst[n] = '\0';
         }
 
+        bool SameBounded(const char* stored, std::string_view src) noexcept {
+            const size_t n = src.size() < BindMiss::kNameMax - 1 ? src.size() : BindMiss::kNameMax - 1;
+            return std::strncmp(stored, src.data(), n) == 0 && stored[n] == '\0';
+        }
+
+        bool AlreadyRetained(std::string_view klass, std::string_view member, int argc) noexcept {
+            uint32_t n = g_retained.load(std::memory_order_relaxed);
+            if (n > BindMiss::kCapacity) n = BindMiss::kCapacity;
+            for (uint32_t i = 0; i < n; ++i) {
+                const Entry& e = g_entries[i];
+                if (e.argc == argc && SameBounded(e.member, member) && SameBounded(e.klass, klass))
+                    return true;
+            }
+            return false;
+        }
+
     }
 
     void BindMiss::Record(std::string_view klass, std::string_view member, int argc) noexcept {
         g_total.fetch_add(1, std::memory_order_relaxed);
+        if (AlreadyRetained(klass, member, argc)) return;
 
         const uint32_t slot = g_retained.fetch_add(1, std::memory_order_relaxed);
         if (slot >= kCapacity) {

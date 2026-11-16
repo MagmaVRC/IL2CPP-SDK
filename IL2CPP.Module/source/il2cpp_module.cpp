@@ -268,9 +268,10 @@ namespace IL2CPP::Module {
 
     il2cppClass* FindClass(std::string_view fullName) {
         if (!E() || !E()->m_helperFindClass) return nullptr;
+        const NulTerminated name(fullName);
         return static_cast<il2cppClass*>(
             reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(E()->m_helperFindClass)(
-                std::string(fullName).c_str()));
+                name.c_str()));
     }
 
     il2cppClass* GetClassFromName(il2cppImage* image, const char* ns, const char* name) {

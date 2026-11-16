@@ -12,63 +12,118 @@ namespace IL2CPP::Module::Unity {
 
 
         [[nodiscard]] Vector3 GetPosition() const {
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_position_Injected"), 2,
+                IL2CPP_STR("UnityEngine.Transform::get_position_Injected(System.IntPtr,UnityEngine.Vector3&)"));
+            if (auto fn = ic.as<void(IL2CPP_CALLTYPE)(void*, Vector3*)>())
+                if (void* self = ICall::unity_self(raw())) { Vector3 v; fn(self, &v); return v; }
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_position"), 0);
             return MethodHandler::invoke<Vector3>(m, raw());
         }
         void SetPosition(const Vector3& pos) {
-            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_position"), 1);
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_position_Injected"), 2,
+                IL2CPP_STR("UnityEngine.Transform::set_position_Injected(System.IntPtr,UnityEngine.Vector3&)"));
             Vector3 p = pos;
+            if (auto fn = ic.as<void(IL2CPP_CALLTYPE)(void*, Vector3*)>())
+                if (void* self = ICall::unity_self(raw())) { fn(self, &p); return; }
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_position"), 1);
             void* params[] = { &p };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] Vector3 GetLocalPosition() const {
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_localPosition_Injected"), 2,
+                IL2CPP_STR("UnityEngine.Transform::get_localPosition_Injected(System.IntPtr,UnityEngine.Vector3&)"));
+            if (auto fn = ic.as<void(IL2CPP_CALLTYPE)(void*, Vector3*)>())
+                if (void* self = ICall::unity_self(raw())) { Vector3 v; fn(self, &v); return v; }
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_localPosition"), 0);
             return MethodHandler::invoke<Vector3>(m, raw());
         }
         void SetLocalPosition(const Vector3& pos) {
-            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_localPosition"), 1);
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_localPosition_Injected"), 2,
+                IL2CPP_STR("UnityEngine.Transform::set_localPosition_Injected(System.IntPtr,UnityEngine.Vector3&)"));
             Vector3 p = pos;
+            if (auto fn = ic.as<void(IL2CPP_CALLTYPE)(void*, Vector3*)>())
+                if (void* self = ICall::unity_self(raw())) { fn(self, &p); return; }
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_localPosition"), 1);
             void* params[] = { &p };
             MethodHandler::invoke(m, raw(), params);
         }
 
 
         [[nodiscard]] Quaternion GetRotation() const {
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_rotation_Injected"), 2,
+                IL2CPP_STR("UnityEngine.Transform::get_rotation_Injected(System.IntPtr,UnityEngine.Quaternion&)"));
+            if (auto fn = ic.as<void(IL2CPP_CALLTYPE)(void*, Quaternion*)>())
+                if (void* self = ICall::unity_self(raw())) { Quaternion q; fn(self, &q); return q; }
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_rotation"), 0);
             return MethodHandler::invoke<Quaternion>(m, raw());
         }
         void SetRotation(const Quaternion& rot) {
-            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_rotation"), 1);
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_rotation_Injected"), 2,
+                IL2CPP_STR("UnityEngine.Transform::set_rotation_Injected(System.IntPtr,UnityEngine.Quaternion&)"));
             Quaternion r = rot;
+            if (auto fn = ic.as<void(IL2CPP_CALLTYPE)(void*, Quaternion*)>())
+                if (void* self = ICall::unity_self(raw())) { fn(self, &r); return; }
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_rotation"), 1);
             void* params[] = { &r };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] Quaternion GetLocalRotation() const {
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_localRotation_Injected"), 2,
+                IL2CPP_STR("UnityEngine.Transform::get_localRotation_Injected(System.IntPtr,UnityEngine.Quaternion&)"));
+            if (auto fn = ic.as<void(IL2CPP_CALLTYPE)(void*, Quaternion*)>())
+                if (void* self = ICall::unity_self(raw())) { Quaternion q; fn(self, &q); return q; }
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_localRotation"), 0);
             return MethodHandler::invoke<Quaternion>(m, raw());
         }
         void SetLocalRotation(const Quaternion& rot) {
-            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_localRotation"), 1);
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_localRotation_Injected"), 2,
+                IL2CPP_STR("UnityEngine.Transform::set_localRotation_Injected(System.IntPtr,UnityEngine.Quaternion&)"));
             Quaternion r = rot;
+            if (auto fn = ic.as<void(IL2CPP_CALLTYPE)(void*, Quaternion*)>())
+                if (void* self = ICall::unity_self(raw())) { fn(self, &r); return; }
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_localRotation"), 1);
             void* params[] = { &r };
             MethodHandler::invoke(m, raw(), params);
         }
 
 
         [[nodiscard]] Vector3 GetLocalScale() const {
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_localScale_Injected"), 2,
+                IL2CPP_STR("UnityEngine.Transform::get_localScale_Injected(System.IntPtr,UnityEngine.Vector3&)"));
+            if (auto fn = ic.as<void(IL2CPP_CALLTYPE)(void*, Vector3*)>())
+                if (void* self = ICall::unity_self(raw())) { Vector3 v; fn(self, &v); return v; }
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_localScale"), 0);
             return MethodHandler::invoke<Vector3>(m, raw());
         }
         void SetLocalScale(const Vector3& scale) {
-            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_localScale"), 1);
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_localScale_Injected"), 2,
+                IL2CPP_STR("UnityEngine.Transform::set_localScale_Injected(System.IntPtr,UnityEngine.Vector3&)"));
             Vector3 s = scale;
+            if (auto fn = ic.as<void(IL2CPP_CALLTYPE)(void*, Vector3*)>())
+                if (void* self = ICall::unity_self(raw())) { fn(self, &s); return; }
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("set_localScale"), 1);
             void* params[] = { &s };
             MethodHandler::invoke(m, raw(), params);
         }
 
         [[nodiscard]] Vector3 GetLossyScale() const {
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_lossyScale_Injected"), 2,
+                IL2CPP_STR("UnityEngine.Transform::get_lossyScale_Injected(System.IntPtr,UnityEngine.Vector3&)"));
+            if (auto fn = ic.as<void(IL2CPP_CALLTYPE)(void*, Vector3*)>())
+                if (void* self = ICall::unity_self(raw())) { Vector3 v; fn(self, &v); return v; }
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_lossyScale"), 0);
             return MethodHandler::invoke<Vector3>(m, raw());
         }
@@ -126,11 +181,23 @@ namespace IL2CPP::Module::Unity {
         }
 
         [[nodiscard]] int GetChildCount() const {
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_childCount_Injected"), 1,
+                IL2CPP_STR("UnityEngine.Transform::get_childCount_Injected(System.IntPtr)"));
+            if (auto fn = ic.as<int32_t(IL2CPP_CALLTYPE)(void*)>())
+                if (void* self = ICall::unity_self(raw())) return fn(self);
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("get_childCount"), 0);
             return MethodHandler::invoke<int>(m, raw());
         }
 
         [[nodiscard]] Transform GetChild(int index) const {
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("GetChild_Injected"), 2,
+                IL2CPP_STR("UnityEngine.Transform::GetChild_Injected(System.IntPtr,System.Int32)"));
+            // An out-of-range index makes the icall raise; leave that to runtime_invoke, which catches it.
+            if (auto fn = ic.as<void*(IL2CPP_CALLTYPE)(void*, int32_t)>())
+                if (void* self = ICall::unity_self(raw()); self && index >= 0 && index < GetChildCount())
+                    return Transform{ ICall::unmarshal_object(fn(self, index)) };
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("GetChild"), 1);
             void* params[] = { &index };
             return Transform{ MethodHandler::invoke<void*>(m, raw(), params) };
@@ -165,17 +232,27 @@ namespace IL2CPP::Module::Unity {
 
 
         void SetPositionAndRotation(const Vector3& pos, const Quaternion& rot) {
-            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("SetPositionAndRotation"), 2);
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("SetPositionAndRotation_Injected"), 3,
+                IL2CPP_STR("UnityEngine.Transform::SetPositionAndRotation_Injected(System.IntPtr,UnityEngine.Vector3&,UnityEngine.Quaternion&)"));
             Vector3 p = pos;
             Quaternion r = rot;
+            if (auto fn = ic.as<void(IL2CPP_CALLTYPE)(void*, Vector3*, Quaternion*)>())
+                if (void* self = ICall::unity_self(raw())) { fn(self, &p, &r); return; }
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("SetPositionAndRotation"), 2);
             void* params[] = { &p, &r };
             MethodHandler::invoke(m, raw(), params);
         }
 
         void SetLocalPositionAndRotation(const Vector3& pos, const Quaternion& rot) {
-            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("SetLocalPositionAndRotation"), 2);
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("SetLocalPositionAndRotation_Injected"), 3,
+                IL2CPP_STR("UnityEngine.Transform::SetLocalPositionAndRotation_Injected(System.IntPtr,UnityEngine.Vector3&,UnityEngine.Quaternion&)"));
             Vector3 p = pos;
             Quaternion r = rot;
+            if (auto fn = ic.as<void(IL2CPP_CALLTYPE)(void*, Vector3*, Quaternion*)>())
+                if (void* self = ICall::unity_self(raw())) { fn(self, &p, &r); return; }
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Transform"), IL2CPP_STR("SetLocalPositionAndRotation"), 2);
             void* params[] = { &p, &r };
             MethodHandler::invoke(m, raw(), params);
         }
@@ -304,18 +381,33 @@ namespace IL2CPP::Module::Unity {
     inline Transform Component::GetTransform() const {
         static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Component"), IL2CPP_STR("get_transform"), 0);
         if (!raw()) return Transform{};
+        static ICall ic;
+        if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Component"), IL2CPP_STR("get_transform_Injected"), 1,
+            IL2CPP_STR("UnityEngine.Component::get_transform_Injected(System.IntPtr)"));
+        if (auto fn = ic.as<void*(IL2CPP_CALLTYPE)(void*)>())
+            if (void* self = ICall::unity_self(raw())) return Transform{ ICall::unmarshal_object(fn(self)) };
         return Transform{ MethodHandler::invoke<void*>(m, raw()) };
     }
 
     inline GameObject Component::GetGameObject() const {
         static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Component"), IL2CPP_STR("get_gameObject"), 0);
         if (!raw()) return GameObject{};
+        static ICall ic;
+        if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Component"), IL2CPP_STR("get_gameObject_Injected"), 1,
+            IL2CPP_STR("UnityEngine.Component::get_gameObject_Injected(System.IntPtr)"));
+        if (auto fn = ic.as<void*(IL2CPP_CALLTYPE)(void*)>())
+            if (void* self = ICall::unity_self(raw())) return GameObject{ ICall::unmarshal_object(fn(self)) };
         return GameObject{ MethodHandler::invoke<void*>(m, raw()) };
     }
 
     inline Transform GameObject::GetTransform() const {
         static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("get_transform"), 0);
         if (!raw()) return Transform{};
+        static ICall ic;
+        if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.GameObject"), IL2CPP_STR("get_transform_Injected"), 1,
+            IL2CPP_STR("UnityEngine.GameObject::get_transform_Injected(System.IntPtr)"));
+        if (auto fn = ic.as<void*(IL2CPP_CALLTYPE)(void*)>())
+            if (void* self = ICall::unity_self(raw())) return Transform{ ICall::unmarshal_object(fn(self)) };
         return Transform{ MethodHandler::invoke<void*>(m, raw()) };
     }
 

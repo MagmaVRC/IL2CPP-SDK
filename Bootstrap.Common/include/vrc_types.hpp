@@ -207,6 +207,11 @@ namespace Bootstrap {
     struct FlatBufferNetworkSerializerData {
         void* Class;
         int RequireFastRate;
+        // Appended, never reordered: this struct is shared ABI.
+        // il2cppMethodInfo* for the parameterless "encode the rig and raise it"
+        // method, matched by shape because its obfuscated name is an ordinal
+        // that moves between builds.
+        void* SerializeAndSend;
     };
 
     struct PhotonViewData {
@@ -226,6 +231,17 @@ namespace Bootstrap {
     struct VRCMotionStateData {
         void* Class;
         int characterController;
+        // Appended, never reordered: this struct is shared ABI.
+        void* Move;
+        int grounded;
+        int velocity;
+        int groundCollider;
+        // Locomotion methods that snap the player capsule back upright each physics step.
+        void* UprightCorrections[4];
+        int uprightCorrectionCount;
+        // Every Move(Vector3, Single) variant; builds from 1936 have one per locomotion mode.
+        void* Moves[4];
+        int moveCount;
     };
 
     struct ONSPAudioData {
@@ -239,6 +255,39 @@ namespace Bootstrap {
         void* Class;
         int apiWorld;
         int apiWorldInstance;
+    };
+
+    struct AvatarSecurityScanData {
+        void* Class;
+        // Void (ApiDictContainer): the override that parses one security scan response and
+        // builds its AvatarPerformanceStats.
+        void* Parse;
+        // Instance field offsets, from the analysis base class in declaration order.
+        int fileId;
+        int fileVersion;
+        int variant;
+        int fileSize;
+        int uncompressedSize;
+        int performanceRating;
+        int createdAt;
+        int stats;
+    };
+
+    struct AvatarManagerData {
+        void* Class;
+        // AvatarVariant (ApiAvatar, Boolean force): picks which bundle variant a load fetches.
+        void* ChooseVariant;
+        // Boolean (): per-LateUpdate "show the distance/count proxy instead of the avatar".
+        void* ShouldShowProxy;
+        // VRCPlayer Void (Boolean force, Boolean): queues an avatar refresh for its DispatchedUpdate.
+        void* RequestReload;
+        int vrcPlayer;
+        int avatarKind;
+        // VRC.Core.ApiAvatar.impostorUrl backing field.
+        int impostorUrl;
+        // Built-in avatar parameter controller: Void Update() and its field pointing back at the manager.
+        void* ParamUpdate;
+        int paramManager;
     };
 
     struct AssetBundleCacheData {
@@ -833,6 +882,16 @@ namespace Bootstrap {
         int volumeFillRaw;
     };
 
+    struct HudMicIndicatorData {
+        void* Class;
+        int micOn;
+        int micOff;
+        int micOnOutline;
+        int micOffOutline;
+        int colorOn;
+        int colorOff;
+    };
+
     struct MMAudioSettingsSectionData {
         void* Class;
         int masterVolumeSetting;
@@ -1371,6 +1430,26 @@ namespace Bootstrap {
         int layoutGroup;
         int prefabCompact;
         int fadeTarget;
+    };
+
+    /// <summary>The view model behind one avatar cell in the avatar menu lists: a
+    /// DataModel&lt;ApiAvatar&gt; built with new T(), given its id, then its ApiAvatar.</summary>
+    struct AvatarListModelData {
+        void* Class;
+        void* CtorMethod;
+        void* SetIdMethod;
+        void* SetModelMethod;
+        int apiAvatarOffset;
+        int idOffset;
+        /// <summary>SelectedAvatarPanel field holding the model on show.</summary>
+        int selectedPanelModelOffset;
+    };
+
+    /// <summary>One avatar cell in the avatar menu lists.</summary>
+    struct AvatarListCellData {
+        void* Class;
+        int favoriteIcon;
+        int modelOffset;
     };
 
     struct AvatarLooksPanelData {
@@ -2029,6 +2108,32 @@ namespace Bootstrap {
         int text;
         int fill;
         int fillGraphic;
+    };
+
+    struct LoadingPopupData {
+        void* Class = nullptr;
+        void* ShowForWorld = nullptr;
+        int instanceStatic = -1;
+        int bannerControllers = -1;
+        int panelContainers = -1;
+        int downloadProgressPanels = -1;
+    };
+
+    struct LoadingScreenManagerData {
+        void* Class = nullptr;
+        void* Prepare = nullptr;
+        void* Prepare2 = nullptr;
+    };
+
+    struct LoadingOverlayData {
+        void* Class = nullptr;
+        int container = -1;
+        int background = -1;
+    };
+
+    struct LoadingOverlayManagerData {
+        void* Class = nullptr;
+        void* Hide = nullptr;
     };
 
     struct MatManagerData {

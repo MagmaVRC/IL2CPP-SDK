@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <optional>
+#include <map>
 #include <utility>
 #include <cstring>
 
@@ -81,6 +82,35 @@ namespace IL2CPP::Module {
             return names;
         }
 
+        struct TargetTypeNames {
+            std::string name;
+            std::string rawName;
+            std::string fullName;
+            std::string rawFullName;
+        };
+    }
+
+    /// <summary>Caches field-type and target-type name sets across the resolvers of one class
+    /// scan. Names are frozen at first use, so an instance must not outlive the scan.</summary>
+    class TypeNameMemo {
+        std::map<std::pair<void*, void*>, std::vector<std::string>> m_fields;
+        std::map<void*, detail::TargetTypeNames>                   m_targets;
+
+    public:
+        const std::vector<std::string>& field_names(Field field, Class fieldClass) {
+            auto [it, fresh] = m_fields.try_emplace({ field.type().raw(), fieldClass.raw() });
+            if (fresh) it->second = detail::CollectFieldTypeNames(field, fieldClass);
+            return it->second;
+        }
+
+        const detail::TargetTypeNames& target_names(Class target) {
+            auto [it, fresh] = m_targets.try_emplace(target.raw());
+            if (fresh) it->second = { target.name(), target.raw_name(), target.full_name(), target.raw_full_name() };
+            return it->second;
+        }
+    };
+
+    namespace detail {
         // Per-field state shared by every query in one validate() pass. The
         // candidate-name set is built at most once, on first use.
         struct FieldMatchCtx {
@@ -88,8 +118,10 @@ namespace IL2CPP::Module {
             Class       fieldClass;
             bool        isStatic = false;
             const char* name = nullptr;
+            TypeNameMemo* memo = nullptr;
 
             const std::vector<std::string>& type_names() const {
+                if (memo) return memo->field_names(field, fieldClass);
                 if (!m_built) {
                     m_names = CollectFieldTypeNames(field, fieldClass);
                     m_built = true;
@@ -112,14 +144,24 @@ namespace IL2CPP::Module {
 
         inline bool FieldTypeNameMatches(const FieldMatchCtx& f, std::string_view expected) {
             if (expected.empty()) return true;
+            if (f.fieldClass && TypeNameEquals(f.fieldClass.raw_name(), expected)) return true;
             return FieldTypeNamesContain(f.type_names(), expected);
         }
 
         inline bool FieldMatchesTargetClass(const FieldMatchCtx& f, Class targetClass) {
             if (!targetClass) return false;
             if (f.fieldClass && f.fieldClass.raw() == targetClass.raw()) return true;
+            if (f.fieldClass && TypeNameEquals(f.fieldClass.raw_name(), targetClass.raw_name())) return true;
 
             const std::vector<std::string>& names = f.type_names();
+
+            if (f.memo) {
+                const TargetTypeNames& t = f.memo->target_names(targetClass);
+                if (FieldTypeNamesContain(names, t.name)) return true;
+                if (FieldTypeNamesContain(names, t.rawName)) return true;
+                if (!t.fullName.empty() && FieldTypeNamesContain(names, t.fullName)) return true;
+                return !t.rawFullName.empty() && FieldTypeNamesContain(names, t.rawFullName);
+            }
 
             if (FieldTypeNamesContain(names, targetClass.name())) return true;
             if (FieldTypeNamesContain(names, targetClass.raw_name())) return true;
@@ -910,6 +952,7 @@ namespace IL2CPP::Module {
         std::string                         m_deobfName;
         std::vector<std::string>            m_misses;
         bool                                m_includeInherited = false;
+        TypeNameMemo*                       m_memo = nullptr;
 
     public:
         /// <summary>Construct a resolver for the given class handle.</summary>
@@ -938,6 +981,12 @@ namespace IL2CPP::Module {
         /// roundTripTime on PhotonPeer, for one) is invisible without this.</summary>
         ClassResolver& includeInherited(bool enable = true) {
             m_includeInherited = enable;
+            return *this;
+        }
+
+        /// <summary>Shares type-name sets with the other resolvers of the same scan.</summary>
+        ClassResolver& typeNameMemo(TypeNameMemo& memo) {
+            m_memo = &memo;
             return *this;
         }
 
@@ -1004,6 +1053,7 @@ namespace IL2CPP::Module {
                 for (auto& field : fields) {
                     detail::FieldMatchCtx f;
                     f.field = field;
+                    f.memo = m_memo;
                     if (needsFieldClass) f.fieldClass = detail::ClassFromFieldType(field);
                     if (needsStatic)     f.isStatic = detail::is_field_static(field);
                     if (needsName)       f.name = field.name();
@@ -1032,6 +1082,7 @@ namespace IL2CPP::Module {
                     if (Field f = cur.get_field(query.m_name)) {
                         detail::FieldMatchCtx ctx;
                         ctx.field = f;
+                        ctx.memo = m_memo;
                         ctx.fieldClass = detail::ClassFromFieldType(f);
                         ctx.isStatic = detail::is_field_static(f);
                         ctx.name = query.m_name.c_str();

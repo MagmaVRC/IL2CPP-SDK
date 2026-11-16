@@ -199,7 +199,14 @@ namespace IL2CPP::Module::Unity {
         }
 
         [[nodiscard]] bool HasProperty(std::string_view name) const {
-            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Material"), IL2CPP_STR("HasProperty"), 1);
+            static Method m{};
+            if (!m) {
+                constexpr int kTypeString = 0x0E;
+                if (Class klass = Class::find(IL2CPP_STR("UnityEngine.Material")))
+                    for (const Method& overload : klass.get_overloads(IL2CPP_STR("HasProperty"), 1, false))
+                        if (overload.get_param_type(0).type_enum() == kTypeString) { m = overload; break; }
+                if (!m) return false;
+            }
             auto* e = GetExports(); if (!e || !e->m_stringNew) return false;
             void* str = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(std::string(name).c_str());
             void* params[] = { str };

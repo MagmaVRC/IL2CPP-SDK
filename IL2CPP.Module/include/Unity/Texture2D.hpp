@@ -163,6 +163,13 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
+        /// <summary>Negative values keep sharper mip levels at a distance (-1 = twice as far).</summary>
+        void SetMipMapBias(float bias) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Texture"), IL2CPP_STR("set_mipMapBias"), 1);
+            void* params[] = { &bias };
+            MethodHandler::invoke(m, raw(), params);
+        }
+
         void Apply(bool updateMipmaps = true, bool makeNoLongerReadable = false) {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Texture2D"), IL2CPP_STR("Apply"), 2);
             void* params[] = { &updateMipmaps, &makeNoLongerReadable };
@@ -178,6 +185,13 @@ namespace IL2CPP::Module::Unity {
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Texture2D"), IL2CPP_STR("SetPixel"), 3);
             Color c = color;
             void* params[] = { &x, &y, &c };
+            MethodHandler::invoke(m, raw(), params);
+        }
+
+        /// <summary>Replace mip 0 with a UnityEngine.Color32[] of width*height pixels, bottom row first.</summary>
+        void SetPixels32(void* color32Array) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Texture2D"), IL2CPP_STR("SetPixels32"), 1);
+            void* params[] = { color32Array };
             MethodHandler::invoke(m, raw(), params);
         }
 

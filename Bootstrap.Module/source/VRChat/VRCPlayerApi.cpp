@@ -4,14 +4,38 @@
 #include <IL2CPP.Module/include/MethodHandler.hpp>
 #include <IL2CPP.Module/include/Reflection.hpp>
 #include <IL2CPP.Module/include/Unity/GameObject.hpp>
+#include <IL2CPP.Module/include/ICall.hpp>
 #include <IL2CPP.Module/include/System/String.hpp>
+#include <atomic>
 
 namespace IL2CPP::VRChat {
 
     using IL2CPP::Module::MethodHandler;
 
+    namespace {
+        // Class pointer and field offset packed into one word so a reader never sees a torn pair.
+        int VRCPlayerApi_CachedFieldOffset(std::atomic<uint64_t>& cache, void* obj, const char* name) {
+            void* klass = *static_cast<void**>(obj);
+            const uint64_t key = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(klass)) << 16;
+            const uint64_t cached = cache.load(std::memory_order_acquire);
+            if (cached && (cached & ~uint64_t{ 0xFFFF }) == key) return static_cast<int>(cached & 0xFFFF);
+            IL2CPP::Module::Field f = IL2CPP::Module::Class{ klass }.get_field(name);
+            if (!f) return -1;
+            const int off = f.offset();
+            if (off < 0) return -1;
+            if (off <= 0xFFFF) cache.store(key | static_cast<uint64_t>(off), std::memory_order_release);
+            return off;
+        }
+    }
+
     std::string VRCPlayerApi::GetDisplayName() {
-        return get_string_field("displayName");
+        if (!valid()) return "";
+        static std::atomic<uint64_t> s_off{ 0 };
+        const int off = VRCPlayerApi_CachedFieldOffset(s_off, raw(), "displayName");
+        if (off < 0) return "";
+        void* str = read<void*>(off);
+        if (!str) return "";
+        return IL2CPP::Module::System::String(str).to_string();
     }
 
     void VRCPlayerApi::SetDisplayName(std::string_view name) {
@@ -20,13 +44,18 @@ namespace IL2CPP::VRChat {
 
     int VRCPlayerApi::GetPlayerId() {
         if (!valid()) return -1;
+        static std::atomic<uint64_t> s_off{ 0 };
+        if (const int off = VRCPlayerApi_CachedFieldOffset(s_off, raw(), "mPlayerId"); off >= 0)
+            if (const int id = read<int>(off); id != -1) return id;
         static auto m = MethodHandler::resolve("VRC.SDKBase.VRCPlayerApi", "get_playerId", 0);
         return MethodHandler::invoke<int>(m, raw());
     }
 
     bool VRCPlayerApi::IsLocal() {
         if (!valid()) return false;
-        return get_field<bool>("isLocal");
+        static std::atomic<uint64_t> s_off{ 0 };
+        const int off = VRCPlayerApi_CachedFieldOffset(s_off, raw(), "isLocal");
+        return off >= 0 ? read<bool>(off) : false;
     }
 
     bool VRCPlayerApi::IsMaster() {
@@ -61,6 +90,8 @@ namespace IL2CPP::VRChat {
 
     bool VRCPlayerApi::IsValid() {
         if (!valid()) return false;
+        static std::atomic<uint64_t> s_off{ 0 };
+        if (const int off = VRCPlayerApi_CachedFieldOffset(s_off, raw(), "_isValid"); off >= 0) return read<bool>(off);
         static auto m = MethodHandler::resolve("VRC.SDKBase.VRCPlayerApi", "IsValid", 0);
         return MethodHandler::invoke<bool>(m, raw());
     }
@@ -92,6 +123,25 @@ namespace IL2CPP::VRChat {
 
     IL2CPP::Vector3 VRCPlayerApi::GetPosition() {
         if (!valid()) return {};
+        using IL2CPP::Module::ICall;
+        static ICall icTransform;
+        static ICall icPosition;
+        if (!icTransform.ready()) icTransform.resolve("UnityEngine.GameObject", "get_transform_Injected", 1,
+            "UnityEngine.GameObject::get_transform_Injected(System.IntPtr)");
+        if (!icPosition.ready()) icPosition.resolve("UnityEngine.Transform", "get_position_Injected", 2,
+            "UnityEngine.Transform::get_position_Injected(System.IntPtr,UnityEngine.Vector3&)");
+        auto trFn = icTransform.as<void*(IL2CPP_CALLTYPE)(void*)>();
+        auto posFn = icPosition.as<void(IL2CPP_CALLTYPE)(void*, IL2CPP::Vector3*)>();
+        if (trFn && posFn) {
+            static std::atomic<uint64_t> s_goOff{ 0 };
+            if (const int off = VRCPlayerApi_CachedFieldOffset(s_goOff, raw(), "gameObject"); off >= 0)
+                if (void* goSelf = ICall::unity_self(read<void*>(off)))
+                    if (void* trSelf = ICall::unity_self(ICall::unmarshal_object(trFn(goSelf)))) {
+                        IL2CPP::Vector3 v{};
+                        posFn(trSelf, &v);
+                        return v;
+                    }
+        }
         static auto m = MethodHandler::resolve("VRC.SDKBase.VRCPlayerApi", "GetPosition", 0);
         return MethodHandler::invoke<IL2CPP::Vector3>(m, raw());
     }
@@ -123,10 +173,18 @@ namespace IL2CPP::VRChat {
         MethodHandler::invoke<void>(m, raw(), params);
     }
 
+    namespace { thread_local int t_teleportDepth = 0; }
+
+    TeleportScope::TeleportScope() noexcept { ++t_teleportDepth; }
+    TeleportScope::~TeleportScope() noexcept { --t_teleportDepth; }
+
+    bool VRCPlayerApi::TeleportInProgress() noexcept { return t_teleportDepth > 0; }
+
     void VRCPlayerApi::TeleportTo(IL2CPP::Vector3 pos, IL2CPP::Quaternion rot) {
         if (!valid()) return;
         static auto m = MethodHandler::resolve("VRC.SDKBase.VRCPlayerApi", "TeleportTo", 2);
         void* params[2] = { &pos, &rot };
+        TeleportScope scope;
         MethodHandler::invoke<void>(m, raw(), params);
     }
 
@@ -134,6 +192,7 @@ namespace IL2CPP::VRChat {
         if (!valid()) return;
         static auto m = MethodHandler::resolve("VRC.SDKBase.VRCPlayerApi", "TeleportTo", 3);
         void* params[3] = { &pos, &rot, &o };
+        TeleportScope scope;
         MethodHandler::invoke<void>(m, raw(), params);
     }
 
@@ -141,6 +200,7 @@ namespace IL2CPP::VRChat {
         if (!valid()) return;
         static auto m = MethodHandler::resolve("VRC.SDKBase.VRCPlayerApi", "TeleportTo", 4);
         void* params[4] = { &pos, &rot, &o, &lerpOnRemote };
+        TeleportScope scope;
         MethodHandler::invoke<void>(m, raw(), params);
     }
 
@@ -504,19 +564,26 @@ namespace IL2CPP::VRChat {
 
     bool VRCPlayerApi::IsVRCPlus() {
         if (!valid()) return false;
-        return get_field<bool>("isVRCPlus");
+        static IL2CPP::Module::Method m{};
+        if (!m) m = MethodHandler::resolve("VRC.SDKBase.VRCPlayerApi", "get_isVRCPlus", 0);
+        if (!m) return false;
+        return MethodHandler::invoke<bool>(m, raw());
     }
 
     IL2CPP::Module::Unity::GameObject VRCPlayerApi::GetGameObject() {
         if (!valid()) return {};
-        return get_field<IL2CPP::Module::Unity::GameObject>("gameObject");
+        static std::atomic<uint64_t> s_off{ 0 };
+        const int off = VRCPlayerApi_CachedFieldOffset(s_off, raw(), "gameObject");
+        if (off < 0) return {};
+        return IL2CPP::Module::Unity::GameObject(read<void*>(off));
     }
 
     VRCPlayer VRCPlayerApi::GetVRCPlayer() {
         if (!valid()) return {};
         auto go = GetGameObject();
         if (!go) return {};
-        static auto klass = IL2CPP::Module::Class::find("VRCPlayer");
+        static IL2CPP::Module::Class klass{};
+        if (!klass) klass = IL2CPP::Module::Class::find("VRCPlayer");
         if (!klass) return {};
         return VRCPlayer(IL2CPP::Module::Unity::GameObject(go).GetComponent(klass).raw());
     }

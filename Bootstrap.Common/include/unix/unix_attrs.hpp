@@ -30,8 +30,9 @@ struct Attr {
 /// <param name="e">The export table; each row exposes an `attr` member of type Attr.</param>
 /// <returns>False if any row is deprecated without a removal date, code or replacement;
 /// removed without a code or replacement; Experimental without a code; carries a removal
-/// that does not follow its deprecation; or stamps since/deprecated/removed past this
-/// SDK version. `removal` is deliberately unbounded: it is a future date.</returns>
+/// that does not follow its deprecation; stamps since/deprecated/removed past this
+/// SDK version; or is still present at or past its removal version. `removal` is otherwise
+/// unbounded: it is a future date.</returns>
 template <class Row, std::size_t N>
 consteval bool UnixAttrsAreWellFormed(const Row (&e)[N]) {
     for (std::size_t i = 0; i < N; ++i) {
@@ -40,6 +41,7 @@ consteval bool UnixAttrsAreWellFormed(const Row (&e)[N]) {
         if (a.removed    && !(a.code && a.replacement))              return false;
         if (a.stability == Stability::Experimental && !a.code)       return false;
         if (a.removal && !(a.removal > a.deprecated))                return false;
+        if (a.removal && !a.removed && a.removal <= UNIX_SDK_VERSION) return false;
         if (a.since > UNIX_SDK_VERSION || a.deprecated > UNIX_SDK_VERSION
                                       || a.removed > UNIX_SDK_VERSION) return false;
     }

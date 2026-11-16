@@ -7,6 +7,10 @@
 
 #include <cmath>
 
+#ifdef GetObject
+#undef GetObject
+#endif
+
 namespace UNIx {
 
     /// <summary>The typed VRChat object behind a player.</summary>

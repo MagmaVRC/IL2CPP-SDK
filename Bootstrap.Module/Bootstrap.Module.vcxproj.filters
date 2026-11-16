@@ -89,9 +89,6 @@
     <ClInclude Include="include\unix\il2cpp.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\unix\compat\bootstrap_module_names.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\unix\services\*.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

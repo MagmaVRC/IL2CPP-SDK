@@ -204,12 +204,14 @@ public:
         return detail::g_d.player_set_plate_visible(detail::g_self, api, (int32_t)visibility);
     }
 
-    template <class = void> [[nodiscard]] bool IsOwner(void* api, void* gameObject) const {
+    template <class = void> [[deprecated("use Net::IsOwner")]] [[nodiscard]]
+    bool IsOwner(void* api, void* gameObject) const {
         UNIX_USE(player, is_owner);
         return detail::g_d.player_is_owner(detail::g_self, api, gameObject);
     }
 
-    template <class = void> Status TakeOwnership(void* api, void* gameObject) {
+    template <class = void> [[deprecated("use Net::SetOwner")]]
+    Status TakeOwnership(void* api, void* gameObject) {
         UNIX_USE(player, take_ownership);
         return detail::g_d.player_take_ownership(detail::g_self, api, gameObject);
     }
@@ -248,6 +250,42 @@ public:
     template <class = void> Status ClearTags(void* api) {
         UNIX_USE(player, clear_tags);
         return detail::g_d.player_clear_tags(detail::g_self, api);
+    }
+
+    /// <summary>The VRCPlayerApi behind a player, or null when the player is gone.</summary>
+    template <class = void> [[nodiscard]] void* FromPlayer(Player p) const {
+        UNIX_USE(player, from_player);
+        return p ? detail::g_d.player_from_player(detail::g_self, p.Raw()) : nullptr;
+    }
+
+    /// <summary>The blueprint id of the avatar the player wears. Empty when unknown.</summary>
+    template <class = void> [[nodiscard]] std::string GetAvatarId(void* api) const {
+        UNIX_USE(player, avatar_id);
+        return detail::ReadStr([&](char* b, uint32_t c) {
+            return detail::g_d.player_avatar_id(detail::g_self, api, b, c);
+        });
+    }
+
+    /// <summary>Be told when any player's avatar changes, the local player's included.</summary>
+    template <class = void> [[nodiscard]] Subscription
+    OnAvatarChanged(std::function<void(const AvatarEvent&)> fn) {
+        UNIX_USE(player, on_avatar);
+        if (!fn) return {};
+        detail::Node* n = detail::NodeFor<unix_avatar_ev>(std::move(fn));
+        const unix_handle h = detail::g_d.player_on_avatar(detail::g_self, &detail::Tramp<unix_avatar_ev>, n);
+        if (h == unix_null) { detail::FreeNode(n); return {}; }
+        return Subscription{ h, n };
+    }
+};
+
+/// <summary>The local player's own avatar. Unity main thread only.</summary>
+class Avatars {
+public:
+    /// <summary>Switch the local player into an avatar by blueprint id. unix_e_arg for a
+    /// malformed id.</summary>
+    template <class = void> Status Equip(std::string_view avatarId) {
+        UNIX_USE(avatar, equip);
+        return detail::g_d.avatar_equip(detail::g_self, Sv(avatarId));
     }
 };
 
@@ -376,6 +414,33 @@ public:
     template <class = void> Status RequestStorageUpdate() {
         UNIX_USE(net, request_storage_update);
         return detail::g_d.net_request_storage_update(detail::g_self);
+    }
+
+    /// <summary>Go to this user's home world.</summary>
+    template <class = void> Status GoHome() {
+        UNIX_USE(net, go_home);
+        return detail::g_d.net_go_home(detail::g_self);
+    }
+
+    /// <summary>Leave and rejoin the current instance.</summary>
+    template <class = void> Status Rejoin() {
+        UNIX_USE(net, rejoin);
+        return detail::g_d.net_rejoin(detail::g_self);
+    }
+
+    /// <summary>Where this client is: world, instance and owner. Empty when the host cannot say.</summary>
+    template <class = void> [[nodiscard]] std::optional<Location> GetLocation() const {
+        UNIX_USE(net, location);
+        Location l{};
+        l.size = sizeof(l);
+        if (detail::g_d.net_location(detail::g_self, &l) != unix_ok) return std::nullopt;
+        return l;
+    }
+
+    /// <summary>Whether the local user may moderate this instance.</summary>
+    template <class = void> [[nodiscard]] bool CanModerate() const {
+        UNIX_USE(net, can_moderate);
+        return detail::g_d.net_can_moderate(detail::g_self);
     }
 };
 

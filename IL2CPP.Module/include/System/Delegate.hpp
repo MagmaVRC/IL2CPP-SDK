@@ -172,6 +172,26 @@ namespace IL2CPP::Module::System {
             return Delegate{ delegateObj };
         }
 
+        /// <summary>Create a native delegate that Unity and VRChat can invoke with its context.
+        /// The game calls `invoke_impl(method_code, args..., method)` and never reads m_target, so
+        /// the managed context is written to both fields.</summary>
+        /// <param name="delegateClass">Concrete delegate class, e.g. read from AddListener's parameter.</param>
+        /// <param name="nativeFn">`void __fastcall(void* context, args..., void* method)`.</param>
+        /// <param name="managedContext">Managed object passed as the first argument; the caller keeps it rooted.</param>
+        /// <returns>An empty delegate on failure.</returns>
+        [[nodiscard]] static Delegate CreateCallable(Class delegateClass, void* nativeFn, void* managedContext) {
+            auto d = CreateNative(delegateClass, nativeFn, managedContext);
+            if (!d || !managedContext) return d;
+            static const int codeOff = [] {
+                auto k = Class::find(IL2CPP_STR("System.Delegate"));
+                auto f = k ? k.get_field(IL2CPP_STR("method_code")) : Field{};
+                return f ? f.offset() : -1;
+            }();
+            if (codeOff < 0) return Delegate{};
+            *reinterpret_cast<void**>(static_cast<char*>(d.raw()) + codeOff) = managedContext;
+            return d;
+        }
+
         /// Type-safe overload — pass any function pointer type directly.
         /// Casts to void* internally.
         template<typename Fn>

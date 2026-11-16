@@ -114,8 +114,6 @@ namespace IL2CPP::VRChat {
         OwnerOnly
     };
 
-    using VRC_SerializationMethod [[deprecated("use SerializationMethod")]] = SerializationMethod;
-
     enum class EventTiming : int {
         Update = 0,
         LateUpdate,

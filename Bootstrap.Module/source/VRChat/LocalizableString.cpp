@@ -1,6 +1,8 @@
 #include <VRChat/LocalizableString.hpp>
 #include <IL2CPP.Module/include/MethodHandler.hpp>
 #include <IL2CPP.Module/include/System/String.hpp>
+#include <IL2CPP.Module/include/Reflection.hpp>
+#include <IL2CPP.Module/include/il2cpp_module.hpp>
 
 namespace IL2CPP::VRChat {
 
@@ -57,6 +59,13 @@ namespace IL2CPP::VRChat {
     }
 
     LocalizableString LocalizableString::Empty() {
+        static const auto klass = IL2CPP::Module::Class::find("VRC.Localization.LocalizableString");
+        static const auto field = klass ? klass.get_field("Empty") : IL2CPP::Module::Field{};
+        if (field) {
+            alignas(16) unsigned char data[0x40]{};
+            field.get_static_value(data);
+            return LocalizableString{ IL2CPP::Module::Box(static_cast<IL2CPP::il2cppClass*>(klass.raw()), data) };
+        }
         static auto m = MethodHandler::resolve("VRC.Localization.LocalizableString", "get_Empty", 0);
         void* result = MethodHandler::invoke<void*>(m, nullptr);
         return LocalizableString{ result };

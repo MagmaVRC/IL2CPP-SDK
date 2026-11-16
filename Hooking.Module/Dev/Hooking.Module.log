@@ -1,2 +1,0 @@
-﻿  hook_module.cpp
-N:\VisualStudio\VRChat\UNIx\UNIxLoader\IL2CPP\Hooking.Module\source\hook_module.cpp(1,10): error C1083: Cannot open include file: 'include/hook_module.hpp': No such file or directory

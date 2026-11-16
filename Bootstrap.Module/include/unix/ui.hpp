@@ -14,6 +14,9 @@ struct SliderDesc {
     float Power = 1.f;
     bool  SubIndicator = false;
     std::function<void(float)> OnChange{};
+    std::string_view Tooltip{};
+    /// <summary>The shown value is the slider value times this.</summary>
+    float DisplayScale = 1.f;
 };
 
 /// <summary>Options for a toggle.</summary>
@@ -24,6 +27,7 @@ struct ToggleDesc {
     /// <summary>Owns performing the transition and writing the bound value; may refuse.
     /// If it leaves the value unchanged the control snaps back on the next host poll.</summary>
     std::function<void(bool)> Apply{};
+    std::string_view Tooltip{};
 };
 
 /// <summary>Options for an enum selector. Value is ignored by the bound overloads.</summary>
@@ -33,6 +37,25 @@ struct EnumDesc {
     std::string_view ConfigKey{};
     bool  SubIndicator = false;
     std::function<void(int32_t)> OnChange{};
+    std::string_view Tooltip{};
+};
+
+/// <summary>How UIPage::NavigateTo and UISubPage::NavigateTo open a page.</summary>
+struct NavOptions {
+    PageTransition Transition = PageTransition::Left;
+    bool Modal = false;
+    bool Transparent = false;
+};
+
+/// <summary>Options for the world keyboard.</summary>
+struct KeyboardDesc {
+    std::string_view Title, Initial, Placeholder;
+    /// <summary>Maximum length; 0 is unlimited.</summary>
+    int32_t Limit = 0;
+    bool Multiline = false, Numeric = false;
+    /// <summary>Called once with the entered text, on the Unity main thread. The string is the
+    /// host's and lives only for the call. Nothing fires on cancel.</summary>
+    std::function<void(std::string_view)> OnSubmit;
 };
 
 namespace detail {
@@ -49,27 +72,77 @@ constexpr unix_icon MakeIcon(void* sprite) noexcept {
 // One trampoline per callback shape; the closure node's address is the ud (SDK spec 6.4).
 inline void UNIX_CC TrampWidget(void* ud, const unix_widget_ev* e) {
     auto* n = static_cast<Node*>(ud);
-    if (n && n->fn && e && e->kind != unix_wk_restore) n->fn(e);
+    if (!n || !e) return;
+    if (e->kind == unix_wk_release) { ForgetNode(n); return; }
+    NodeScope s(n);
+    if (s && n->fn && e->kind != unix_wk_restore) n->fn(e);
 }
 inline void UNIX_CC TrampUser(void* ud, const unix_user_ev* e) {
     auto* n = static_cast<Node*>(ud);
-    if (n && n->fn && e) n->fn(e);
+    if (!n || !e) return;
+    NodeScope s(n);
+    if (s && n->fn) n->fn(e);
 }
 inline void UNIX_CC TrampPlayer(void* ud, const unix_player_ev* e) {
     auto* n = static_cast<Node*>(ud);
-    if (n && n->fn && e) n->fn(e);
+    if (!n || !e) return;
+    NodeScope s(n);
+    if (s && n->fn) n->fn(e);
 }
 inline void UNIX_CC TrampRender(void* ud, const unix_frame* f) {
     auto* n = static_cast<Node*>(ud);
-    if (n && n->fn && f) n->fn(f);
+    if (!n || !f) return;
+    NodeScope s(n);
+    if (s && n->fn) n->fn(f);
 }
 inline void UNIX_CC TrampTween(void* ud, const unix_tween_ev* e) {
     auto* n = static_cast<Node*>(ud);
-    if (n && n->fn && e) n->fn(e);
+    if (!n || !e) return;
+    NodeScope s(n);
+    if (s && n->fn) n->fn(e);
+}
+inline void UNIX_CC TrampTweenFinal(void* ud, const unix_tween_ev* e) {
+    auto* n = static_cast<Node*>(ud);
+    NodeScope s(n);
+    if (s && n->fn && e) n->fn(e);
+    if (e) ReleaseOwned(e->tween);
+}
+inline void UNIX_CC TrampKeyboardFinal(void* ud, const unix_keyboard_ev* e) {
+    auto* n = static_cast<Node*>(ud);
+    NodeScope s(n);
+    if (s && n->fn && e) n->fn(e);
+    if (e) ReleaseOwned(e->request);
 }
 inline void UNIX_CC TrampMenu(void* ud, unix_menu_phase p) {
     auto* n = static_cast<Node*>(ud);
-    if (n && n->fn) n->fn(&p);
+    if (!n) return;
+    NodeScope s(n);
+    if (s && n->fn) n->fn(&p);
+}
+inline void UNIX_CC TrampPage(void* ud, const unix_page_ev* e) {
+    auto* n = static_cast<Node*>(ud);
+    if (!n || !e) return;
+    if (e->kind == unix_page_released) { ForgetNode(n); return; }
+    NodeScope s(n);
+    if (s && n->fn) n->fn(e);
+}
+
+constexpr PageReason ReasonOf(const unix_page_ev& e) noexcept {
+    return e.size >= offsetof(unix_page_ev, reason) + sizeof(uint32_t)
+               ? static_cast<PageReason>(e.reason) : PageReason::None;
+}
+
+inline std::vector<unix_str> StrList(std::span<const char* const> items) {
+    std::vector<unix_str> out;
+    out.reserve(items.size());
+    for (const char* s : items) out.push_back(Sv(s ? std::string_view{ s } : std::string_view{}));
+    return out;
+}
+inline std::vector<unix_str> StrList(std::span<const std::string_view> items) {
+    std::vector<unix_str> out;
+    out.reserve(items.size());
+    for (const std::string_view s : items) out.push_back(Sv(s));
+    return out;
 }
 
 template <class Call>
@@ -143,6 +216,29 @@ public:
     /// built.</summary>
     /// <param name="onPress">Receives the index of the row pressed.</param>
     template <class = void> UIList AddList(std::function<void(uint32_t)> onPress = {});
+
+    /// <summary>The surface's own GameObject.</summary>
+    template <class = void> [[nodiscard]] void* GetObject() const;
+    /// <summary>The GameObject the surface's controls are parented under.</summary>
+    template <class = void> [[nodiscard]] void* GetContentObject() const;
+    /// <summary>Recompute the surface's layout now rather than on the next frame.</summary>
+    template <class = void> void RebuildLayout();
+    /// <summary>Scroll so the control is in view; applied when the page next shows if it is
+    /// hidden.</summary>
+    template <class Ctl> requires requires(const Ctl& c) { c.Handle(); }
+    UISurface& ScrollTo(const Ctl& control, ScrollAlign align = ScrollAlign::Nearest);
+    /// <summary>Scroll to the top.</summary>
+    template <class = void> UISurface& ScrollToTop();
+    /// <param name="fromTop">0 is the top, 1 the bottom.</param>
+    template <class = void> UISurface& SetScrollPosition(float fromTop);
+    /// <summary>The scroll position measured from the top, 0 to 1.</summary>
+    /// <returns>-1 when the page has no scroll view.</returns>
+    template <class = void> [[nodiscard]] float ScrollPosition() const;
+    /// <summary>Remove every control on this surface; the surface itself, its tab and (unless
+    /// subPages) its sub-pages stay.</summary>
+    template <class = void> UISurface& Clear(bool subPages = false);
+    /// <summary>True while this page is anywhere on the QuickMenu's page stack.</summary>
+    template <class = void> [[nodiscard]] bool IsOnStack() const;
 protected:
     unix_handle m_handle{};
 };
@@ -184,6 +280,12 @@ public:
     template <class = void> void OnChange(std::function<void(bool)> fn);
     template <class = void> UIFoldout& SetEnabled(bool on);
     template <class = void> UIFoldout& SetVisible(bool on);
+    /// <summary>Hover text on the foldout's header.</summary>
+    template <class = void> UIFoldout& SetTooltip(std::string_view text);
+    template <class = void> UIFoldout& SetTitle(std::string_view title);
+    /// <summary>The GameObject the foldout's controls are parented under.</summary>
+    template <class = void> [[nodiscard]] void* GetContentObject() const;
+    template <class = void> [[nodiscard]] void* GetObject() const;
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
@@ -196,17 +298,34 @@ public:
     template <class = void> UISubPage& SetNavText(std::string_view text);
     template <class = void> UISubPage& SetNavIcon(Sprite icon);
     template <class = void> UISubPage& SetNavAlert(bool on);
+    /// <summary>Hover text on this sub-page's nav row.</summary>
+    template <class = void> UISubPage& SetTooltip(std::string_view text);
+    /// <summary>Position of the nav row among its siblings. Lower sorts first; ties keep
+    /// creation order.</summary>
+    template <class = void> UISubPage& SetNavOrder(int32_t order);
     template <class = void> [[nodiscard]] UIButton GetNavButton() const;
     /// <summary>Pin a small button into this sub-page's nav row corner; the row still opens
     /// the page.</summary>
     template <class = void> UICornerButton AddCornerButton(Sprite icon,
                                                            std::function<void()> onClick);
+    /// <summary>Open this sub-page with an explicit transition.</summary>
+    template <class = void> void NavigateTo(const NavOptions& options);
+    /// <summary>Look up a sub-page this module made under this one, by name. Never creates.</summary>
+    template <class = void> [[nodiscard]] UISubPage FindSubPage(std::string_view name) const;
+    /// <summary>Be told when this sub-page shows. Lives as long as the sub-page.</summary>
+    template <class = void> UISubPage& OnShow(std::function<void(PageReason)> fn);
+    /// <summary>Be told when this sub-page hides. Lives as long as the sub-page.</summary>
+    template <class = void> UISubPage& OnHide(std::function<void(PageReason)> fn);
+    /// <summary>Per frame while this sub-page is on screen. Lives as long as the sub-page.</summary>
+    template <class = void> UISubPage& OnTick(std::function<void(float)> fn);
     template <class = void> void Remove();
 };
 
 /// <summary>A QuickMenu page, and the one SDK object with virtuals. Constructing it creates the
-/// host page, or re-acquires the one this module already made under that name; destroying it
-/// cancels the event registration and leaves the page alone.</summary>
+/// host page, or re-acquires the one this module already made under that name. `OnBuild` runs
+/// once per host page, in the object that created it; that object owns the page and removes it
+/// when destroyed. A re-acquiring object receives Show/Hide/Tick but never Build. A page no
+/// object has built yet is removed when the last object over it is destroyed.</summary>
 class UIPage : public UISurface, protected Services {
 public:
     UIPage() = default;
@@ -219,26 +338,44 @@ public:
     UIPage(const UIPage&) = delete;
     UIPage& operator=(const UIPage&) = delete;
     virtual ~UIPage();
-    /// <summary>Look one up by name. Never creates.</summary>
+    /// <summary>Look up a page this module made, by name. Never creates.</summary>
     template <class = void> [[nodiscard]] static UIPage Find(std::string_view name);
 
     template <class = void> UISubPage AddSubPage(std::string_view name);
+    /// <summary>Look up a sub-page this module made under this page, by name. Never creates.</summary>
+    template <class = void> [[nodiscard]] UISubPage FindSubPage(std::string_view name) const;
     template <class = void> UIPage& SetIcon(Sprite icon);
     template <class = void> UIPage& SetIcon(void* sprite);
     template <class = void> UIPage& SetTitle(std::string_view title);
+    /// <summary>Hover text on this page's tab.</summary>
+    template <class = void> UIPage& SetTooltip(std::string_view text);
     /// <summary>Badge with the theme's default colour.</summary>
     template <class = void> UIPage& SetBadge(bool visible, std::string_view text = "");
     template <class = void> UIPage& SetBadge(bool visible, std::string_view text, Color bg);
+    /// <summary>Tile size and gap of the page's button grid. A negative component keeps that
+    /// setting.</summary>
+    template <class = void> UIPage& SetGrid(Vec2 cell, Vec2 spacing = { -1.f, -1.f });
+    /// <summary>Position of this page's tab among the module tabs. Lower sorts first; ties
+    /// keep creation order.</summary>
+    template <class = void> UIPage& SetTabOrder(int32_t order);
     template <class = void> void NavigateTo();
-    /// <summary>True while the menu has this page open.</summary>
+    /// <summary>Open this page with an explicit transition.</summary>
+    template <class = void> void NavigateTo(const NavOptions& options);
+    /// <summary>True while this page is on screen: the top of the stack with the QuickMenu
+    /// open.</summary>
     template <class = void> [[nodiscard]] bool IsVisible() const;
     /// <summary>Show or hide this page's tab. The page stays, and NavigateTo and a nav row
     /// on another page still reach it.</summary>
     template <class = void> UIPage& SetTabVisible(bool visible);
-    /// <summary>Destroy the host page. Unity main thread only.</summary>
+    /// <summary>Destroy the host page. Destroying this object afterwards does nothing more.</summary>
     template <class = void> void Remove();
+    /// <summary>Stop owning the page: destroying this object then leaves the page standing.</summary>
+    void Release() noexcept;
 
 protected:
+    /// <summary>Why the page is showing or hiding; meaningful inside OnShow and OnHide.</summary>
+    [[nodiscard]] PageReason Reason() const noexcept { return m_reason; }
+
     /// <summary>Build the page's contents. Delivered on the first main-thread pump after
     /// construction, never from the constructor.</summary>
     virtual void OnBuild() {}
@@ -251,7 +388,11 @@ protected:
 private:
     static void UNIX_CC OnPageEvent(void* ud, const unix_page_ev* e);
     void DispatchPageEvent(const unix_page_ev& e);
+    bool Untrack() noexcept;
     unix_handle m_events{};
+    bool        m_owner = false;
+    bool        m_tracked = false;
+    PageReason  m_reason = PageReason::None;
 };
 
 /// <summary>One row of a MainMenu page's side list, and the column its controls go on.
@@ -281,11 +422,27 @@ public:
     template <class = void> void Open();
     /// <summary>The title over the side list.</summary>
     template <class = void> UIMainMenuPage& SetTitle(std::string_view title);
+    /// <summary>A page opened from this one, which Back pops.</summary>
+    /// <param name="name">The page's title, and its key for re-acquiring.</param>
+    template <class = void> UIMainMenuSubPage AddSubPage(std::string_view name);
+    template <class = void> [[nodiscard]] void* GetObject() const;
+    /// <summary>The GameObject the page's section column is parented under.</summary>
+    template <class = void> [[nodiscard]] void* GetContentObject() const;
     /// <summary>Destroy the page, its tab and its sections. Unity main thread only.</summary>
     template <class = void> void Remove();
 
 private:
     unix_handle m_handle{};
+};
+
+/// <summary>A MainMenu page opened from another one, which Back pops. Controls go straight on it.</summary>
+class UIMainMenuSubPage : public UISurface {
+public:
+    using UISurface::UISurface;
+    template <class = void> void Open();
+    template <class = void> UIMainMenuSubPage& SetTitle(std::string_view title);
+    /// <summary>Destroy the page and its controls. Unity main thread only.</summary>
+    template <class = void> void Remove();
 };
 
 /// <summary>A tile on a page or sub-page.</summary>
@@ -303,6 +460,13 @@ public:
     template <class = void> UIButton& SetColor(Color c);
     template <class = void> UIButton& SetEnabled(bool on);
     template <class = void> UIButton& SetVisible(bool on);
+    template <class = void> UIButton& SetTooltip(std::string_view text);
+    /// <summary>Show or hide the icon, and let the text fill the tile.</summary>
+    /// <param name="inset">Text margin in tile units when it fills the tile.</param>
+    template <class = void> UIButton& SetLayout(bool iconVisible, bool textFill, float inset = 10.f);
+    /// <summary>Be told when the pointer enters the tile, on the Unity main thread. Empty when
+    /// the host's hover hook is not installed.</summary>
+    template <class = void> [[nodiscard]] Subscription OnHover(std::function<void()> fn);
     template <class = void> [[nodiscard]] void* GetObject() const;
     /// <summary>Pin a mini button into this tile's corner. The tile still does its own thing.</summary>
     template <class = void> UICornerButton AddCornerButton(Sprite icon,
@@ -332,6 +496,12 @@ public:
     template <class = void> UIToggle& SetIcon(void* sprite);
     template <class = void> UIToggle& SetEnabled(bool on);
     template <class = void> UIToggle& SetVisible(bool on);
+    template <class = void> UIToggle& SetTooltip(std::string_view text);
+    template <class = void> UIToggle& SetText(std::string_view text);
+    /// <summary>Be told when the pointer enters the toggle, on the Unity main thread. Empty for
+    /// a settings-row toggle, which has no hover hook.</summary>
+    template <class = void> [[nodiscard]] Subscription OnHover(std::function<void()> fn);
+    template <class = void> [[nodiscard]] void* GetObject() const;
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
@@ -352,6 +522,21 @@ public:
     template <class = void> void SetValueSilent(float v);
     template <class = void> UISlider& SetEnabled(bool on);
     template <class = void> UISlider& SetVisible(bool on);
+    template <class = void> UISlider& SetTooltip(std::string_view text);
+    template <class = void> UISlider& SetLabel(std::string_view label);
+    /// <summary>`min` must be below `max`; equal values leave the range unchanged. The value is
+    /// clamped into the new range without firing the change callback.</summary>
+    template <class = void> UISlider& SetRange(float min, float max);
+    /// <summary>How the value is shown: a printf-style format and a factor applied before it.
+    /// An empty format keeps the current one.</summary>
+    template <class = void> UISlider& SetFormat(std::string_view format, float displayScale = 1.f);
+    /// <summary>A toggle in this slider's row, whose state the host owns.</summary>
+    template <class = void> UIToggle AttachToggle(std::string_view text, bool def,
+                                                  const ToggleDesc& desc = {});
+    /// <summary>A toggle in this slider's row, two-way bound to an existing member.</summary>
+    template <class = void> UIToggle AttachToggle(std::string_view text, bool* value,
+                                                  const ToggleDesc& desc = {});
+    template <class = void> [[nodiscard]] void* GetObject() const;
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
@@ -374,6 +559,15 @@ public:
     template <class = void> void SetIndexSilent(int32_t i);
     template <class = void> UIEnumSelector& SetEnabled(bool on);
     template <class = void> UIEnumSelector& SetVisible(bool on);
+    template <class = void> UIEnumSelector& SetTooltip(std::string_view text);
+    template <class = void> UIEnumSelector& SetLabel(std::string_view label);
+    /// <summary>Replace the option list without firing the change callback.</summary>
+    /// <param name="index">The new selection, clamped; -1 keeps the current one.</param>
+    template <class = void> UIEnumSelector& SetOptions(std::span<const char* const> options,
+                                                       int32_t index = -1);
+    template <class = void> UIEnumSelector& SetOptions(std::span<const std::string_view> options,
+                                                       int32_t index = -1);
+    template <class = void> [[nodiscard]] void* GetObject() const;
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
@@ -388,9 +582,15 @@ public:
     [[nodiscard]] unix_handle Handle() const noexcept { return m_handle; }
     friend bool operator==(UILabel a, UILabel b) noexcept { return a.m_handle == b.m_handle; }
 
+    /// <summary>Replace the text. Empty text collapses the row; non-empty text shows it again
+    /// unless SetVisible(false) hid it.</summary>
     template <class = void> UILabel& SetText(std::string_view text);
     template <class = void> UILabel& SetEnabled(bool on);
     template <class = void> UILabel& SetVisible(bool on);
+    template <class = void> UILabel& SetColor(Color c);
+    /// <summary>Right-aligned value text beside the label. Empty hides it.</summary>
+    template <class = void> UILabel& SetValue(std::string_view text);
+    template <class = void> [[nodiscard]] void* GetObject() const;
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
@@ -408,6 +608,7 @@ public:
     }
 
     template <class = void> UISeparator& SetVisible(bool on);
+    template <class = void> [[nodiscard]] void* GetObject() const;
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
@@ -429,6 +630,9 @@ public:
     template <class = void> UITextInput& SetText(std::string_view text);
     template <class = void> UITextInput& SetEnabled(bool on);
     template <class = void> UITextInput& SetVisible(bool on);
+    template <class = void> UITextInput& SetTooltip(std::string_view text);
+    template <class = void> UITextInput& SetLabel(std::string_view label);
+    template <class = void> [[nodiscard]] void* GetObject() const;
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
@@ -447,11 +651,22 @@ public:
     template <class = void> void SetItems(std::span<const std::string_view> items);
     template <class = void> void SetItems(std::span<const char* const> items);
     template <class = void> void Clear();
+    /// <summary>The number of items, across every page.</summary>
     template <class = void> [[nodiscard]] uint32_t Count() const;
     /// <summary>One row, so it can be restyled after the list was filled.</summary>
+    /// <param name="index">An item index; the row is empty when that item is off the current
+    /// page.</param>
     template <class = void> [[nodiscard]] UIButton Row(uint32_t index) const;
     template <class = void> UIList& SetEnabled(bool on);
     template <class = void> UIList& SetVisible(bool on);
+    /// <summary>Show pageSize items at a time with a pager row; 0 shows all.</summary>
+    template <class = void> UIList& SetPaging(uint32_t pageSize);
+    /// <summary>Show one page, clamped to the last.</summary>
+    template <class = void> UIList& SetPage(uint32_t page);
+    /// <summary>The page shown, from 0.</summary>
+    template <class = void> [[nodiscard]] uint32_t Page() const;
+    /// <summary>How many pages Count() items fill at pageSize items each.</summary>
+    template <class = void> [[nodiscard]] uint32_t PageCount(uint32_t pageSize) const;
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
@@ -471,6 +686,7 @@ public:
     /// <summary>Tint the corner to show state. A per-change push, not a bound pointer.</summary>
     template <class = void> UICornerButton& SetColor(Color c);
     template <class = void> UICornerButton& SetIcon(Sprite icon);
+    template <class = void> [[nodiscard]] void* GetObject() const;
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
@@ -489,6 +705,16 @@ public:
 
     template <class = void> UIUserButton& SetText(std::string_view text);
     template <class = void> UIUserButton& SetIcon(Sprite icon);
+    /// <summary>Show or hide this button on every user page. A row whose buttons are all
+    /// hidden is hidden as well.</summary>
+    template <class = void> UIUserButton& SetVisible(bool on);
+    /// <summary>Grey this button out; a disabled button ignores presses.</summary>
+    template <class = void> UIUserButton& SetEnabled(bool on);
+    /// <summary>Show this button only for selections the predicate accepts. It is asked when
+    /// the selection changes and on UserPage::Refresh, never per frame. Empty clears it.</summary>
+    template <class = void> UIUserButton& SetVisibleWhen(std::function<bool()> predicate);
+    /// <summary>The button's GameObject on the open user page, or null.</summary>
+    template <class = void> [[nodiscard]] void* GetObject() const;
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
@@ -521,10 +747,66 @@ public:
     template <class = void> UIFoldout AddFoldout(std::string_view title, bool expanded = true,
                                                  bool background = true,
                                                  bool autoSeparators = false);
+    /// <summary>A page opened from a button in this row. Its title follows the selected user.</summary>
+    template <class = void> UISubPage AddSubPage(std::string_view name, Sprite icon = Sprite::None);
+    /// <summary>Show or hide this row and its buttons, on top of its audience.</summary>
+    template <class = void> UIUserRow& SetVisible(bool on);
+    /// <summary>The row's GameObject on the open user page, or null.</summary>
+    template <class = void> [[nodiscard]] void* GetObject() const;
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
 };
+
+/// <summary>Built-in content of a user-page info pill.</summary>
+enum class UserPill : uint32_t {
+    Custom = unix_pill_custom, UserId = unix_pill_user_id, ActorId = unix_pill_actor_id,
+    AvatarName = unix_pill_avatar_name, AvatarRelease = unix_pill_avatar_release,
+    Platform = unix_pill_platform, Rank = unix_pill_rank, InstanceTime = unix_pill_instance_time,
+    Friend = unix_pill_friend, ClientFps = unix_pill_client_fps, ClientPing = unix_pill_client_ping,
+};
+
+/// <summary>What a custom info pill shows. Empty copy makes it inert; color tints the text.</summary>
+struct PillText {
+    std::string text, copy, tooltip;
+    std::optional<Color> color{};
+};
+
+/// <summary>A label pill in the info strip under the user page's profile header.</summary>
+class UIUserPill {
+public:
+    UIUserPill() = default;
+    explicit UIUserPill(unix_handle h) noexcept : m_handle(h) {}
+    [[nodiscard]] explicit operator bool() const noexcept { return m_handle != unix_null; }
+    [[nodiscard]] unix_handle Handle() const noexcept { return m_handle; }
+    friend bool operator==(UIUserPill a, UIUserPill b) noexcept { return a.m_handle == b.m_handle; }
+
+    /// <summary>Show or hide this pill on top of its audience.</summary>
+    template <class = void> UIUserPill& SetVisible(bool on);
+    template <class = void> void Remove();
+private:
+    unix_handle m_handle{};
+};
+
+namespace detail {
+struct UserPillCall { const unix_user_ev* ev; unix_user_pill_out* out; };
+inline bool UNIX_CC TrampUserPill(void* ud, const unix_user_ev* e, unix_user_pill_out* o) {
+    auto* n = static_cast<Node*>(ud);
+    if (!n || !e || !o) return false;
+    NodeScope s(n);
+    if (!s || !n->ret) return false;
+    const UserPillCall call{ e, o };
+    return n->ret(&call);
+}
+template <size_t N>
+inline void CopyFixed(char (&dst)[N], std::string_view src) {
+    size_t n = src.size() < N - 1 ? src.size() : N - 1;
+    if (n < src.size())
+        while (n > 0 && (static_cast<unsigned char>(src[n]) & 0xC0u) == 0x80u) --n;
+    for (size_t i = 0; i < n; ++i) dst[i] = src[i];
+    dst[n] = '\0';
+}
+}   // namespace detail
 
 /// <summary>A custom row on a player's nameplate.</summary>
 class Nameplate {
@@ -566,7 +848,26 @@ public:
     [[nodiscard]] unix_handle Handle() const noexcept { return m_handle; }
     friend bool operator==(Tween a, Tween b) noexcept { return a.m_handle == b.m_handle; }
 
-    /// <summary>Stop it. The completion callback fires with completed = false.</summary>
+    /// <summary>Stop the tween. Cancel never calls the completion callback. `OnDone(false)`
+    /// fires only when the tween ends another way: `CancelAll`, `CancelTarget`, or its target
+    /// destroyed. Call it on the Unity main thread: off it, it can race a callback already
+    /// running there. A float target is detached before it returns.</summary>
+    template <class = void> void Cancel();
+    /// <summary>True while the tween or sequence is still running.</summary>
+    template <class = void> [[nodiscard]] bool IsActive() const;
+private:
+    unix_handle m_handle{};
+};
+
+/// <summary>An open world-keyboard request.</summary>
+class KeyboardRequest {
+public:
+    KeyboardRequest() = default;
+    explicit KeyboardRequest(unix_handle h) noexcept : m_handle(h) {}
+    [[nodiscard]] explicit operator bool() const noexcept { return m_handle != unix_null; }
+    [[nodiscard]] unix_handle Handle() const noexcept { return m_handle; }
+    /// <summary>Close the keyboard without submitting. Safe from any thread. After it returns,
+    /// the callback is never called again.</summary>
     template <class = void> void Cancel();
 private:
     unix_handle m_handle{};
@@ -635,7 +936,7 @@ private:
 namespace detail {
 
 inline unix_handle AddToggleTo(unix_handle parent, std::string_view text, bool def,
-                               bool* bound, const ToggleDesc& d) {
+                               bool* bound, const ToggleDesc& d, bool onSlider = false) {
     Node* n = nullptr;
     if (d.OnChange || d.Apply) {
         n = AllocNode([apply = d.Apply, on = d.OnChange](const void* p) {
@@ -647,6 +948,7 @@ inline unix_handle AddToggleTo(unix_handle parent, std::string_view text, bool d
     unix_toggle_desc t{};
     t.size          = sizeof(t);
     t.label         = Sv(text);
+    t.tooltip       = Sv(d.Tooltip);
     t.config_key    = Sv(d.ConfigKey);
     t.def           = bound ? *bound : def;
     t.sub_indicator = d.SubIndicator;
@@ -654,7 +956,8 @@ inline unix_handle AddToggleTo(unix_handle parent, std::string_view text, bool d
     t.ud            = n;
     t.bound         = bound;
     t.module_owns_write = static_cast<bool>(d.Apply);
-    const unix_handle h = g_d.menu_add_toggle(g_self, parent, &t);
+    const unix_handle h = onSlider ? g_d.menu_add_slider_toggle(g_self, parent, &t)
+                                   : g_d.menu_add_toggle(g_self, parent, &t);
     OwnNode(h, n);
     return h;
 }
@@ -670,13 +973,14 @@ inline unix_handle AddSliderTo(unix_handle parent, std::string_view label, float
     unix_slider_desc s{};
     s.size          = sizeof(s);
     s.label         = Sv(label);
+    s.tooltip       = Sv(d.Tooltip);
     s.format        = Sv(d.Format);
     s.config_key    = Sv(d.ConfigKey);
     s.value         = bound ? *bound : d.Value;
     s.min           = d.Min;
     s.max           = d.Max;
     s.power         = d.Power;
-    s.display_scale = 1.f;
+    s.display_scale = d.DisplayScale;
     s.sub_indicator = d.SubIndicator;
     s.on_change     = n ? &TrampWidget : nullptr;
     s.ud            = n;
@@ -729,9 +1033,7 @@ inline unix_handle AddEnumTo(unix_handle parent, std::string_view label, int32_t
             on(static_cast<const unix_widget_ev*>(p)->i);
         });
     }
-    std::vector<unix_str> options;
-    options.reserve(d.Options.size());
-    for (const char* o : d.Options) options.push_back(Sv(o ? std::string_view{ o } : std::string_view{}));
+    const std::vector<unix_str> options = StrList(d.Options);
 
     unix_enum_desc e{};
     e.size          = sizeof(e);
@@ -744,6 +1046,7 @@ inline unix_handle AddEnumTo(unix_handle parent, std::string_view label, int32_t
     e.on_change     = n ? &TrampWidget : nullptr;
     e.ud            = n;
     e.bound         = bound;
+    e.tooltip       = Sv(d.Tooltip);
     const unix_handle h = g_d.menu_add_enum(g_self, parent, &e);
     OwnNode(h, n);
     return h;
@@ -757,6 +1060,37 @@ inline unix_handle AddCornerTo(unix_handle owner, unix_icon icon, unix_handle pa
                                                      n ? &TrampWidget : nullptr, n);
     OwnNode(h, n);
     return h;
+}
+
+inline void SubscribeSubPage(unix_handle page, unix_page_event kind,
+                             std::function<void(const unix_page_ev&)> fn) {
+    if (!page || !fn) return;
+    Node* n = AllocNode([kind, f = std::move(fn)](const void* p) {
+        const auto& e = *static_cast<const unix_page_ev*>(p);
+        if (e.kind == kind) f(e);
+    });
+    const unix_handle sub = g_d.menu_on_page_event(g_self, page, &TrampPage, n);
+    OwnNode(sub, n);
+}
+
+inline Subscription HoverOn(unix_handle ctl, std::function<void()> fn) {
+    if (!fn) return {};
+    Node* n = AllocNode([f = std::move(fn)](const void*) { f(); });
+    const unix_handle h = g_d.menu_on_hover(g_self, ctl, &Tramp<unix_hover_ev>, n);
+    if (h == unix_null) { FreeNode(n); return {}; }
+    return Subscription{ h, n };
+}
+
+inline unix_status SetSliderRange(unix_handle ctl, float min, float max, float displayScale,
+                                  std::string_view format) {
+    unix_slider_range r{};
+    r.size          = sizeof(r);
+    r.min           = min;
+    r.max           = max;
+    r.power         = 0.f;
+    r.display_scale = displayScale;
+    r.format        = Sv(format);
+    return g_d.menu_set_slider_range(g_self, ctl, &r);
 }
 
 }   // namespace detail
@@ -989,6 +1323,93 @@ bool UIFoldout::IsExpanded() const {
 }
 
 template <class>
+UIFoldout& UIFoldout::SetTooltip(std::string_view text) {
+    UNIX_USE(menu, set_tooltip);
+    detail::g_d.menu_set_tooltip(detail::g_self, m_handle, Sv(text));
+    return *this;
+}
+
+template <class>
+UIFoldout& UIFoldout::SetTitle(std::string_view title) {
+    UNIX_USE(menu, set_control_label);
+    detail::g_d.menu_set_control_label(detail::g_self, m_handle, Sv(title));
+    return *this;
+}
+
+template <class>
+void* UIFoldout::GetContentObject() const {
+    UNIX_USE(menu, content_object);
+    return detail::g_d.menu_content_object(detail::g_self, m_handle);
+}
+
+template <class>
+void* UIFoldout::GetObject() const {
+    UNIX_USE(menu, button_object);
+    return detail::g_d.menu_button_object(detail::g_self, m_handle);
+}
+
+// ---- surface ------------------------------------------------------------------------
+
+template <class>
+void* UISurface::GetObject() const {
+    UNIX_USE(menu, page_object);
+    return detail::g_d.menu_page_object(detail::g_self, m_handle);
+}
+
+template <class>
+void* UISurface::GetContentObject() const {
+    UNIX_USE(menu, content_object);
+    return detail::g_d.menu_content_object(detail::g_self, m_handle);
+}
+
+template <class>
+void UISurface::RebuildLayout() {
+    UNIX_USE(menu, rebuild_layout);
+    detail::g_d.menu_rebuild_layout(detail::g_self, m_handle);
+}
+
+template <class Ctl> requires requires(const Ctl& c) { c.Handle(); }
+UISurface& UISurface::ScrollTo(const Ctl& control, ScrollAlign align) {
+    UNIX_USE(menu, scroll_to);
+    detail::g_d.menu_scroll_to(detail::g_self, m_handle, control.Handle(),
+                               static_cast<uint32_t>(align));
+    return *this;
+}
+
+template <class>
+UISurface& UISurface::ScrollToTop() {
+    return SetScrollPosition(0.f);
+}
+
+template <class>
+UISurface& UISurface::SetScrollPosition(float fromTop) {
+    UNIX_USE(menu, set_scroll);
+    detail::g_d.menu_set_scroll(detail::g_self, m_handle, fromTop);
+    return *this;
+}
+
+template <class>
+float UISurface::ScrollPosition() const {
+    UNIX_USE(menu, get_scroll);
+    return detail::g_d.menu_get_scroll(detail::g_self, m_handle);
+}
+
+template <class>
+UISurface& UISurface::Clear(bool subPages) {
+    UNIX_USE(menu, clear_page);
+    detail::g_d.menu_clear_page(detail::g_self, m_handle,
+                                subPages ? static_cast<uint32_t>(unix_clear_sub_pages)
+                                         : static_cast<uint32_t>(unix_clear_controls));
+    return *this;
+}
+
+template <class>
+bool UISurface::IsOnStack() const {
+    UNIX_USE(menu, page_on_stack);
+    return detail::g_d.menu_page_on_stack(detail::g_self, m_handle);
+}
+
+template <class>
 void UIFoldout::Remove() {
     detail::Cancel(m_handle);
     m_handle = unix_null;
@@ -1030,6 +1451,61 @@ UICornerButton UISubPage::AddCornerButton(Sprite icon, std::function<void()> onC
 }
 
 template <class>
+UISubPage& UISubPage::SetTooltip(std::string_view text) {
+    UNIX_USE(menu, set_tooltip);
+    detail::g_d.menu_set_tooltip(detail::g_self, m_handle, Sv(text));
+    return *this;
+}
+
+template <class>
+UISubPage& UISubPage::SetNavOrder(int32_t order) {
+    UNIX_USE(menu, set_page_order);
+    detail::g_d.menu_set_page_order(detail::g_self, m_handle, order);
+    return *this;
+}
+
+template <class>
+void UISubPage::NavigateTo(const NavOptions& options) {
+    UNIX_USE(menu, navigate_to_ex);
+    unix_nav_desc d{};
+    d.size        = sizeof(d);
+    d.transition  = static_cast<unix_page_transition>(options.Transition);
+    d.modal       = options.Modal;
+    d.transparent = options.Transparent;
+    detail::g_d.menu_navigate_to_ex(detail::g_self, m_handle, &d);
+}
+
+template <class>
+UISubPage UISubPage::FindSubPage(std::string_view name) const {
+    UNIX_USE(menu, find_sub_page);
+    return UISubPage{ detail::g_d.menu_find_sub_page(detail::g_self, m_handle, Sv(name)) };
+}
+
+template <class>
+UISubPage& UISubPage::OnShow(std::function<void(PageReason)> fn) {
+    UNIX_USE(menu, on_page_event);
+    if (fn) detail::SubscribeSubPage(m_handle, unix_page_shown,
+                                     [f = std::move(fn)](const unix_page_ev& e) { f(detail::ReasonOf(e)); });
+    return *this;
+}
+
+template <class>
+UISubPage& UISubPage::OnHide(std::function<void(PageReason)> fn) {
+    UNIX_USE(menu, on_page_event);
+    if (fn) detail::SubscribeSubPage(m_handle, unix_page_hidden,
+                                     [f = std::move(fn)](const unix_page_ev& e) { f(detail::ReasonOf(e)); });
+    return *this;
+}
+
+template <class>
+UISubPage& UISubPage::OnTick(std::function<void(float)> fn) {
+    UNIX_USE(menu, on_page_event);
+    if (fn) detail::SubscribeSubPage(m_handle, unix_page_tick,
+                                     [f = std::move(fn)](const unix_page_ev& e) { f(e.dt); });
+    return *this;
+}
+
+template <class>
 void UISubPage::Remove() {
     detail::Cancel(m_handle);
     m_handle = unix_null;
@@ -1043,20 +1519,55 @@ UIPage::UIPage(std::string_view name, std::string_view tooltip) {
     if (m_handle)
         m_events = detail::g_d.menu_on_page_event(detail::g_self, m_handle,
                                                   &UIPage::OnPageEvent, this);
+    if (m_events) {
+        detail::PageTrack(m_handle);
+        m_tracked = true;
+    }
+}
+
+inline bool UIPage::Untrack() noexcept {
+    if (!m_tracked) return false;
+    m_tracked = false;
+    return detail::PageUntrack(m_handle);
 }
 
 inline UIPage::~UIPage() {
+    const bool orphan = Untrack();
+    if (m_owner || orphan) {
+        m_owner = false;
+        detail::Cancel(m_handle);
+        m_handle = unix_null;
+    }
+    detail::Cancel(m_events);
+    m_events = unix_null;
+}
+
+inline void UIPage::Release() noexcept {
+    if (m_tracked) detail::PageSettle(m_handle);
+    (void)Untrack();
+    m_owner = false;
     detail::Cancel(m_events);
     m_events = unix_null;
 }
 
 inline void UIPage::DispatchPageEvent(const unix_page_ev& e) {
+    m_reason = detail::ReasonOf(e);
     switch (e.kind) {
-        case unix_page_built:        OnBuild(); break;
+        case unix_page_built:
+            m_owner = true;
+            if (m_tracked) detail::PageSettle(m_handle);
+            OnBuild();
+            break;
         case unix_page_shown:        OnShow(); break;
         case unix_page_hidden:       OnHide(); break;
         case unix_page_tick:         OnTick(e.dt); break;
         case unix_page_scene_loaded: OnSceneLoaded(); break;
+        case unix_page_released:
+            (void)Untrack();
+            m_owner  = false;
+            m_handle = unix_null;
+            m_events = unix_null;
+            break;
         default: break;
     }
 }
@@ -1113,9 +1624,47 @@ UIPage& UIPage::SetBadge(bool visible, std::string_view text, Color bg) {
 }
 
 template <class>
+UISubPage UIPage::FindSubPage(std::string_view name) const {
+    UNIX_USE(menu, find_sub_page);
+    return UISubPage{ detail::g_d.menu_find_sub_page(detail::g_self, m_handle, Sv(name)) };
+}
+
+template <class>
+UIPage& UIPage::SetTooltip(std::string_view text) {
+    UNIX_USE(menu, set_tooltip);
+    detail::g_d.menu_set_tooltip(detail::g_self, m_handle, Sv(text));
+    return *this;
+}
+
+template <class>
+UIPage& UIPage::SetGrid(Vec2 cell, Vec2 spacing) {
+    UNIX_USE(menu, set_grid);
+    detail::g_d.menu_set_grid(detail::g_self, m_handle, cell, spacing);
+    return *this;
+}
+
+template <class>
+UIPage& UIPage::SetTabOrder(int32_t order) {
+    UNIX_USE(menu, set_page_order);
+    detail::g_d.menu_set_page_order(detail::g_self, m_handle, order);
+    return *this;
+}
+
+template <class>
 void UIPage::NavigateTo() {
     UNIX_USE(menu, navigate_to);
     detail::g_d.menu_navigate_to(detail::g_self, m_handle);
+}
+
+template <class>
+void UIPage::NavigateTo(const NavOptions& options) {
+    UNIX_USE(menu, navigate_to_ex);
+    unix_nav_desc d{};
+    d.size        = sizeof(d);
+    d.transition  = static_cast<unix_page_transition>(options.Transition);
+    d.modal       = options.Modal;
+    d.transparent = options.Transparent;
+    detail::g_d.menu_navigate_to_ex(detail::g_self, m_handle, &d);
 }
 
 template <class>
@@ -1133,8 +1682,10 @@ UIPage& UIPage::SetTabVisible(bool visible) {
 
 template <class>
 void UIPage::Remove() {
+    (void)Untrack();
     detail::Cancel(m_events);
     m_events = unix_null;
+    m_owner = false;
     detail::Cancel(m_handle);
     m_handle = unix_null;
 }
@@ -1159,7 +1710,45 @@ UIMainMenuPage& UIMainMenuPage::SetTitle(std::string_view title) {
 }
 
 template <class>
+UIMainMenuSubPage UIMainMenuPage::AddSubPage(std::string_view name) {
+    UNIX_USE(mainmenu, create_sub_page);
+    return UIMainMenuSubPage{ detail::g_d.mainmenu_create_sub_page(detail::g_self, m_handle,
+                                                                   Sv(name)) };
+}
+
+template <class>
+void* UIMainMenuPage::GetObject() const {
+    UNIX_USE(mainmenu, page_object);
+    return detail::g_d.mainmenu_page_object(detail::g_self, m_handle);
+}
+
+template <class>
+void* UIMainMenuPage::GetContentObject() const {
+    UNIX_USE(mainmenu, content_object);
+    return detail::g_d.mainmenu_content_object(detail::g_self, m_handle);
+}
+
+template <class>
 void UIMainMenuPage::Remove() {
+    detail::Cancel(m_handle);
+    m_handle = unix_null;
+}
+
+template <class>
+void UIMainMenuSubPage::Open() {
+    UNIX_USE(mainmenu, open_page);
+    detail::g_d.mainmenu_open_page(detail::g_self, m_handle);
+}
+
+template <class>
+UIMainMenuSubPage& UIMainMenuSubPage::SetTitle(std::string_view title) {
+    UNIX_USE(mainmenu, set_page_title);
+    detail::g_d.mainmenu_set_page_title(detail::g_self, m_handle, Sv(title));
+    return *this;
+}
+
+template <class>
+void UIMainMenuSubPage::Remove() {
     detail::Cancel(m_handle);
     m_handle = unix_null;
 }
@@ -1213,16 +1802,36 @@ UIButton& UIButton::SetColor(Color c) {
 
 template <class>
 UIButton& UIButton::SetEnabled(bool on) {
-    UNIX_USE(menu, set_button_enabled);
-    detail::g_d.menu_set_button_enabled(detail::g_self, m_handle, on);
+    UNIX_USE(menu, set_control_enabled);
+    detail::g_d.menu_set_control_enabled(detail::g_self, m_handle, on);
     return *this;
 }
 
 template <class>
 UIButton& UIButton::SetVisible(bool on) {
-    UNIX_USE(menu, set_button_visible);
-    detail::g_d.menu_set_button_visible(detail::g_self, m_handle, on);
+    UNIX_USE(menu, set_control_visible);
+    detail::g_d.menu_set_control_visible(detail::g_self, m_handle, on);
     return *this;
+}
+
+template <class>
+UIButton& UIButton::SetTooltip(std::string_view text) {
+    UNIX_USE(menu, set_tooltip);
+    detail::g_d.menu_set_tooltip(detail::g_self, m_handle, Sv(text));
+    return *this;
+}
+
+template <class>
+UIButton& UIButton::SetLayout(bool iconVisible, bool textFill, float inset) {
+    UNIX_USE(menu, set_button_layout);
+    detail::g_d.menu_set_button_layout(detail::g_self, m_handle, iconVisible, textFill, inset);
+    return *this;
+}
+
+template <class>
+Subscription UIButton::OnHover(std::function<void()> fn) {
+    UNIX_USE(menu, on_hover);
+    return detail::HoverOn(m_handle, std::move(fn));
 }
 
 template <class>
@@ -1285,16 +1894,42 @@ UIToggle& UIToggle::SetIcon(void* sprite) {
 
 template <class>
 UIToggle& UIToggle::SetEnabled(bool on) {
-    UNIX_USE(menu, set_button_enabled);
-    detail::g_d.menu_set_button_enabled(detail::g_self, m_handle, on);
+    UNIX_USE(menu, set_control_enabled);
+    detail::g_d.menu_set_control_enabled(detail::g_self, m_handle, on);
     return *this;
 }
 
 template <class>
 UIToggle& UIToggle::SetVisible(bool on) {
-    UNIX_USE(menu, set_button_visible);
-    detail::g_d.menu_set_button_visible(detail::g_self, m_handle, on);
+    UNIX_USE(menu, set_control_visible);
+    detail::g_d.menu_set_control_visible(detail::g_self, m_handle, on);
     return *this;
+}
+
+template <class>
+UIToggle& UIToggle::SetTooltip(std::string_view text) {
+    UNIX_USE(menu, set_tooltip);
+    detail::g_d.menu_set_tooltip(detail::g_self, m_handle, Sv(text));
+    return *this;
+}
+
+template <class>
+UIToggle& UIToggle::SetText(std::string_view text) {
+    UNIX_USE(menu, set_control_label);
+    detail::g_d.menu_set_control_label(detail::g_self, m_handle, Sv(text));
+    return *this;
+}
+
+template <class>
+Subscription UIToggle::OnHover(std::function<void()> fn) {
+    UNIX_USE(menu, on_hover);
+    return detail::HoverOn(m_handle, std::move(fn));
+}
+
+template <class>
+void* UIToggle::GetObject() const {
+    UNIX_USE(menu, button_object);
+    return detail::g_d.menu_button_object(detail::g_self, m_handle);
 }
 
 template <class>
@@ -1322,6 +1957,52 @@ void UISlider::SetValueSilent(float v) {
 }
 
 template <class>
+UISlider& UISlider::SetTooltip(std::string_view text) {
+    UNIX_USE(menu, set_tooltip);
+    detail::g_d.menu_set_tooltip(detail::g_self, m_handle, Sv(text));
+    return *this;
+}
+
+template <class>
+UISlider& UISlider::SetLabel(std::string_view label) {
+    UNIX_USE(menu, set_control_label);
+    detail::g_d.menu_set_control_label(detail::g_self, m_handle, Sv(label));
+    return *this;
+}
+
+template <class>
+UISlider& UISlider::SetRange(float min, float max) {
+    UNIX_USE(menu, set_slider_range);
+    detail::SetSliderRange(m_handle, min, max, 0.f, {});
+    return *this;
+}
+
+template <class>
+UISlider& UISlider::SetFormat(std::string_view format, float displayScale) {
+    UNIX_USE(menu, set_slider_range);
+    detail::SetSliderRange(m_handle, 0.f, 0.f, displayScale, format);
+    return *this;
+}
+
+template <class>
+UIToggle UISlider::AttachToggle(std::string_view text, bool def, const ToggleDesc& desc) {
+    UNIX_USE(menu, add_slider_toggle);
+    return UIToggle{ detail::AddToggleTo(m_handle, text, def, nullptr, desc, true) };
+}
+
+template <class>
+UIToggle UISlider::AttachToggle(std::string_view text, bool* value, const ToggleDesc& desc) {
+    UNIX_USE(menu, add_slider_toggle);
+    return UIToggle{ detail::AddToggleTo(m_handle, text, false, value, desc, true) };
+}
+
+template <class>
+void* UISlider::GetObject() const {
+    UNIX_USE(menu, button_object);
+    return detail::g_d.menu_button_object(detail::g_self, m_handle);
+}
+
+template <class>
 void UISlider::Remove() {
     detail::Cancel(m_handle);
     m_handle = unix_null;
@@ -1346,6 +2027,47 @@ void UIEnumSelector::SetIndexSilent(int32_t i) {
 }
 
 template <class>
+UIEnumSelector& UIEnumSelector::SetTooltip(std::string_view text) {
+    UNIX_USE(menu, set_tooltip);
+    detail::g_d.menu_set_tooltip(detail::g_self, m_handle, Sv(text));
+    return *this;
+}
+
+template <class>
+UIEnumSelector& UIEnumSelector::SetLabel(std::string_view label) {
+    UNIX_USE(menu, set_control_label);
+    detail::g_d.menu_set_control_label(detail::g_self, m_handle, Sv(label));
+    return *this;
+}
+
+template <class>
+UIEnumSelector& UIEnumSelector::SetOptions(std::span<const char* const> options, int32_t index) {
+    UNIX_USE(menu, set_enum_options);
+    const std::vector<unix_str> items = detail::StrList(options);
+    detail::g_d.menu_set_enum_options(detail::g_self, m_handle,
+                                      items.empty() ? nullptr : items.data(),
+                                      static_cast<uint32_t>(items.size()), index);
+    return *this;
+}
+
+template <class>
+UIEnumSelector& UIEnumSelector::SetOptions(std::span<const std::string_view> options,
+                                           int32_t index) {
+    UNIX_USE(menu, set_enum_options);
+    const std::vector<unix_str> items = detail::StrList(options);
+    detail::g_d.menu_set_enum_options(detail::g_self, m_handle,
+                                      items.empty() ? nullptr : items.data(),
+                                      static_cast<uint32_t>(items.size()), index);
+    return *this;
+}
+
+template <class>
+void* UIEnumSelector::GetObject() const {
+    UNIX_USE(menu, button_object);
+    return detail::g_d.menu_button_object(detail::g_self, m_handle);
+}
+
+template <class>
 void UIEnumSelector::Remove() {
     detail::Cancel(m_handle);
     m_handle = unix_null;
@@ -1359,9 +2081,35 @@ UILabel& UILabel::SetText(std::string_view text) {
 }
 
 template <class>
+UILabel& UILabel::SetColor(Color c) {
+    UNIX_USE(menu, set_label_color);
+    detail::g_d.menu_set_label_color(detail::g_self, m_handle, c);
+    return *this;
+}
+
+template <class>
+UILabel& UILabel::SetValue(std::string_view text) {
+    UNIX_USE(menu, set_label_value);
+    detail::g_d.menu_set_label_value(detail::g_self, m_handle, Sv(text));
+    return *this;
+}
+
+template <class>
+void* UILabel::GetObject() const {
+    UNIX_USE(menu, button_object);
+    return detail::g_d.menu_button_object(detail::g_self, m_handle);
+}
+
+template <class>
 void UILabel::Remove() {
     detail::Cancel(m_handle);
     m_handle = unix_null;
+}
+
+template <class>
+void* UISeparator::GetObject() const {
+    UNIX_USE(menu, button_object);
+    return detail::g_d.menu_button_object(detail::g_self, m_handle);
 }
 
 template <class>
@@ -1424,6 +2172,26 @@ UITextInput& UITextInput::SetText(std::string_view text) {
 }
 
 template <class>
+UITextInput& UITextInput::SetTooltip(std::string_view text) {
+    UNIX_USE(menu, set_tooltip);
+    detail::g_d.menu_set_tooltip(detail::g_self, m_handle, Sv(text));
+    return *this;
+}
+
+template <class>
+UITextInput& UITextInput::SetLabel(std::string_view label) {
+    UNIX_USE(menu, set_control_label);
+    detail::g_d.menu_set_control_label(detail::g_self, m_handle, Sv(label));
+    return *this;
+}
+
+template <class>
+void* UITextInput::GetObject() const {
+    UNIX_USE(menu, button_object);
+    return detail::g_d.menu_button_object(detail::g_self, m_handle);
+}
+
+template <class>
 void UITextInput::Remove() {
     detail::Cancel(m_handle);
     m_handle = unix_null;
@@ -1472,6 +2240,33 @@ UIButton UIList::Row(uint32_t index) const {
 }
 
 template <class>
+UIList& UIList::SetPaging(uint32_t pageSize) {
+    UNIX_USE(menu, set_list_paging);
+    detail::g_d.menu_set_list_paging(detail::g_self, m_handle, pageSize);
+    return *this;
+}
+
+template <class>
+UIList& UIList::SetPage(uint32_t page) {
+    UNIX_USE(menu, set_list_page);
+    detail::g_d.menu_set_list_page(detail::g_self, m_handle, page);
+    return *this;
+}
+
+template <class>
+uint32_t UIList::Page() const {
+    UNIX_USE(menu, list_page);
+    return detail::g_d.menu_list_page(detail::g_self, m_handle);
+}
+
+template <class>
+uint32_t UIList::PageCount(uint32_t pageSize) const {
+    const uint32_t n = Count();
+    if (pageSize == 0) return n ? 1u : 0u;
+    return n / pageSize + (n % pageSize ? 1u : 0u);
+}
+
+template <class>
 void UIList::Remove() {
     detail::Cancel(m_handle);
     m_handle = unix_null;
@@ -1489,6 +2284,12 @@ UICornerButton& UICornerButton::SetIcon(Sprite icon) {
     UNIX_USE(menu, set_button_icon);
     detail::g_d.menu_set_button_icon(detail::g_self, m_handle, detail::MakeIcon(icon));
     return *this;
+}
+
+template <class>
+void* UICornerButton::GetObject() const {
+    UNIX_USE(menu, button_object);
+    return detail::g_d.menu_button_object(detail::g_self, m_handle);
 }
 
 template <class>
@@ -1512,8 +2313,66 @@ UIUserButton& UIUserButton::SetIcon(Sprite icon) {
 }
 
 template <class>
+UIUserButton& UIUserButton::SetVisible(bool on) {
+    UNIX_USE(users, set_control_visible);
+    detail::g_d.users_set_control_visible(detail::g_self, m_handle, on);
+    return *this;
+}
+
+template <class>
+void* UIUserButton::GetObject() const {
+    UNIX_USE(users, control_object);
+    return detail::g_d.users_control_object(detail::g_self, m_handle);
+}
+
+template <class>
+UIUserButton& UIUserButton::SetEnabled(bool on) {
+    UNIX_USE(users, set_button_enabled);
+    detail::g_d.users_set_button_enabled(detail::g_self, m_handle, on);
+    return *this;
+}
+
+namespace detail {
+/// <summary>Predicate closures by button handle. The user page API is UnityMain-only, so
+/// this needs no lock.</summary>
+inline std::vector<std::pair<unix_handle, Node*>>& UserPredicateNodes() {
+    static std::vector<std::pair<unix_handle, Node*>> nodes;
+    return nodes;
+}
+inline void SetUserPredicateNode(unix_handle h, Node* n) {
+    auto& nodes = UserPredicateNodes();
+    for (auto it = nodes.begin(); it != nodes.end(); ++it) {
+        if (it->first != h) continue;
+        FreeNode(it->second);
+        nodes.erase(it);
+        break;
+    }
+    if (n) nodes.emplace_back(h, n);
+}
+}   // namespace detail
+
+template <class>
+UIUserButton& UIUserButton::SetVisibleWhen(std::function<bool()> predicate) {
+    UNIX_USE(users, set_button_predicate);
+    detail::Node* n = nullptr;
+    if (predicate) {
+        n = detail::AllocNodeRaw();
+        n->ret = [f = std::move(predicate)](const void*) -> bool { return f(); };
+    }
+    const Status s = detail::g_d.users_set_button_predicate(
+        detail::g_self, m_handle, n ? &detail::TrampAvail : nullptr, n);
+    if (s != unix_ok) {
+        detail::FreeNode(n);
+        return *this;
+    }
+    detail::SetUserPredicateNode(m_handle, n);
+    return *this;
+}
+
+template <class>
 void UIUserButton::Remove() {
     detail::Cancel(m_handle);
+    detail::SetUserPredicateNode(m_handle, nullptr);
     m_handle = unix_null;
 }
 
@@ -1560,7 +2419,40 @@ UIFoldout UIUserRow::AddFoldout(std::string_view title, bool expanded, bool back
 }
 
 template <class>
+UISubPage UIUserRow::AddSubPage(std::string_view name, Sprite icon) {
+    UNIX_USE(users, add_row_sub_page);
+    return UISubPage{ detail::g_d.users_add_row_sub_page(detail::g_self, m_handle, Sv(name),
+                                                         detail::MakeIcon(icon)) };
+}
+
+template <class>
+UIUserRow& UIUserRow::SetVisible(bool on) {
+    UNIX_USE(users, set_control_visible);
+    detail::g_d.users_set_control_visible(detail::g_self, m_handle, on);
+    return *this;
+}
+
+template <class>
+void* UIUserRow::GetObject() const {
+    UNIX_USE(users, control_object);
+    return detail::g_d.users_control_object(detail::g_self, m_handle);
+}
+
+template <class>
 void UIUserRow::Remove() {
+    detail::Cancel(m_handle);
+    m_handle = unix_null;
+}
+
+template <class>
+UIUserPill& UIUserPill::SetVisible(bool on) {
+    UNIX_USE(users, set_control_visible);
+    detail::g_d.users_set_control_visible(detail::g_self, m_handle, on);
+    return *this;
+}
+
+template <class>
+void UIUserPill::Remove() {
     detail::Cancel(m_handle);
     m_handle = unix_null;
 }
@@ -1665,6 +2557,18 @@ void Tween::Cancel() {
 }
 
 template <class>
+bool Tween::IsActive() const {
+    UNIX_USE(tween, is_active);
+    return detail::g_d.tween_is_active(detail::g_self, m_handle);
+}
+
+template <class>
+void KeyboardRequest::Cancel() {
+    detail::Cancel(m_handle);
+    m_handle = unix_null;
+}
+
+template <class>
 UIToggle UIToggleHandler::Attach(UIFoldout parent, std::string_view label, bool def, bool* bound) {
     ToggleDesc d{};
     d.OnChange = [this](bool on) { OnChanged(on); };
@@ -1757,7 +2661,8 @@ struct ActionSlot {
 };
 inline std::deque<ActionSlot> g_amSlots;
 
-inline void UNIX_CC AmClickThunk(void* ud, const unix_widget_ev*) {
+inline void UNIX_CC AmClickThunk(void* ud, const unix_widget_ev* e) {
+    if (e && e->kind == unix_wk_release) return;
     auto* s = static_cast<ActionSlot*>(ud);
     if (s && s->click) s->click();
 }

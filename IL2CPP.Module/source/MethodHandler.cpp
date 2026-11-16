@@ -15,10 +15,9 @@ namespace IL2CPP::Module {
         auto fn = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*, const char*, int)>(
             e->m_helperMethodResolve);
 
-        void* info = fn(
-            std::string(className).c_str(),
-            std::string(methodName).c_str(),
-            argc);
+        const NulTerminated klass(className);
+        const NulTerminated method(methodName);
+        void* info = fn(klass.c_str(), method.c_str(), argc);
 
         if (!info) BindMiss::Record(className, methodName, argc);
 

@@ -8,6 +8,7 @@ IL2CPP_PREDEFINE
 #include <IL2CPP.Common/il2cpp_types.hpp>
 
 #include <cstdint>
+#include <cstring>
 #include <string_view>
 #include <vector>
 #include <string>
@@ -45,6 +46,29 @@ namespace IL2CPP::Module {
     // any handle allocated above 4 GB.
     using GCHandle = uintptr_t;
     static_assert(sizeof(GCHandle) == sizeof(void*), "GC handles must stay pointer-sized");
+
+    /// <summary>A null-terminated copy of a string_view, held inline when it fits so a name lookup does not allocate.</summary>
+    class NulTerminated {
+        char        m_inline[256];
+        std::string m_heap;
+        const char* m_ptr;
+
+    public:
+        explicit NulTerminated(std::string_view text) {
+            if (text.size() < sizeof(m_inline)) {
+                if (!text.empty()) std::memcpy(m_inline, text.data(), text.size());
+                m_inline[text.size()] = '\0';
+                m_ptr = m_inline;
+            } else {
+                m_heap.assign(text);
+                m_ptr = m_heap.c_str();
+            }
+        }
+        NulTerminated(const NulTerminated&) = delete;
+        NulTerminated& operator=(const NulTerminated&) = delete;
+
+        [[nodiscard]] const char* c_str() const noexcept { return m_ptr; }
+    };
 
     [[nodiscard]] GCHandle GCHandleNew(il2cppObject* object, bool pinned = false);
     [[nodiscard]] il2cppObject* GCHandleGetTarget(GCHandle handle);

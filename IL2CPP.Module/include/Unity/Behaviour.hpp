@@ -9,6 +9,11 @@ namespace IL2CPP::Module::Unity {
         using Component::Component;
 
         [[nodiscard]] bool GetEnabled() const {
+            static ICall ic;
+            if (!ic.ready()) ic.resolve(IL2CPP_STR("UnityEngine.Behaviour"), IL2CPP_STR("get_enabled_Injected"), 1,
+                IL2CPP_STR("UnityEngine.Behaviour::get_enabled_Injected(System.IntPtr)"));
+            if (auto fn = ic.as<bool(IL2CPP_CALLTYPE)(void*)>())
+                if (void* self = ICall::unity_self(raw())) return fn(self);
             static auto m = MethodHandler::resolve(IL2CPP_STR("UnityEngine.Behaviour"), IL2CPP_STR("get_enabled"), 0);
             return MethodHandler::invoke<bool>(m, raw());
         }

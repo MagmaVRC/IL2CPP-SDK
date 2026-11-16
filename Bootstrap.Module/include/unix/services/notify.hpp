@@ -17,9 +17,6 @@ enum class NotifyStyle : uint32_t {
     Event        = unix_notify_event,
     Voyager      = unix_notify_voyager,
     VoyagerBig   = unix_notify_voyager_big,
-    /// <summary>A menu page in VRChat's own styling, the shape of its News window: heading,
-    /// body and up to two buttons. It stays up until one is pressed rather than expiring.</summary>
-    Announcement = unix_notify_announcement,
 };
 
 /// <summary>Which HUD anchor a style hangs off. Centre is the only one on screen in desktop.</summary>
@@ -40,47 +37,6 @@ constexpr uint32_t ChannelTag(std::string_view name) noexcept {
     uint32_t h = 2166136261u;
     for (char c : name) { h ^= static_cast<uint8_t>(c); h *= 16777619u; }
     return h ? h : 1u;
-}
-
-// An announcement outlives the builder that described it, so its handlers live here rather
-// than in the temporary. One slot per announcement still on screen; the host answers exactly
-// once, which is when the slot is freed.
-struct NotifyActions {
-    std::vector<std::function<void()>> buttons;
-    std::function<void()> on_close;
-    bool live = false;
-};
-inline std::vector<NotifyActions>& NotifySlots() {
-    static std::vector<NotifyActions> slots;
-    return slots;
-}
-inline void UNIX_CC NotifyActionTramp(void* ud, uint32_t button) {
-    auto& slots = NotifySlots();
-    const size_t i = reinterpret_cast<size_t>(ud);
-    if (i >= slots.size() || !slots[i].live) return;
-
-    // A toggle is not the answer: run its handler and leave the slot for the button that is.
-    if (button & unix_notify_toggled) {
-        const uint32_t row = button & ~unix_notify_toggled;
-        if (row < slots[i].buttons.size() && slots[i].buttons[row]) slots[i].buttons[row]();
-        return;
-    }
-
-    NotifyActions taken = std::move(slots[i]);
-    slots[i] = {};
-    if (button == unix_notify_no_answer) { if (taken.on_close) taken.on_close(); return; }
-    if (button < taken.buttons.size() && taken.buttons[button]) taken.buttons[button]();
-}
-inline void* ClaimNotifySlot(NotifyActions a) {
-    a.live = true;
-    auto& slots = NotifySlots();
-    for (size_t i = 0; i < slots.size(); ++i) {
-        if (slots[i].live) continue;
-        slots[i] = std::move(a);
-        return reinterpret_cast<void*>(i);
-    }
-    slots.push_back(std::move(a));
-    return reinterpret_cast<void*>(slots.size() - 1);
 }
 }   // namespace detail
 
@@ -203,101 +159,6 @@ private:
     std::string title_, text_, badge_, image_;
 };
 
-/// <summary>A page in the shape of VRChat's News window, described as rows from top to bottom:
-/// a tag, a heading, paragraphs, an image, separators, a toggle, buttons, small print. Rows are
-/// drawn in the order they are added, so the layout is the module's rather than a fixed set of
-/// slots, and the page is built from the menu's own row templates.</summary>
-class Announcement {
-public:
-    Announcement() { desc_.size = sizeof(desc_); desc_.style = unix_notify_announcement; }
-    explicit Announcement(std::string_view heading) : Announcement() { Heading(heading); }
-
-    /// <summary>The window's own title bar, the way VRChat's reads "News".</summary>
-    Announcement& Header(std::string_view s) { header_ = s; return *this; }
-    /// <summary>Whether the corner close button is offered. On by default.</summary>
-    Announcement& Closable(bool on = true) { desc_.closable = on; return *this; }
-    /// <summary>Runs when the page closes with no button pressed.</summary>
-    Announcement& OnClose(std::function<void()> fn) { acts_.on_close = std::move(fn); return *this; }
-
-    /// <summary>The small tag above the heading, "Announcement" in VRChat's own.</summary>
-    Announcement& Pill(std::string_view text, Color tint = {}) {
-        return Row(unix_ann_pill, text, tint);
-    }
-    Announcement& Heading(std::string_view text) { return Row(unix_ann_heading, text); }
-    /// <summary>A paragraph. Add as many as the story needs.</summary>
-    Announcement& Text(std::string_view text) { return Row(unix_ann_text, text); }
-    /// <summary>Small print under the buttons.</summary>
-    Announcement& Footer(std::string_view text) { return Row(unix_ann_footer, text); }
-    Announcement& Separator() { return Row(unix_ann_separator, {}); }
-
-    /// <summary>A picture, `height` pixels tall.</summary>
-    Announcement& Image(Sprite sprite, float height = 160.0f) {
-        unix_ann_row r = MakeRow(unix_ann_image, {});
-        r.icon = detail::MakeIcon(sprite);
-        r.height = height;
-        rows_.push_back(r);
-        return *this;
-    }
-
-    /// <summary>A button. The first one added with a tint is drawn as the call to action.</summary>
-    Announcement& Button(std::string_view text, std::function<void()> on_press = {},
-                         Sprite icon = Sprite::None, Color tint = {}) {
-        unix_ann_row r = MakeRow(unix_ann_button, text);
-        r.icon = detail::MakeIcon(icon);
-        r.tint = tint;
-        rows_.push_back(r);
-        acts_.buttons.push_back(std::move(on_press));
-        return *this;
-    }
-
-    /// <summary>A switch the reader can set before answering, "Don't show this again" and the
-    /// like. Its press reports through the same handler as a button.</summary>
-    Announcement& Toggle(std::string_view text, bool on = false,
-                         std::function<void()> on_change = {}) {
-        unix_ann_row r = MakeRow(unix_ann_toggle, text);
-        r.on = on;
-        rows_.push_back(r);
-        acts_.buttons.push_back(std::move(on_change));
-        return *this;
-    }
-
-    /// <summary>Put it on screen. It stays until answered.</summary>
-    template <class = void> Notice Show() {
-        UNIX_USE(notify, show);
-        unix_notification d = desc_;
-        d.header = Sv(header_);
-        d.rows = rows_.empty() ? nullptr : rows_.data();
-        d.row_count = static_cast<uint32_t>(rows_.size());
-        d.on_action = &detail::NotifyActionTramp;
-        d.action_ud = detail::ClaimNotifySlot(acts_);
-        return Notice{ detail::g_d.notify_show(detail::g_self, &d) };
-    }
-
-private:
-    // Every row borrows its text, so the strings live in a deque: it never moves what it
-    // already holds, which a vector would the first time it grew.
-    unix_ann_row MakeRow(unix_ann_row_kind kind, std::string_view text) {
-        owned_.emplace_back(text);
-        unix_ann_row r{};
-        r.size = sizeof(r);
-        r.kind = kind;
-        r.text = Sv(owned_.back());
-        return r;
-    }
-    Announcement& Row(unix_ann_row_kind kind, std::string_view text, Color tint = {}) {
-        unix_ann_row r = MakeRow(kind, text);
-        r.tint = tint;
-        rows_.push_back(r);
-        return *this;
-    }
-
-    unix_notification desc_{};
-    std::string header_;
-    std::deque<std::string> owned_;
-    std::vector<unix_ann_row> rows_;
-    detail::NotifyActions acts_;
-};
-
 /// <summary>A named stream of notifications from this module: set the style, icon and duration
 /// once, then send one-liners. Every widget is shared with every other module, so a channel is
 /// also the unit the host replaces and cancels by.</summary>
@@ -396,24 +257,6 @@ public:
                                          float seconds = 0.0f) const {
         return Notification(body).Title(title).Icon(icon).Badge(badge).BadgeIcon(badge_icon)
                                  .For(seconds).As(NotifyStyle::Event).Show();
-    }
-
-    /// <summary>The shorthand News window: a heading, a paragraph and two buttons.</summary>
-    /// <param name="action">Call-to-action label; empty leaves only the dismiss button.</param>
-    template <class = void> Notice Announce(std::string_view title, std::string_view body,
-                                            std::string_view action = {},
-                                            std::function<void()> on_action = {}) const {
-        ::UNIx::Announcement a(title);
-        a.Text(body);
-        if (!action.empty()) a.Button(action, std::move(on_action), Sprite::None, { 0, 0.62f, 0.68f, 1 });
-        a.Button("Dismiss");
-        return a.Show();
-    }
-
-    /// <summary>An announcement to lay out row by row.</summary>
-    template <class = void> [[nodiscard]] ::UNIx::Announcement Announcement(
-        std::string_view heading = {}) const {
-        return heading.empty() ? ::UNIx::Announcement{} : ::UNIx::Announcement{ heading };
     }
 
     /// <summary>Take one notification down early.</summary>

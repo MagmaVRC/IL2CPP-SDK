@@ -4,6 +4,7 @@
 #include "../System/String.hpp"
 #include <IL2CPP.Common/il2cpp_types.hpp>
 #include <IL2CPP.Common/il2cpp_shared.hpp>
+#include <cstring>
 #include <string>
 #include <string_view>
 
@@ -21,13 +22,9 @@ namespace IL2CPP::Module::Unity {
         }
 
         void SetText(std::string_view value) {
-            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_Text"), IL2CPP_STR("set_text"), 1);
-            auto* e = GetExports();
-            if (!e || !e->m_stringNew) return;
-            void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(
-                e->m_stringNew)(std::string(value).c_str());
-            void* params[] = { il2cppStr };
-            MethodHandler::invoke(m, raw(), params);
+            static Method m;
+            if (!m) m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_Text"), IL2CPP_STR("set_text"), 1);
+            InvokeStringSetter(m, raw(), value);
         }
 
         [[nodiscard]] float GetFontSize() const {
@@ -67,6 +64,13 @@ namespace IL2CPP::Module::Unity {
         }
         void SetEnableWordWrapping(bool value) {
             static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_Text"), IL2CPP_STR("set_enableWordWrapping"), 1);
+            void* params[] = { &value };
+            MethodHandler::invoke(m, raw(), params);
+        }
+
+        /// <summary>TextOverflowModes: 0 Overflow, 1 Ellipsis, 3 Truncate.</summary>
+        void SetOverflowMode(int value) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_Text"), IL2CPP_STR("set_overflowMode"), 1);
             void* params[] = { &value };
             MethodHandler::invoke(m, raw(), params);
         }
@@ -111,6 +115,13 @@ namespace IL2CPP::Module::Unity {
             MethodHandler::invoke(m, raw(), params);
         }
 
+        /// <summary>Extra spacing between characters, in font units (1 = 1/100 em).</summary>
+        void SetCharacterSpacing(float value) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_Text"), IL2CPP_STR("set_characterSpacing"), 1);
+            void* params[] = { &value };
+            MethodHandler::invoke(m, raw(), params);
+        }
+
         [[nodiscard]] bool GetRichText() const {
             static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_Text"), IL2CPP_STR("get_richText"), 0);
             return MethodHandler::invoke<bool>(m, raw());
@@ -122,18 +133,53 @@ namespace IL2CPP::Module::Unity {
         }
 
         void SetTextDirect(std::string_view text) {
-            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_Text"), IL2CPP_STR("SetText"), 1);
-            auto* e = GetExports();
-            if (!e || !e->m_stringNew) return;
-            void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(
-                e->m_stringNew)(std::string(text).c_str());
-            void* params[] = { il2cppStr };
-            MethodHandler::invoke(m, raw(), params);
+            static Method m;
+            if (!m) m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_Text"), IL2CPP_STR("SetText"), 1);
+            InvokeStringSetter(m, raw(), text);
         }
 
         void ForceMeshUpdate() {
             static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_Text"), IL2CPP_STR("ForceMeshUpdate"), 0);
             MethodHandler::invoke(m, raw());
+        }
+
+        [[nodiscard]] void* GetFontRaw() const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_Text"), IL2CPP_STR("get_font"), 0);
+            return MethodHandler::invoke<void*>(m, raw());
+        }
+        void SetFontRaw(void* fontAsset) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_Text"), IL2CPP_STR("set_font"), 1);
+            void* params[] = { fontAsset };
+            MethodHandler::invoke(m, raw(), params);
+        }
+        [[nodiscard]] void* GetFontSharedMaterialRaw() const {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_Text"), IL2CPP_STR("get_fontSharedMaterial"), 0);
+            return MethodHandler::invoke<void*>(m, raw());
+        }
+        void SetFontSharedMaterialRaw(void* material) {
+            static auto m = MethodHandler::resolve(IL2CPP_STR("TMPro.TMP_Text"), IL2CPP_STR("set_fontSharedMaterial"), 1);
+            void* params[] = { material };
+            MethodHandler::invoke(m, raw(), params);
+        }
+
+    protected:
+        static void InvokeStringSetter(const Method& m, void* self, std::string_view value) {
+            if (!m) return;
+            auto* e = GetExports();
+            if (!e || !e->m_stringNew) return;
+            char inlineBuf[256];
+            std::string heapBuf;
+            const char* text = inlineBuf;
+            if (value.size() < sizeof(inlineBuf)) {
+                if (!value.empty()) std::memcpy(inlineBuf, value.data(), value.size());
+                inlineBuf[value.size()] = '\0';
+            } else {
+                heapBuf.assign(value);
+                text = heapBuf.c_str();
+            }
+            void* il2cppStr = reinterpret_cast<void*(IL2CPP_CALLTYPE)(const char*)>(e->m_stringNew)(text);
+            void* params[] = { il2cppStr };
+            MethodHandler::invoke(m, self, params);
         }
     };
 
