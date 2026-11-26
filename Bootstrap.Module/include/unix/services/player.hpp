@@ -5,6 +5,13 @@
 
 namespace UNIx {
 
+namespace detail {
+[[deprecated("UNIX0041: PlayerApi::IsOwner is removed in 9.0; use Net::IsOwner")]]
+inline void Deprecated_PlayerIsOwner() noexcept {}
+[[deprecated("UNIX0042: PlayerApi::TakeOwnership is removed in 9.0; use Net::SetOwner")]]
+inline void Deprecated_PlayerTakeOwnership() noexcept {}
+}   // namespace detail
+
 using PlayerInfo   = unix_player_info;
 using Locomotion   = unix_locomotion;
 using VoiceSettings = unix_voice;
@@ -204,17 +211,24 @@ public:
         return detail::g_d.player_set_plate_visible(detail::g_self, api, (int32_t)visibility);
     }
 
-    template <class = void> [[deprecated("use Net::IsOwner")]] [[nodiscard]]
+#pragma warning(push)
+#pragma warning(1 : 4996)
+    /// <summary>Deprecated 8.0 (UNIX0041), removed 9.0: use Net::IsOwner.</summary>
+    template <class = void> [[nodiscard]]
     bool IsOwner(void* api, void* gameObject) const {
+        detail::Deprecated_PlayerIsOwner();
         UNIX_USE(player, is_owner);
         return detail::g_d.player_is_owner(detail::g_self, api, gameObject);
     }
 
-    template <class = void> [[deprecated("use Net::SetOwner")]]
+    /// <summary>Deprecated 8.0 (UNIX0042), removed 9.0: use Net::SetOwner.</summary>
+    template <class = void>
     Status TakeOwnership(void* api, void* gameObject) {
+        detail::Deprecated_PlayerTakeOwnership();
         UNIX_USE(player, take_ownership);
         return detail::g_d.player_take_ownership(detail::g_self, api, gameObject);
     }
+#pragma warning(pop)
 
     template <class = void> Status EnablePickups(void* api, bool enabled) {
         UNIX_USE(player, enable_pickups);

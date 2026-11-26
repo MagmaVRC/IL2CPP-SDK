@@ -12,6 +12,7 @@
 #include <deque>
 #include <format>
 #include <functional>
+#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <span>
@@ -34,13 +35,13 @@ class Log; class FileSystem; class Bus; class Hotkeys; class Nameplates; class T
 class Deob; class Studio; class Clipboard; class Perf; class License; class WorldScripts;
 class Console; class Explorer; class Photon; class Modules; class Telemetry; class Il2Cpp;
 class Udon; class PlayerApi; class Net; class Notify; class Relay;
-class App; class Avatars; class Hud; class Actuation;
+class App; class Avatars; class Hud; class Actuation; class PlayerManager;
 // UI objects (unix/ui.hpp, except Hotkey and StudioPage which live in unix/services/core.hpp)
 class UISurface; class UIPage; class UISubPage; class UISection; class UIMainMenuPage;
 class UIMainMenuSubPage;
 class UIFoldout; class UIButton; class UILabel;
 class UIToggle; class UISlider; class UIEnumSelector; class UISeparator; class UICornerButton;
-class UITextInput; class UIList;
+class UITextInput; class UIList; class UIChips;
 class UIUserButton; class UIUserRow; class Nameplate; class Tween; class Hotkey; class StudioPage;
 class KeyboardRequest; class HudWidget;
 
@@ -397,6 +398,33 @@ private:
     void* m_raw = nullptr;
 };
 
+/// <summary>One player lifecycle event (8.2). Fields past the 7.0 layout read as zero from an older host.</summary>
+struct PlayerLifecycleEvent {
+    PlayerPhase phase = PlayerPhase::Awake;
+    /// <summary>The VRChat Player. Null for EnteredRoom until the player object exists.</summary>
+    Player player;
+    void* apiUser = nullptr;
+    /// <summary>Photon actor number, 0 when unknown.</summary>
+    int32_t actorId = 0;
+    /// <summary>Set on Left only.</summary>
+    LeaveReason reason = LeaveReason::Unknown;
+    /// <summary>Photon's Player (actor) object; set on EnteredRoom and LeftRoom.</summary>
+    void* photonPlayer = nullptr;
+
+    [[nodiscard]] static PlayerLifecycleEvent From(const PlayerEvent& e) noexcept {
+        PlayerLifecycleEvent out;
+        out.phase = static_cast<PlayerPhase>(e.phase);
+        out.player = Player{ e.player };
+        out.apiUser = e.api_user;
+        if (e.size >= sizeof(unix_player_ev)) {
+            out.actorId = e.actor_id;
+            out.reason = static_cast<LeaveReason>(e.reason);
+            out.photonPlayer = e.photon_player;
+        }
+        return out;
+    }
+};
+
 /// <summary>Everything a module can reach, bound to this module's identity.</summary>
 class Host {
 public:
@@ -438,6 +466,7 @@ public:
     template <class = void> [[nodiscard]] ::UNIx::Avatars&       Avatars();
     template <class = void> [[nodiscard]] ::UNIx::Hud&           Hud();
     template <class = void> [[nodiscard]] ::UNIx::Actuation&     Actuation();
+    template <class = void> [[nodiscard]] ::UNIx::PlayerManager& PlayerManager();
 
     template <class = void> [[nodiscard]] std::string    GetName() const;
     template <class = void> [[nodiscard]] unix_host_kind GetKind() const;
@@ -507,6 +536,7 @@ protected:
     UNIX_SERVICE_ACCESSOR(Avatars,      Avatars)
     UNIX_SERVICE_ACCESSOR(Hud,          Hud)
     UNIX_SERVICE_ACCESSOR(Actuation,    Actuation)
+    UNIX_SERVICE_ACCESSOR(PlayerManager, PlayerManager)
 #undef UNIX_SERVICE_ACCESSOR
 };
 
@@ -532,13 +562,24 @@ public:
     virtual void OnPresent(const Frame&) {}
     virtual void OnScene(const SceneEvent&) {}
     virtual void OnMenu(MenuPhase) {}
-    /// <summary>Every player phase, including JoinedComplete. Overriding any of the four
-    /// player hooks subscribes the single on_player slot.</summary>
+    /// <summary>The 7.0 player phases (Awake, Joined, JoinedComplete, Left). Overriding any player
+    /// hook subscribes the single on_player slot. EnteredRoom/LeftRoom use their typed hooks.</summary>
     virtual void OnPlayer(const PlayerEvent&) {}
+    /// <summary>Deprecated 8.2 (UNIX0051), removed 9.0: override OnPlayerJoining.</summary>
     virtual void OnPlayerAwake (Player) {}
     virtual void OnPlayerJoined(Player) {}
     virtual void OnPlayerLeft  (Player) {}
     virtual void OnUpdatePlayer(Player) {}
+    /// <summary>A Photon actor entered the room; e.player is usually null yet (8.2).</summary>
+    virtual void OnPlayerEnteredRoom (const PlayerLifecycleEvent&) {}
+    /// <summary>The VRChat Player exists; name may still be empty (8.2).</summary>
+    virtual void OnPlayerJoining     (const PlayerLifecycleEvent&) {}
+    /// <summary>Fully set up; never before OnPlayerJoined (8.2).</summary>
+    virtual void OnPlayerJoinComplete(const PlayerLifecycleEvent&) {}
+    /// <summary>The Photon actor left; the player object is still alive (8.2).</summary>
+    virtual void OnPlayerLeftRoom    (const PlayerLifecycleEvent&) {}
+    /// <summary>Left with its reason; fires alongside OnPlayerLeft (8.2).</summary>
+    virtual void OnPlayerRemoved     (const PlayerLifecycleEvent&) {}
     virtual void OnWorld(const WorldEvent&) {}
     virtual void OnMessage(const Message&) {}
     /// <summary>Window message pump. Return true to swallow the message.</summary>
@@ -552,11 +593,21 @@ public:
 };
 
 inline void Module::DispatchPlayer(const PlayerEvent& e) {
-    OnPlayer(e);
+    if (e.phase < unix_player_entered_room) OnPlayer(e);
+    const PlayerLifecycleEvent ev = PlayerLifecycleEvent::From(e);
     switch (e.phase) {
-    case unix_player_awake:  OnPlayerAwake (Player{ e.player }); break;
-    case unix_player_joined: OnPlayerJoined(Player{ e.player }); break;
-    case unix_player_left:   OnPlayerLeft  (Player{ e.player }); break;
+    case unix_player_awake:
+        OnPlayerAwake(Player{ e.player });
+        OnPlayerJoining(ev);
+        break;
+    case unix_player_joined:          OnPlayerJoined(Player{ e.player }); break;
+    case unix_player_joined_complete: OnPlayerJoinComplete(ev); break;
+    case unix_player_left:
+        OnPlayerLeft(Player{ e.player });
+        OnPlayerRemoved(ev);
+        break;
+    case unix_player_entered_room:    OnPlayerEnteredRoom(ev); break;
+    case unix_player_left_room:       OnPlayerLeftRoom(ev); break;
     default: break;
     }
 }
@@ -624,6 +675,16 @@ inline void* const kDeniedStubs[kSymCount] = {
 #include <unix/unix_exports.inc>
 };
 
+// Deprecation markers are called from template bodies inside this level-1 region, so the
+// C4996 names the module's call site but stays a warning under /sdl (which errors on C4996).
+#pragma warning(push)
+#pragma warning(1 : 4996)
+
+/// <summary>Called only for a module that overrides Module::OnPlayerAwake, so the warning lands
+/// on that module's build.</summary>
+[[deprecated("UNIX0051: Module::OnPlayerAwake is removed in 9.0; override OnPlayerJoining(const PlayerLifecycleEvent&)")]]
+inline void OverridesOnPlayerAwake() noexcept {}
+
 /// <summary>Fills a desc from a UNIx::Module subclass, subscribing only the overridden hooks.
 /// Detection is by member-pointer TYPE identity, which is exact at compile time.</summary>
 template <class T>
@@ -669,11 +730,19 @@ const unix_module_desc* DescFor(T* self) {
     UNIX_HOOK(OnPhoton, bool (Module::*)(const PhotonEvent&),
               d.on_photon = [](void* u, const unix_photon_ev* e) -> bool {
                   return static_cast<T*>(u)->OnPhoton(*e); };)
-    // One slot, four virtuals: subscribe if any of them moved, and let Module fan out.
-    if constexpr (!std::is_same_v<decltype(&T::OnPlayer),       void (Module::*)(const PlayerEvent&)> ||
-                  !std::is_same_v<decltype(&T::OnPlayerAwake),  void (Module::*)(Player)>             ||
-                  !std::is_same_v<decltype(&T::OnPlayerJoined), void (Module::*)(Player)>             ||
-                  !std::is_same_v<decltype(&T::OnPlayerLeft),   void (Module::*)(Player)>)
+    // One slot, many virtuals: subscribe if any of them moved, and let Module fan out.
+    using LifecycleHook = void (Module::*)(const PlayerLifecycleEvent&);
+    if constexpr (!std::is_same_v<decltype(&T::OnPlayerAwake), void (Module::*)(Player)>)
+        OverridesOnPlayerAwake();
+    if constexpr (!std::is_same_v<decltype(&T::OnPlayer),             void (Module::*)(const PlayerEvent&)> ||
+                  !std::is_same_v<decltype(&T::OnPlayerAwake),        void (Module::*)(Player)>             ||
+                  !std::is_same_v<decltype(&T::OnPlayerJoined),       void (Module::*)(Player)>             ||
+                  !std::is_same_v<decltype(&T::OnPlayerLeft),         void (Module::*)(Player)>             ||
+                  !std::is_same_v<decltype(&T::OnPlayerEnteredRoom),  LifecycleHook>                         ||
+                  !std::is_same_v<decltype(&T::OnPlayerJoining),      LifecycleHook>                         ||
+                  !std::is_same_v<decltype(&T::OnPlayerJoinComplete), LifecycleHook>                         ||
+                  !std::is_same_v<decltype(&T::OnPlayerLeftRoom),     LifecycleHook>                         ||
+                  !std::is_same_v<decltype(&T::OnPlayerRemoved),      LifecycleHook>)
         d.on_player = [](void* u, const unix_player_ev* e) {
             static_cast<T*>(u)->DispatchPlayer(*e); };
     // Written out because it is the one slot whose SDK type differs from its ABI type.
@@ -683,6 +752,8 @@ const unix_module_desc* DescFor(T* self) {
 #undef UNIX_HOOK
     return &d;
 }
+
+#pragma warning(pop)
 
 }   // namespace detail
 }   // namespace UNIx
@@ -724,6 +795,7 @@ const unix_module_desc* DescFor(T* self) {
 #include <unix/services/hud.hpp>
 #include <unix/services/actuation.hpp>
 #include <unix/services/photon.hpp>
+#include <unix/services/players.hpp>
 #if __has_include(<unix/services/telemetry.hpp>)
 #  include <unix/services/telemetry.hpp>
 #endif
@@ -764,6 +836,7 @@ UNIX_DEFINE_SERVICE(App,          App)
 UNIX_DEFINE_SERVICE(Avatars,      Avatars)
 UNIX_DEFINE_SERVICE(Hud,          Hud)
 UNIX_DEFINE_SERVICE(Actuation,    Actuation)
+UNIX_DEFINE_SERVICE(PlayerManager, PlayerManager)
 
 template <> struct std::hash<UNIx::Player> {
     std::size_t operator()(UNIx::Player p) const noexcept { return std::hash<void*>{}(p.Raw()); }

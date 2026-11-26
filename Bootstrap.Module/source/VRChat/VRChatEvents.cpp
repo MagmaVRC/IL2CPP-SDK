@@ -9,11 +9,6 @@ namespace IL2CPP::VRChat {
             reinterpret_cast<PlayerCallback>(ud)(Player(ev->player));
         }
 
-        uint32_t subscribe(unix_player_phase phase, PlayerCallback callback) {
-            if (!callback) return 0;
-            return Bridge::OnPlayerEvent(1u << static_cast<uint32_t>(phase), &forward_player_event,
-                                         reinterpret_cast<void*>(callback));
-        }
     }
 
     VRChatEvents& VRChatEvents::Get() {
@@ -21,20 +16,10 @@ namespace IL2CPP::VRChat {
         return instance;
     }
 
-    uint32_t VRChatEvents::RegisterOnAwake(PlayerCallback callback) {
-        return subscribe(unix_player_awake, callback);
-    }
-
-    uint32_t VRChatEvents::RegisterOnJoin(PlayerCallback callback) {
-        return subscribe(unix_player_joined, callback);
-    }
-
-    uint32_t VRChatEvents::RegisterOnJoinComplete(PlayerCallback callback) {
-        return subscribe(unix_player_joined_complete, callback);
-    }
-
-    uint32_t VRChatEvents::RegisterOnLeave(PlayerCallback callback) {
-        return subscribe(unix_player_left, callback);
+    uint32_t VRChatEvents::Subscribe(uint32_t phase, PlayerCallback callback) {
+        if (!callback || phase > unix_player_left) return 0;
+        return Bridge::OnPlayerEvent(1u << phase, &forward_player_event,
+                                     reinterpret_cast<void*>(callback));
     }
 
     void VRChatEvents::Unregister(uint32_t handle) {

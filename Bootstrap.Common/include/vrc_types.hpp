@@ -880,6 +880,8 @@ namespace Bootstrap {
         int volumeSliderSmoothed;
         int volumeSliderRaw;
         int volumeFillRaw;
+        int sensitivityUiSlider;
+        int sensitivitySetting;
     };
 
     struct HudMicIndicatorData {
@@ -914,6 +916,16 @@ namespace Bootstrap {
         int micTestButton;
         int micTestPlayAgain;
         int micTestVisualizer;
+        void* Init;
+        /// <summary>The SettingsSlider void(Single) value-changed handlers (byte-identical clones).</summary>
+        void* SliderChanged[4];
+        int   SliderChangedCount;
+        /// <summary>The SettingsSlider Single() that maps the bound setting's value to the slider position.</summary>
+        void* SliderValue[4];
+        int   SliderValueCount;
+        /// <summary>The SettingsSlider void() that writes the bound setting's value into its number text.</summary>
+        void* SliderLabel[4];
+        int   SliderLabelCount;
     };
 
     struct MMSettingsPageTrackingAndIKData {
@@ -2762,6 +2774,75 @@ namespace Bootstrap {
         int worldCollider;
         int pickupCollider;
         int PlayerOwner;
+    };
+
+    /// <summary>The local mic's denoise path: USpeaker, its RNNoise SafeHandle wrapper, the
+    /// void(Single[]) method that runs the wrapper over each 480-sample chunk, and every
+    /// void(Single[], UInt16, Boolean) clone that queues a captured buffer before the gate.</summary>
+    struct USpeakerDenoiseData {
+        static constexpr int kMaxCapture = 4;
+        void* Class = nullptr;
+        void* WrapperClass = nullptr;
+        int   WrapperField = -1;
+        void* Denoise = nullptr;
+        void* Capture[kMaxCapture]{};
+        int   CaptureCount = 0;
+    };
+
+    /// <summary>The local mic's post-gate gain stage: every static Byte[] Encode(Single[] samples,
+    /// encoder, Single gain) clone that runs the gain loop, all in one class, plus the USpeaker
+    /// encoder field and its interface type.</summary>
+    struct USpeakerEncodeData {
+        static constexpr int kMax = 8;
+        void* Encode[kMax]{};
+        int   EncodeCount = 0;
+        void* EncoderClass = nullptr;
+        int   EncoderField = -1;
+    };
+
+    /// <summary>The local mic's level gates: the gate class (rms and peak thresholds, hold,
+    /// last-open), the USpeaker transmit and pre-gate fields, the void(Single) setter that
+    /// creates the transmit gate, and the deduplicated bool(Single, Single) gate methods.</summary>
+    struct USpeakerGateData {
+        static constexpr int kMax = 16;
+        void* Class = nullptr;
+        void* Gate[kMax]{};
+        int   GateCount = 0;
+        int   TransmitField = -1;
+        int   PreField = -1;
+        int   RmsField = -1;
+        void* Setter = nullptr;
+    };
+
+    /// <summary>Remote voice playback: the USpeaker void(Single[], Int32, Int32) sink that writes
+    /// decoded PCM into the AudioClip ring, its write-head and buffered-count fields, the VRCPlayer,
+    /// mode and AudioSource fields, and the per-user gain filter class with its Gain field.</summary>
+    struct USpeakerPlaybackData {
+        void* Sink = nullptr;
+        void* ClipSetData = nullptr;
+        int   PlayerField = -1;
+        int   ModeField = -1;
+        int   HeadField = -1;
+        int   BufferedField = -1;
+        int   AudioSourceField = -1;
+        void* GainFilterClass = nullptr;
+        int   GainField = -1;
+    };
+
+    /// <summary>The user page's Mic Level row: its class, the user field, the plain UI slider,
+    /// the void(Single) volume handler and the APIUser field of the bound user model.</summary>
+    struct UserVolumeRowData {
+        void* Class = nullptr;
+        int   UserField = -1;
+        int   SliderField = -1;
+        void* SetVolume = nullptr;
+        int   ApiUserField = -1;
+        /// <summary>The slider widget of the redesigned profile voice panel (build 1952+): its inner
+        /// UI Slider field and its Action`1 callback fields; the per-user volume is the instance with
+        /// a callback bound.</summary>
+        void* SliderWidgetClass = nullptr;
+        int   WidgetSliderField = -1;
+        int   WidgetCallbackField[2]{ -1, -1 };
     };
 
 } // namespace Bootstrap

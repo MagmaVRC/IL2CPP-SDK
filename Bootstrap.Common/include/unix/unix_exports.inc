@@ -46,6 +46,9 @@ UNIX_EXPORT (players, rank,         uint32_t,    (unix_self, void*),            
 UNIX_EXPORT (players, rank_color,   unix_color,  (unix_self, uint32_t),                        .since = UNIX_VER(7,0,0), .caps = unix_cap_players, .thread = Thread::Any)
 UNIX_EXPORT (players, on_event,     unix_handle, (unix_self, uint32_t, unix_cb_player, void*), .since = UNIX_VER(7,0,0), .caps = unix_cap_players, .thread = Thread::Any)
 UNIX_EXPORT (players, inject_event, unix_status, (unix_self, void*, uint32_t),                 .since = UNIX_VER(7,0,0), .caps = unix_cap_players | unix_cap_player_inject, .thread = Thread::UnityMain)
+UNIX_EXPORT (players, by_actor,     void*,       (unix_self, int32_t),                         .since = UNIX_VER(8,2,0), .caps = unix_cap_players, .thread = Thread::Any)
+UNIX_EXPORT (players, actor_of,     int32_t,     (unix_self, void*),                           .since = UNIX_VER(8,2,0), .caps = unix_cap_players, .thread = Thread::Any)
+UNIX_EXPORT (players, stage,        uint32_t,    (unix_self, void*),                           .since = UNIX_VER(8,2,0), .caps = unix_cap_players, .thread = Thread::Any)
 
 UNIX_EXPORT (deob, offsets,       uint32_t, (unix_self, uint32_t, void*, uint32_t), .since = UNIX_VER(7,0,0), .thread = Thread::Any)
 UNIX_EXPORT (deob, resolve,       uint32_t, (unix_self, unix_str, char*, uint32_t), .since = UNIX_VER(7,0,0), .thread = Thread::UnityMain)
@@ -185,6 +188,11 @@ UNIX_EXPORT (menu, set_list_paging,      unix_status, (unix_self, unix_handle, u
 UNIX_EXPORT (menu, set_list_page,        unix_status, (unix_self, unix_handle, uint32_t),                   .since = UNIX_VER(8,0,0), .caps = unix_cap_menu, .thread = Thread::UnityMain)
 UNIX_EXPORT (menu, list_page,            uint32_t,    (unix_self, unix_handle),                             .since = UNIX_VER(8,0,0), .caps = unix_cap_menu, .thread = Thread::UnityMain)
 UNIX_EXPORT (menu, dump_pages,           uint32_t,    (unix_self, char*, uint32_t),                         .since = UNIX_VER(8,0,0), .caps = unix_cap_menu, .thread = Thread::UnityMain)
+UNIX_EXPORT (menu, set_expand_button,    unix_handle, (unix_self, unix_handle, unix_str, unix_cb_widget, void*), .since = UNIX_VER(8,1,0), .caps = unix_cap_menu, .thread = Thread::UnityMain)
+UNIX_EXPORT (menu, set_tab_double_tap,   unix_handle, (unix_self, unix_handle, unix_cb_widget, void*),           .since = UNIX_VER(8,1,0), .caps = unix_cap_menu, .thread = Thread::UnityMain)
+UNIX_EXPORT (menu, add_chips,            unix_handle, (unix_self, unix_handle, const unix_chips_desc*),     .since = UNIX_VER(8,1,0), .caps = unix_cap_menu, .thread = Thread::UnityMain)
+UNIX_EXPORT (menu, set_chips_master,     unix_status, (unix_self, unix_handle, unix_handle, const bool*),   .since = UNIX_VER(8,1,0), .caps = unix_cap_menu, .thread = Thread::UnityMain)
+UNIX_EXPORT (menu, refresh_chips,        unix_status, (unix_self, unix_handle),                             .since = UNIX_VER(8,1,0), .caps = unix_cap_menu, .thread = Thread::UnityMain)
 UNIX_EXPORT (mainmenu, is_ready,         bool,        (unix_self),                                          .since = UNIX_VER(7,3,0), .caps = unix_cap_menu, .thread = Thread::Any)
 UNIX_EXPORT (mainmenu, create_page,      unix_handle, (unix_self, unix_str, unix_str),                      .since = UNIX_VER(7,3,0), .caps = unix_cap_menu, .thread = Thread::UnityMain)
 UNIX_EXPORT (mainmenu, add_section,      unix_handle, (unix_self, unix_handle, unix_str),                   .since = UNIX_VER(7,3,0), .caps = unix_cap_menu, .thread = Thread::UnityMain)
@@ -200,6 +208,7 @@ UNIX_EXPORT (mainmenu, content_object,   void*,       (unix_self, unix_handle), 
 UNIX_EXPORT (mainmenu, root_object,      void*,       (unix_self),                                          .since = UNIX_VER(8,0,0), .caps = unix_cap_menu, .thread = Thread::UnityMain)
 UNIX_EXPORT (mainmenu, navigate_back,    unix_status, (unix_self),                                          .since = UNIX_VER(8,0,0), .caps = unix_cap_menu, .thread = Thread::UnityMain)
 UNIX_EXPORT (mainmenu, create_sub_page,  unix_handle, (unix_self, unix_handle, unix_str),                   .since = UNIX_VER(8,0,0), .caps = unix_cap_menu, .thread = Thread::UnityMain)
+UNIX_EXPORT (mainmenu, show_page,        unix_status, (unix_self, unix_handle, unix_handle),                .since = UNIX_VER(8,1,0), .caps = unix_cap_menu, .thread = Thread::UnityMain)
 
 UNIX_REMOVED(qm, add_button, unix_handle, (unix_self, unix_handle, unix_str, unix_cb_widget, void*),
              .since = UNIX_VER(6,0,0), .removed = UNIX_VER(7,0,0), .replacement = "menu.add_button", .code = "UNIX0021", .caps = unix_cap_menu, .thread = Thread::UnityMain)
@@ -373,6 +382,10 @@ UNIX_EXPORT (console, unregister_command, unix_status, (unix_self, unix_handle),
 UNIX_EXPORT (console, write,              unix_status, (unix_self, unix_str),              .since = UNIX_VER(7,0,0), .thread = Thread::Any)
 
 UNIX_EXPORT (photon, intercept,     unix_handle, (unix_self, unix_cb_photon, void*), .since = UNIX_VER(7,0,0), .caps = unix_cap_photon_veto, .thread = Thread::Photon)
+UNIX_EXPORT (photon, in_room,       bool,        (unix_self),                        .since = UNIX_VER(8,2,0), .caps = unix_cap_players, .thread = Thread::Any)
+UNIX_EXPORT (photon, local_actor,   int32_t,     (unix_self),                        .since = UNIX_VER(8,2,0), .caps = unix_cap_players, .thread = Thread::Any)
+UNIX_EXPORT (photon, master_actor,  int32_t,     (unix_self),                        .since = UNIX_VER(8,2,0), .caps = unix_cap_players, .thread = Thread::Any)
+UNIX_EXPORT (photon, actor_count,   uint32_t,    (unix_self),                        .since = UNIX_VER(8,2,0), .caps = unix_cap_players, .thread = Thread::Any)
 
 UNIX_EXPORT (player, by_id,                  void*,       (unix_self, int32_t),                                        .since = UNIX_VER(7,1,0), .caps = unix_cap_players, .thread = Thread::UnityMain)
 UNIX_EXPORT (player, by_object,              void*,       (unix_self, void*),                                          .since = UNIX_VER(7,1,0), .caps = unix_cap_players, .thread = Thread::UnityMain)
@@ -497,6 +510,8 @@ UNIX_EXPORT (relay, send_user,        unix_status,      (unix_self, unix_str, ui
 UNIX_EXPORT (relay, send_room,        unix_status,      (unix_self, uint32_t, const void*, uint32_t),                                      .since = UNIX_VER(7,5,0), .caps = unix_cap_relay, .thread = Thread::UnityMain)
 UNIX_EXPORT (relay, set_stream,       unix_status,      (unix_self, uint32_t, uint32_t, const void*, uint32_t),                            .since = UNIX_VER(7,5,0), .caps = unix_cap_relay, .thread = Thread::UnityMain)
 UNIX_EXPORT (relay, find_peer,        unix_status,      (unix_self, unix_str, unix_relay_peer*),                                           .since = UNIX_VER(7,5,0), .caps = unix_cap_relay, .thread = Thread::UnityMain)
+
+UNIX_EXPORT (voice, on_processed, unix_handle, (unix_self, uint32_t, unix_cb_voice_pcm, void*), .since = UNIX_VER(8,2,0), .caps = unix_cap_players, .thread = Thread::Any)
 
 #undef UNIX_EXPORT
 #undef UNIX_REMOVED

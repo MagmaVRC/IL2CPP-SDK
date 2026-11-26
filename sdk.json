@@ -1,7 +1,7 @@
 {
-    "version":  "12.0.0",
-    "sdk_version":  "8.0.0",
-    "min_loader_version":  "11.7.0",
+    "version":  "12.0.1",
+    "sdk_version":  "8.2.0",
+    "min_loader_version":  "11.20.0",
     "projects":  [
                      "Bootstrap.Common",
                      "Bootstrap.Module",
@@ -27,5 +27,5 @@
                             "guid":  "f8a72e1c-4d5f-47b9-8e3a-9c15d7f2a3b1"
                         }
                     ],
-    "generated":  "2026-11-16T01:37:33Z"
+    "generated":  "2026-11-26T05:04:20Z"
 }

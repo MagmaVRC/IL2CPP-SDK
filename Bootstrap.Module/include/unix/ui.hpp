@@ -40,6 +40,15 @@ struct EnumDesc {
     std::string_view Tooltip{};
 };
 
+/// <summary>One chip of a chip row.</summary>
+struct ChipDesc {
+    std::string_view Label{};
+    /// <summary>Two-way bound flag, owned by the Unity main thread. Null keeps the state in the
+    /// host, starting at Default.</summary>
+    bool* Value = nullptr;
+    bool  Default = false;
+};
+
 /// <summary>How UIPage::NavigateTo and UISubPage::NavigateTo open a page.</summary>
 struct NavOptions {
     PageTransition Transition = PageTransition::Left;
@@ -216,6 +225,12 @@ public:
     /// built.</summary>
     /// <param name="onPress">Receives the index of the row pressed.</param>
     template <class = void> UIList AddList(std::function<void(uint32_t)> onPress = {});
+    /// <summary>A wrap grid of pill chips, one bool each. A tap flips the chip and its bound flag.</summary>
+    /// <param name="onChange">Receives the chip index and its new state, on the Unity main thread.</param>
+    template <class = void> UIChips AddChips(std::span<const ChipDesc> chips,
+                                             std::function<void(uint32_t, bool)> onChange = {});
+    template <class = void> UIChips AddChips(std::initializer_list<ChipDesc> chips,
+                                             std::function<void(uint32_t, bool)> onChange = {});
 
     /// <summary>The surface's own GameObject.</summary>
     template <class = void> [[nodiscard]] void* GetObject() const;
@@ -273,6 +288,12 @@ public:
     template <class = void> UITextInput AddTextInput(std::string_view label,
                                                      const TextInputDesc& desc = {});
     template <class = void> UIList AddList(std::function<void(uint32_t)> onPress = {});
+    /// <summary>A wrap grid of pill chips, one bool each. A tap flips the chip and its bound flag.</summary>
+    /// <param name="onChange">Receives the chip index and its new state, on the Unity main thread.</param>
+    template <class = void> UIChips AddChips(std::span<const ChipDesc> chips,
+                                             std::function<void(uint32_t, bool)> onChange = {});
+    template <class = void> UIChips AddChips(std::initializer_list<ChipDesc> chips,
+                                             std::function<void(uint32_t, bool)> onChange = {});
     template <class = void> void SetExpanded(bool expanded);
     template <class = void> [[nodiscard]] bool IsExpanded() const;
     /// <summary>Be told when the foldout expands or collapses, including when the user works
@@ -308,6 +329,18 @@ public:
     /// the page.</summary>
     template <class = void> UICornerButton AddCornerButton(Sprite icon,
                                                            std::function<void()> onClick);
+    /// <summary>Show VRChat's Expand button in this sub-page's header and run onClick when it is
+    /// pressed instead of VRChat's own handler. Calling again rebinds the same button; removing
+    /// the returned button hides it again.</summary>
+    /// <param name="onClick">Fired on the Unity main thread.</param>
+    /// <param name="tooltip">Hover text on the button.</param>
+    /// <returns>An empty button when the page has no Expand button.</returns>
+    template <class = void> UIButton SetExpandButton(std::function<void()> onClick,
+                                                     std::string_view tooltip = "Open in Main Menu");
+    /// <summary>Make this sub-page's Expand button open a MainMenu page.</summary>
+    template <class = void> UIButton SetMainMenuLink(const UIMainMenuPage& page);
+    /// <summary>Make this sub-page's Expand button open a MainMenu page on one of its sections.</summary>
+    template <class = void> UIButton SetMainMenuLink(const UIMainMenuPage& page, const UISection& section);
     /// <summary>Open this sub-page with an explicit transition.</summary>
     template <class = void> void NavigateTo(const NavOptions& options);
     /// <summary>Look up a sub-page this module made under this one, by name. Never creates.</summary>
@@ -367,6 +400,12 @@ public:
     /// <summary>Show or hide this page's tab. The page stays, and NavigateTo and a nav row
     /// on another page still reach it.</summary>
     template <class = void> UIPage& SetTabVisible(bool visible);
+    /// <summary>Run a callback when this page's tab is tapped twice quickly. A single tap still
+    /// opens the page.</summary>
+    template <class = void> UIButton SetTabDoubleTap(std::function<void()> onDoubleTap);
+    /// <summary>Open a MainMenu page when this page's tab is double-tapped, like VRChat's own
+    /// tabs.</summary>
+    template <class = void> UIButton SetMainMenuLink(const UIMainMenuPage& page);
     /// <summary>Destroy the host page. Destroying this object afterwards does nothing more.</summary>
     template <class = void> void Remove();
     /// <summary>Stop owning the page: destroying this object then leaves the page standing.</summary>
@@ -420,6 +459,11 @@ public:
     template <class = void> UISection AddSection(std::string_view name);
     /// <summary>Open this page's tab.</summary>
     template <class = void> void Open();
+    /// <summary>Open the MainMenu on this page from anywhere, the way VRChat's QuickMenu Expand
+    /// buttons do, closing the QuickMenu. The section is selected once the page shows.</summary>
+    /// <returns>False when the menu is not ready or VRChat's page opener is unavailable.</returns>
+    template <class = void> bool Show();
+    template <class = void> bool Show(const UISection& section);
     /// <summary>The title over the side list.</summary>
     template <class = void> UIMainMenuPage& SetTitle(std::string_view title);
     /// <summary>A page opened from this one, which Back pops.</summary>
@@ -667,6 +711,31 @@ public:
     template <class = void> [[nodiscard]] uint32_t Page() const;
     /// <summary>How many pages Count() items fill at pageSize items each.</summary>
     template <class = void> [[nodiscard]] uint32_t PageCount(uint32_t pageSize) const;
+    template <class = void> void Remove();
+private:
+    unix_handle m_handle{};
+};
+
+/// <summary>A wrap grid of pill chips, one bool each. The host re-reads bound flags when the
+/// page shows.</summary>
+class UIChips {
+public:
+    UIChips() = default;
+    explicit UIChips(unix_handle h) noexcept : m_handle(h) {}
+    [[nodiscard]] explicit operator bool() const noexcept { return m_handle != unix_null; }
+    [[nodiscard]] unix_handle Handle() const noexcept { return m_handle; }
+    friend bool operator==(UIChips a, UIChips b) noexcept { return a.m_handle == b.m_handle; }
+
+    /// <summary>Dim the row and ignore taps while the toggle is off. An empty toggle clears the master.</summary>
+    template <class = void> UIChips& SetMaster(UIToggle master);
+    /// <summary>Dim the row and ignore taps while the flag is false. The flag is re-read when
+    /// the page shows and on Refresh; null clears the master.</summary>
+    template <class = void> UIChips& SetMaster(const bool* master);
+    /// <summary>Re-read every bound flag and the master now.</summary>
+    template <class = void> UIChips& Refresh();
+    template <class = void> UIChips& SetEnabled(bool on);
+    template <class = void> UIChips& SetVisible(bool on);
+    template <class = void> [[nodiscard]] void* GetObject() const;
     template <class = void> void Remove();
 private:
     unix_handle m_handle{};
@@ -1025,6 +1094,37 @@ inline unix_handle AddListTo(unix_handle parent, std::function<void(uint32_t)> o
     return h;
 }
 
+inline unix_handle AddChipsTo(unix_handle parent, std::span<const ChipDesc> chips,
+                              std::function<void(uint32_t, bool)> onChange) {
+    if (chips.empty()) return unix_null;
+    std::vector<unix_chip> rows;
+    rows.reserve(chips.size());
+    for (const ChipDesc& c : chips) {
+        unix_chip r{};
+        r.size  = sizeof(r);
+        r.label = Sv(c.Label);
+        r.bound = c.Value;
+        r.def   = c.Value ? *c.Value : c.Default;
+        rows.push_back(r);
+    }
+    Node* n = nullptr;
+    if (onChange) {
+        n = AllocNode([f = std::move(onChange)](const void* p) {
+            const auto* e = static_cast<const unix_widget_ev*>(p);
+            f(static_cast<uint32_t>(e->i), e->b);
+        });
+    }
+    unix_chips_desc d{};
+    d.size      = sizeof(d);
+    d.chips     = rows.data();
+    d.count     = static_cast<uint32_t>(rows.size());
+    d.on_change = n ? &TrampWidget : nullptr;
+    d.ud        = n;
+    const unix_handle h = g_d.menu_add_chips(g_self, parent, &d);
+    OwnNode(h, n);
+    return h;
+}
+
 inline unix_handle AddEnumTo(unix_handle parent, std::string_view label, int32_t* bound,
                              const EnumDesc& d) {
     Node* n = nullptr;
@@ -1285,6 +1385,32 @@ UIList UIFoldout::AddList(std::function<void(uint32_t)> onPress) {
 }
 
 template <class>
+UIChips UISurface::AddChips(std::span<const ChipDesc> chips, std::function<void(uint32_t, bool)> onChange) {
+    UNIX_USE(menu, add_chips);
+    return UIChips{ detail::AddChipsTo(m_handle, chips, std::move(onChange)) };
+}
+
+template <class>
+UIChips UISurface::AddChips(std::initializer_list<ChipDesc> chips, std::function<void(uint32_t, bool)> onChange) {
+    UNIX_USE(menu, add_chips);
+    return UIChips{ detail::AddChipsTo(m_handle, std::span<const ChipDesc>(chips.begin(), chips.size()),
+                                       std::move(onChange)) };
+}
+
+template <class>
+UIChips UIFoldout::AddChips(std::span<const ChipDesc> chips, std::function<void(uint32_t, bool)> onChange) {
+    UNIX_USE(menu, add_chips);
+    return UIChips{ detail::AddChipsTo(m_handle, chips, std::move(onChange)) };
+}
+
+template <class>
+UIChips UIFoldout::AddChips(std::initializer_list<ChipDesc> chips, std::function<void(uint32_t, bool)> onChange) {
+    UNIX_USE(menu, add_chips);
+    return UIChips{ detail::AddChipsTo(m_handle, std::span<const ChipDesc>(chips.begin(), chips.size()),
+                                       std::move(onChange)) };
+}
+
+template <class>
 void UIFoldout::SetExpanded(bool expanded) {
     UNIX_USE(menu, set_foldout_expanded);
     detail::g_d.menu_set_foldout_expanded(detail::g_self, m_handle, expanded);
@@ -1448,6 +1574,29 @@ UICornerButton UISubPage::AddCornerButton(Sprite icon, std::function<void()> onC
     const UIButton nav = GetNavButton();
     return UICornerButton{ detail::AddCornerTo(nav.Handle(), detail::MakeIcon(icon), unix_null,
                                                std::move(onClick)) };
+}
+
+template <class>
+UIButton UISubPage::SetExpandButton(std::function<void()> onClick, std::string_view tooltip) {
+    UNIX_USE(menu, set_expand_button);
+    detail::Node* n = nullptr;
+    if (onClick) n = detail::AllocNode([f = std::move(onClick)](const void*) { f(); });
+    const unix_handle h = detail::g_d.menu_set_expand_button(detail::g_self, m_handle, Sv(tooltip),
+                                                             n ? &detail::TrampWidget : nullptr, n);
+    detail::OwnNode(h, n);
+    return UIButton{ h };
+}
+
+template <class>
+UIButton UISubPage::SetMainMenuLink(const UIMainMenuPage& page) {
+    return SetExpandButton([h = page.Handle()] { UIMainMenuPage(h).Show(); });
+}
+
+template <class>
+UIButton UISubPage::SetMainMenuLink(const UIMainMenuPage& page, const UISection& section) {
+    return SetExpandButton([h = page.Handle(), s = section.Handle()] {
+        UIMainMenuPage(h).Show(UISection(s));
+    });
 }
 
 template <class>
@@ -1681,6 +1830,22 @@ UIPage& UIPage::SetTabVisible(bool visible) {
 }
 
 template <class>
+UIButton UIPage::SetTabDoubleTap(std::function<void()> onDoubleTap) {
+    UNIX_USE(menu, set_tab_double_tap);
+    detail::Node* n = nullptr;
+    if (onDoubleTap) n = detail::AllocNode([f = std::move(onDoubleTap)](const void*) { f(); });
+    const unix_handle h = detail::g_d.menu_set_tab_double_tap(detail::g_self, m_handle,
+                                                              n ? &detail::TrampWidget : nullptr, n);
+    detail::OwnNode(h, n);
+    return UIButton{ h };
+}
+
+template <class>
+UIButton UIPage::SetMainMenuLink(const UIMainMenuPage& page) {
+    return SetTabDoubleTap([h = page.Handle()] { UIMainMenuPage(h).Show(); });
+}
+
+template <class>
 void UIPage::Remove() {
     (void)Untrack();
     detail::Cancel(m_events);
@@ -1700,6 +1865,18 @@ template <class>
 void UIMainMenuPage::Open() {
     UNIX_USE(mainmenu, open_page);
     detail::g_d.mainmenu_open_page(detail::g_self, m_handle);
+}
+
+template <class>
+bool UIMainMenuPage::Show() {
+    UNIX_USE(mainmenu, show_page);
+    return detail::g_d.mainmenu_show_page(detail::g_self, m_handle, unix_null) == unix_ok;
+}
+
+template <class>
+bool UIMainMenuPage::Show(const UISection& section) {
+    UNIX_USE(mainmenu, show_page);
+    return detail::g_d.mainmenu_show_page(detail::g_self, m_handle, section.Handle()) == unix_ok;
 }
 
 template <class>
@@ -2268,6 +2445,55 @@ uint32_t UIList::PageCount(uint32_t pageSize) const {
 
 template <class>
 void UIList::Remove() {
+    detail::Cancel(m_handle);
+    m_handle = unix_null;
+}
+
+// ---- chips --------------------------------------------------------------------------
+
+template <class>
+UIChips& UIChips::SetMaster(UIToggle master) {
+    UNIX_USE(menu, set_chips_master);
+    detail::g_d.menu_set_chips_master(detail::g_self, m_handle, master.Handle(), nullptr);
+    return *this;
+}
+
+template <class>
+UIChips& UIChips::SetMaster(const bool* master) {
+    UNIX_USE(menu, set_chips_master);
+    detail::g_d.menu_set_chips_master(detail::g_self, m_handle, unix_null, master);
+    return *this;
+}
+
+template <class>
+UIChips& UIChips::Refresh() {
+    UNIX_USE(menu, refresh_chips);
+    detail::g_d.menu_refresh_chips(detail::g_self, m_handle);
+    return *this;
+}
+
+template <class>
+UIChips& UIChips::SetEnabled(bool on) {
+    UNIX_USE(menu, set_control_enabled);
+    detail::g_d.menu_set_control_enabled(detail::g_self, m_handle, on);
+    return *this;
+}
+
+template <class>
+UIChips& UIChips::SetVisible(bool on) {
+    UNIX_USE(menu, set_control_visible);
+    detail::g_d.menu_set_control_visible(detail::g_self, m_handle, on);
+    return *this;
+}
+
+template <class>
+void* UIChips::GetObject() const {
+    UNIX_USE(menu, button_object);
+    return detail::g_d.menu_button_object(detail::g_self, m_handle);
+}
+
+template <class>
+void UIChips::Remove() {
     detail::Cancel(m_handle);
     m_handle = unix_null;
 }

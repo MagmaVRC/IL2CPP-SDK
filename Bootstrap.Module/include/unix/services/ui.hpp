@@ -173,9 +173,13 @@ public:
     template <class = void> [[nodiscard]] void* GetLocalApiUser() const;
     template <class = void> [[nodiscard]] void* GetLocalVrcPlayer() const;
     template <class = void> [[nodiscard]] std::vector<Player> GetAll() const;
+    /// <summary>Deprecated 8.2 (UNIX0052), removed 9.0: use PlayerManager().OnJoined.</summary>
     template <class = void> [[nodiscard]] Subscription OnJoin(std::function<void(Player)> fn);
+    /// <summary>Deprecated 8.2 (UNIX0053), removed 9.0: use PlayerManager().OnLeft.</summary>
     template <class = void> [[nodiscard]] Subscription OnLeave(std::function<void(Player)> fn);
+    /// <summary>Deprecated 8.2 (UNIX0054), removed 9.0: use PlayerManager().OnJoining.</summary>
     template <class = void> [[nodiscard]] Subscription OnAwake(std::function<void(Player)> fn);
+    /// <summary>Deprecated 8.2 (UNIX0055), removed 9.0: use the PlayerManager().On* subscriptions.</summary>
     template <class = void> [[nodiscard]] Subscription OnEvent(
         std::function<void(const PlayerEvent&)> fn);
     template <class = void> [[nodiscard]] Color GetRankColor(PlayerRank rank) const;
@@ -255,19 +259,23 @@ public:
     /// <param name="loops">Sequence play count; -1 repeats until cancelled.</param>
     template <class = void> Tween PlaySequence(std::span<const TweenStep> steps, int32_t loops = 1,
                                                std::function<void(bool completed)> onDone = {});
-    template <class = void> [[deprecated("use Tweens::Play with TweenProperty::AnchoredPosition")]]
+    /// <summary>Deprecated 8.0 (UNIX0046), removed 9.0: use Play with TweenProperty::AnchoredPosition.</summary>
+    template <class = void>
     Tween AnchoredPos(void* rectTransform, Vec2 from, Vec2 to,
                       uint32_t ms, Ease ease = Ease::Linear,
                       std::function<void(bool completed)> onDone = {});
-    template <class = void> [[deprecated("use Tweens::Play with TweenProperty::LocalPosition")]]
+    /// <summary>Deprecated 8.0 (UNIX0047), removed 9.0: use Play with TweenProperty::LocalPosition.</summary>
+    template <class = void>
     Tween LocalPos(void* transform, Vec3 from, Vec3 to, uint32_t ms,
                    Ease ease = Ease::Linear,
                    std::function<void(bool completed)> onDone = {});
-    template <class = void> [[deprecated("use Tweens::Play with TweenProperty::LocalScale")]]
+    /// <summary>Deprecated 8.0 (UNIX0048), removed 9.0: use Play with TweenProperty::LocalScale.</summary>
+    template <class = void>
     Tween LocalScale(void* transform, Vec3 from, Vec3 to, uint32_t ms,
                      Ease ease = Ease::Linear,
                      std::function<void(bool completed)> onDone = {});
-    template <class = void> [[deprecated("use Tweens::Play with TweenProperty::Float and TweenDesc::Bound")]]
+    /// <summary>Deprecated 8.0 (UNIX0049), removed 9.0: use Play with TweenProperty::Float and TweenDesc::Bound.</summary>
+    template <class = void>
     Tween Value(float from, float to, uint32_t ms,
                 Ease ease = Ease::Linear,
                 std::function<void(bool completed)> onDone = {});
@@ -729,8 +737,23 @@ std::vector<Player> Players::GetAll() const {
     return out;
 }
 
+namespace detail {
+[[deprecated("UNIX0052: Players::OnJoin is removed in 9.0; use PlayerManager().OnJoined")]]
+inline void Deprecated_PlayersOnJoin() noexcept {}
+[[deprecated("UNIX0053: Players::OnLeave is removed in 9.0; use PlayerManager().OnLeft")]]
+inline void Deprecated_PlayersOnLeave() noexcept {}
+[[deprecated("UNIX0054: Players::OnAwake is removed in 9.0; use PlayerManager().OnJoining")]]
+inline void Deprecated_PlayersOnAwake() noexcept {}
+[[deprecated("UNIX0055: Players::OnEvent is removed in 9.0; use the PlayerManager().On* subscriptions")]]
+inline void Deprecated_PlayersOnEvent() noexcept {}
+}   // namespace detail
+
+#pragma warning(push)
+#pragma warning(1 : 4996)
+
 template <class>
 Subscription Players::OnJoin(std::function<void(Player)> fn) {
+    detail::Deprecated_PlayersOnJoin();
     UNIX_USE(players, on_event);
     return detail::SubscribePlayer(detail::PhaseBit(unix_player_joined),
                                    [f = std::move(fn)](const PlayerEvent& e) {
@@ -740,6 +763,7 @@ Subscription Players::OnJoin(std::function<void(Player)> fn) {
 
 template <class>
 Subscription Players::OnLeave(std::function<void(Player)> fn) {
+    detail::Deprecated_PlayersOnLeave();
     UNIX_USE(players, on_event);
     return detail::SubscribePlayer(detail::PhaseBit(unix_player_left),
                                    [f = std::move(fn)](const PlayerEvent& e) {
@@ -749,6 +773,7 @@ Subscription Players::OnLeave(std::function<void(Player)> fn) {
 
 template <class>
 Subscription Players::OnAwake(std::function<void(Player)> fn) {
+    detail::Deprecated_PlayersOnAwake();
     UNIX_USE(players, on_event);
     return detail::SubscribePlayer(detail::PhaseBit(unix_player_awake),
                                    [f = std::move(fn)](const PlayerEvent& e) {
@@ -758,9 +783,12 @@ Subscription Players::OnAwake(std::function<void(Player)> fn) {
 
 template <class>
 Subscription Players::OnEvent(std::function<void(const PlayerEvent&)> fn) {
+    detail::Deprecated_PlayersOnEvent();
     UNIX_USE(players, on_event);
     return detail::SubscribePlayer(detail::kAllPlayerPhases, std::move(fn));
 }
+
+#pragma warning(pop)
 
 template <class>
 Color Players::GetRankColor(PlayerRank rank) const {
@@ -923,9 +951,24 @@ Tween Tweens::PlaySequence(std::span<const TweenStep> steps, int32_t loops,
     return Tween{ h };
 }
 
+namespace detail {
+[[deprecated("UNIX0046: Tweens::AnchoredPos is removed in 9.0; use Tweens::Play with TweenProperty::AnchoredPosition")]]
+inline void Deprecated_TweensAnchoredPos() noexcept {}
+[[deprecated("UNIX0047: Tweens::LocalPos is removed in 9.0; use Tweens::Play with TweenProperty::LocalPosition")]]
+inline void Deprecated_TweensLocalPos() noexcept {}
+[[deprecated("UNIX0048: Tweens::LocalScale is removed in 9.0; use Tweens::Play with TweenProperty::LocalScale")]]
+inline void Deprecated_TweensLocalScale() noexcept {}
+[[deprecated("UNIX0049: Tweens::Value is removed in 9.0; use Tweens::Play with TweenProperty::Float and TweenDesc::Bound")]]
+inline void Deprecated_TweensValue() noexcept {}
+}   // namespace detail
+
+#pragma warning(push)
+#pragma warning(1 : 4996)
+
 template <class>
 Tween Tweens::AnchoredPos(void* rectTransform, Vec2 from, Vec2 to, uint32_t ms, Ease ease,
                           std::function<void(bool)> onDone) {
+    detail::Deprecated_TweensAnchoredPos();
     UNIX_USE(tween, anchored_pos);
     detail::Node* n = detail::TweenDoneNode(std::move(onDone));
     const unix_handle h = detail::g_d.tween_anchored_pos(
@@ -938,6 +981,7 @@ Tween Tweens::AnchoredPos(void* rectTransform, Vec2 from, Vec2 to, uint32_t ms, 
 template <class>
 Tween Tweens::LocalPos(void* transform, Vec3 from, Vec3 to, uint32_t ms, Ease ease,
                        std::function<void(bool)> onDone) {
+    detail::Deprecated_TweensLocalPos();
     UNIX_USE(tween, local_pos);
     detail::Node* n = detail::TweenDoneNode(std::move(onDone));
     const unix_handle h = detail::g_d.tween_local_pos(
@@ -950,6 +994,7 @@ Tween Tweens::LocalPos(void* transform, Vec3 from, Vec3 to, uint32_t ms, Ease ea
 template <class>
 Tween Tweens::LocalScale(void* transform, Vec3 from, Vec3 to, uint32_t ms, Ease ease,
                          std::function<void(bool)> onDone) {
+    detail::Deprecated_TweensLocalScale();
     UNIX_USE(tween, local_scale);
     detail::Node* n = detail::TweenDoneNode(std::move(onDone));
     const unix_handle h = detail::g_d.tween_local_scale(
@@ -962,6 +1007,7 @@ Tween Tweens::LocalScale(void* transform, Vec3 from, Vec3 to, uint32_t ms, Ease 
 template <class>
 Tween Tweens::Value(float from, float to, uint32_t ms, Ease ease,
                     std::function<void(bool)> onDone) {
+    detail::Deprecated_TweensValue();
     UNIX_USE(tween, value);
     detail::Node* n = detail::TweenDoneNode(std::move(onDone));
     const unix_handle h = detail::g_d.tween_value(detail::g_self, from, to, ms,
@@ -970,6 +1016,8 @@ Tween Tweens::Value(float from, float to, uint32_t ms, Ease ease,
     detail::OwnNode(h, n);
     return Tween{ h };
 }
+
+#pragma warning(pop)
 
 template <class>
 void Tweens::CancelAll() {

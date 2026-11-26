@@ -7,7 +7,7 @@
 #define UNIX_ABI          1u
 #define UNIX_VER(ma, mi, pa) ((uint32_t)((ma) & 0xFFu) << 16 | \
                               (uint32_t)((mi) & 0xFFu) <<  8 | (uint32_t)((pa) & 0xFFu))
-#define UNIX_SDK_VERSION  UNIX_VER(8, 0, 0)
+#define UNIX_SDK_VERSION  UNIX_VER(8, 2, 0)
 #define UNIX_CC           __cdecl
 #define UNIX_BIND_REQ_V1  32u     // the FROZEN 7.0 stride floor, never sizeof (§3.2)
 
@@ -100,10 +100,25 @@ typedef enum : uint32_t {
     unix_menu_renderer_ready, unix_menu_mm_setup
 } unix_menu_phase;
 
+// Append-only. awake is NetworkManager.OnPlayerJoining. entered_room / left_room (8.2) are
+// the Photon actor callbacks; they reach on_player only for modules built against 8.2+.
 typedef enum : uint32_t {
     unix_player_awake = 0, unix_player_joined, unix_player_joined_complete,
-    unix_player_left, unix_player_update
+    unix_player_left, unix_player_update,
+    unix_player_entered_room, unix_player_left_room
 } unix_player_phase;
+#define unix_player_joining unix_player_awake
+
+// Why a player left (8.2). Append-only.
+typedef enum : uint32_t {
+    unix_leave_unknown = 0, unix_leave_left_room, unix_leave_world_exit, unix_leave_destroyed
+} unix_leave_reason;
+
+// Where a player is in its lifecycle (8.2). Append-only.
+typedef enum : uint32_t {
+    unix_stage_none = 0, unix_stage_in_room, unix_stage_joining, unix_stage_joined,
+    unix_stage_complete, unix_stage_leaving
+} unix_player_stage;
 
 typedef enum : uint32_t {
     unix_h_page = 1, unix_h_ctl, unix_h_plate, unix_h_tween, unix_h_sub,
@@ -206,8 +221,12 @@ struct unix_frame {
     float dt;
     static constexpr uint32_t kAbiTag = 0x66726d00u;
 };
+// 8.2 appended actor_id, reason (unix_leave_reason, left only), photon_player. Read them only
+// when size covers them. player is null for entered_room until the VRChat Player exists.
 struct unix_player_ev  { uint32_t size; unix_player_phase phase; void *player, *api_user;
+                         int32_t actor_id; uint32_t reason; void* photon_player;
                          static constexpr uint32_t kAbiTag = 0x706c7900u; };
+#define UNIX_PLAYER_EV_V1 24u
 struct unix_scene_ev   { uint32_t size; int32_t handle, mode; uint32_t loaded;
                          static constexpr uint32_t kAbiTag = 0x73636e00u; };
 typedef enum : uint32_t { unix_world_entered = 0, unix_world_left } unix_world_phase;
@@ -360,6 +379,15 @@ struct unix_foldout_desc{ uint32_t size; unix_str title; bool expanded, backgrou
 struct unix_text_desc   { uint32_t size; unix_str label, tooltip, value, config_key;
                           unix_cb_widget on_change; void* ud;
                           static constexpr uint32_t kAbiTag = 0x74786400u; };
+// One chip of a chip row. `bound` is the module's flag: the host writes it on tap and re-reads it
+// when the page shows or on menu.refresh_chips. Null keeps the state host-side, starting at `def`.
+struct unix_chip        { uint32_t size; unix_str label; bool* bound; bool def;
+                          static constexpr uint32_t kAbiTag = 0x63687000u; };
+// A wrap grid of pill chips, one bool each. `on_change` receives the chip index in
+// unix_widget_ev::i and its new state in unix_widget_ev::b.
+struct unix_chips_desc  { uint32_t size; const unix_chip* chips; uint32_t count;
+                          unix_cb_widget on_change; void* ud;
+                          static constexpr uint32_t kAbiTag = 0x63687300u; };
 struct unix_nav_desc    { uint32_t size; unix_page_transition transition; bool modal, transparent;
                           static constexpr uint32_t kAbiTag = 0x6e766400u; };
 // min == max keeps the current range; <= 0 power or display_scale, or an empty format, keeps
@@ -512,6 +540,14 @@ struct unix_voice        { uint32_t size;
                            float gain, distance_near, distance_far, volumetric_radius;
                            bool lowpass;
                            static constexpr uint32_t kAbiTag = 0x766f6300u; };
+
+// One 10 ms hop of a denoised remote voice at 48 kHz, before the playback EQ and levelling. `ms` is
+// room server time of its first sample and `pkt_ms` the timestamp of the voice packet it came from;
+// `seq` counts hops, so a gap means hops were dropped. n = 0 marks the end of that player's feed.
+struct unix_voice_pcm_ev { uint32_t size; int32_t actor; uint32_t seq; uint32_t ms; uint32_t pkt_ms;
+                           uint32_t n; const float* pcm48k;
+                           static constexpr uint32_t kAbiTag = 0x76637000u; };
+typedef void (UNIX_CC* unix_cb_voice_pcm)(void* ud, const unix_voice_pcm_ev*);
 
 // Write-only: VRChat exposes setters for avatar audio and no getters, so a read would be a lie.
 struct unix_avatar_audio { uint32_t size;
@@ -888,6 +924,7 @@ inline constexpr uint32_t kUnixAbiTags[] = {
     unix_page_ev::kAbiTag,
     unix_button_desc::kAbiTag, unix_toggle_desc::kAbiTag, unix_slider_desc::kAbiTag,
     unix_enum_desc::kAbiTag, unix_foldout_desc::kAbiTag, unix_text_desc::kAbiTag,
+    unix_chip::kAbiTag, unix_chips_desc::kAbiTag,
     unix_page_desc::kAbiTag,
     unix_cmd_desc::kAbiTag, unix_hook_desc::kAbiTag, unix_log_options::kAbiTag,
     unix_module_info::kAbiTag, unix_hotkey_info::kAbiTag,
@@ -899,7 +936,7 @@ inline constexpr uint32_t kUnixAbiTags[] = {
     unix_relay_msg_ev::kAbiTag, unix_relay_stream_ev::kAbiTag, unix_relay_peer::kAbiTag,
     unix_relay_sub_desc::kAbiTag, unix_relay_send_desc::kAbiTag,
     unix_am_desc::kAbiTag, unix_player_info::kAbiTag, unix_locomotion::kAbiTag,
-    unix_voice::kAbiTag, unix_avatar_audio::kAbiTag, unix_avatar_scale::kAbiTag,
+    unix_voice::kAbiTag, unix_voice_pcm_ev::kAbiTag, unix_avatar_audio::kAbiTag, unix_avatar_scale::kAbiTag,
     unix_storage_usage::kAbiTag, unix_udon_value::kAbiTag, unix_udon_arg::kAbiTag,
     unix_udon_entry::kAbiTag, unix_udon_param::kAbiTag, unix_udon_var::kAbiTag,
     unix_udon_info::kAbiTag, unix_udon_input::kAbiTag, unix_udon_ev::kAbiTag,

@@ -47,6 +47,27 @@ namespace UNIx {
         JoinedComplete = unix_player_joined_complete,
         Left           = unix_player_left,
         Update         = unix_player_update,
+        EnteredRoom    = unix_player_entered_room,
+        LeftRoom       = unix_player_left_room,
+        Joining        = unix_player_awake,
+    };
+
+    /// <summary>Why a player left.</summary>
+    enum class LeaveReason : uint32_t {
+        Unknown   = unix_leave_unknown,
+        LeftRoom  = unix_leave_left_room,
+        WorldExit = unix_leave_world_exit,
+        Destroyed = unix_leave_destroyed,
+    };
+
+    /// <summary>Where a player is in its lifecycle.</summary>
+    enum class PlayerStage : uint32_t {
+        None     = unix_stage_none,
+        InRoom   = unix_stage_in_room,
+        Joining  = unix_stage_joining,
+        Joined   = unix_stage_joined,
+        Complete = unix_stage_complete,
+        Leaving  = unix_stage_leaving,
     };
     static_assert(static_cast<uint32_t>(PlayerPhase::Update) == unix_player_update);
 
